@@ -1,9 +1,10 @@
+import { LoginForm } from "./login-form";
+
 export default function LoginPage() {
-  // TODO Faza 1: Supabase Auth email/password forma
   return (
-    <div>
-      <h2 className="font-display text-2xl mb-4">Prijava</h2>
-      <p className="text-slate-400">Auth forma dolazi u Fazi 1.</p>
+    <div className="max-w-md mx-auto py-8">
+      <h2 className="font-display text-2xl mb-6">Prijava</h2>
+      <LoginForm />
     </div>
   );
 }

@@ -1,0 +1,77 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
+export function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError("Pogrešan email ili lozinka.");
+      setLoading(false);
+      return;
+    }
+
+    const redirect = searchParams.get("redirect") || "/moj-tim";
+    router.push(redirect);
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && (
+        <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">
+          {error}
+        </p>
+      )}
+
+      <label className="flex flex-col gap-1.5 text-sm">
+        Email
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5 text-sm">
+        Lozinka
+        <input
+          type="password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+        />
+      </label>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="bg-gold-400 text-navy-950 font-bold text-sm px-6 py-3 rounded-lg disabled:opacity-50"
+      >
+        {loading ? "Prijavljujem..." : "Prijavi se"}
+      </button>
+    </form>
+  );
+}

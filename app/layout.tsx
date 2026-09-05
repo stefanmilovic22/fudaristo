@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Oswald, Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
+import { createClient } from "@/lib/supabase/server";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const oswald = Oswald({
   subsets: ["latin"],
@@ -19,9 +21,24 @@ export const metadata: Metadata = {
   description: "Fantasy fudbal aplikacija za grčku Super League",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let profile: { team_name: string; team_color: string } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("users")
+      .select("team_name, team_color")
+      .eq("id", user.id)
+      .single();
+    profile = data;
+  }
+
   return (
     <html lang="sr" className={`${oswald.variable} ${inter.variable}`}>
       <body className="font-body">
@@ -61,6 +78,30 @@ export default function RootLayout({
                 Statistike
               </Link>
             </nav>
+
+            {profile ? (
+              <div className="flex items-center gap-3 bg-navy-800 rounded-full pl-1.5 pr-4 py-1.5 border border-navy-600">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-xs"
+                  style={{ backgroundColor: profile.team_color }}
+                >
+                  {profile.team_name.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="leading-tight">
+                  <div className="text-xs font-semibold">{profile.team_name}</div>
+                  <LogoutButton />
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3 text-sm font-semibold">
+                <Link href="/login" className="text-slate-300 hover:text-chalk-50">
+                  Prijava
+                </Link>
+                <Link href="/register" className="text-gold-300">
+                  Registruj se
+                </Link>
+              </div>
+            )}
           </header>
           <main className="flex-1 px-7 py-6">{children}</main>
         </div>
@@ -68,3 +109,4 @@ export default function RootLayout({
     </html>
   );
 }
+
