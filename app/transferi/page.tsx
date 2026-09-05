@@ -1,5 +1,5 @@
 export default function TransferiPage() {
-  // TODO Faza 3/8: lista igrača + transfer logika (videti coacheleven-mockup.html #transferi)
+  // TODO Faza 3/8: lista igrača + transfer logika (videti fudaristo-mockup.html #transferi)
   return (
     <div>
       <h2 className="font-display text-2xl mb-4">Transferi</h2>

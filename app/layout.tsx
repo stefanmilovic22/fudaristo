@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CoachEleven — Fantasy Ελλάδα",
+  title: "Fudaristo — Fantasy Ελλάδα",
   description: "Fantasy fudbal aplikacija za grčku Super League",
 };
 
@@ -29,10 +29,10 @@ export default function RootLayout({
           <header className="flex items-center justify-between px-7 py-4 border-b border-navy-700">
             <Link href="/" className="flex items-baseline gap-2.5">
               <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
-                Coach11
+                Fudaristo
               </span>
               <span className="text-sm text-slate-400 font-medium">
-                CoachEleven — Fantasy Ελλάδα
+                Fantasy Ελλάδα
               </span>
             </Link>
             <nav className="flex gap-1.5 bg-navy-800 p-1 rounded-lg">

@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Design tokeni preuzeti direktno iz coacheleven-mockup.html — jedan izvor
+// Design tokeni preuzeti direktno iz fudaristo-mockup.html — jedan izvor
 // istine za boje kroz ceo projekat.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],

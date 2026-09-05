@@ -1,5 +1,5 @@
 -- ============================================================================
--- CoachEleven (Coach11) — Fantasy Grčka Super Liga
+-- Fudaristo (Fudaristo) — Fantasy Grčka Super Liga
 -- Database Schema — Supabase / PostgreSQL
 -- Verzija: Demo v1
 -- ============================================================================

@@ -1,4 +1,4 @@
-# CoachEleven — setup (Faza 0)
+# Fudaristo — setup (Faza 0)
 
 Ovaj skelet odgovara Fazi 0 iz `IMPLEMENTATION-PLAN.md`. Struktura foldera,
 Supabase klijenti, middleware, i placeholder stranice za sve rute su već tu.
@@ -7,7 +7,7 @@ Prati korake ispod tačno tim redosledom.
 ## 1. Instaliraj zavisnosti
 
 ```bash
-cd coacheleven
+cd fudaristo
 npm install
 ```
 
@@ -17,7 +17,7 @@ npm install
 git init
 git add .
 git commit -m "Faza 0: initial skeleton"
-gh repo create coacheleven --private --source=. --push
+gh repo create fudaristo --private --source=. --push
 # (ili ručno kroz github.com, pa git remote add origin ... && git push)
 ```
 
