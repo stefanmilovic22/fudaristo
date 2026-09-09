@@ -6,4 +6,22 @@ html,
 body {
   background-color: #0b1526;
   color: #f4f6f8;
+  /* Govori pregledaču da su nativne kontrole tamne. Bez ovoga padajuća lista
+     <select>-a, birač boje i skrolbarovi ostaju u sistemskoj svetloj temi —
+     bela lista sa belim tekstom, jer Tailwind preflight postavlja
+     color: inherit na form elemente. */
+  color-scheme: dark;
+}
+
+@layer base {
+  /* Stavke padajuće liste se crtaju izvan stranice (na nivou OS-a), pa ih
+     klase sa samog <select>-a ne dohvataju — moraju eksplicitno. */
+  option {
+    background-color: #101f38;
+    color: #f4f6f8;
+  }
+
+  ::placeholder {
+    color: #64718a;
+  }
 }

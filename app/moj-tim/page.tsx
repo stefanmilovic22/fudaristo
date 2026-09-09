@@ -100,6 +100,33 @@ export default async function MojTimPage() {
   // proverava i reset_squad u bazi). Posle toga izmene idu kroz transfere.
   const preSeason = await isBuildingFirstSquad(supabase, user.id, targetGw.number);
 
+  /**
+   * Protivnik po klubu za ovo kolo, kao u FPL-u: "PAO (H)" ispod igrača.
+   * Ključ je klub, ne igrač — svi igrači istog kluba imaju isti meč.
+   *
+   * Duplo kolo (klub igra dvaput) daje više redova, pa se skraćenice spajaju
+   * ("PAO (H), OFI (A)"). Klub bez meča (slobodno kolo) prosto neće imati unos
+   * i ispod igrača ostaje cena, kao do sad.
+   */
+  const { data: gwFixtures } = await supabase
+    .from("fixtures")
+    .select("home_club_id, away_club_id, status, home:home_club_id(short_name), away:away_club_id(short_name)")
+    .eq("gameweek_id", targetGw.id)
+    .neq("status", "cancelled");
+
+  const opponentByClub = new Map<string, string>();
+  for (const f of (gwFixtures ?? []) as any[]) {
+    const homeShort = f.home?.short_name ?? "?";
+    const awayShort = f.away?.short_name ?? "?";
+    const push = (clubId: string, text: string) => {
+      const prev = opponentByClub.get(clubId);
+      opponentByClub.set(clubId, prev ? `${prev}, ${text}` : text);
+    };
+    push(f.home_club_id, `${awayShort} (H)`);
+    push(f.away_club_id, `${homeShort} (A)`);
+  }
+
+
   // --- Čipovi za ovo kolo ---------------------------------------------------
   // chips_usage je privatan (RLS: samo vlasnik), pa ovaj upit vraća isključivo
   // sopstvene redove. Prozor za jokere stoji na samom kolu (gameweeks.joker_window,
@@ -181,6 +208,7 @@ export default async function MojTimPage() {
           budgetRemaining={Number(profile?.budget_remaining ?? 0)}
           freeTransfers={Number(profile?.free_transfers ?? 0)}
           preSeason={preSeason}
+          opponentByClub={Object.fromEntries(opponentByClub)}
         />
       </div>
     </div>

@@ -9,7 +9,9 @@ import { PlayerPicker } from "@/components/PlayerPicker";
 import {
   MAX_PLAYERS_PER_CLUB,
   POSITIONS,
+  FORMATIONS,
   POSITION_LABELS,
+  POSITION_SHORT,
   SQUAD_COMPOSITION,
   SQUAD_SIZE,
   STARTING_XI_BOUNDS,
@@ -307,6 +309,40 @@ export function SquadBuilder({
     router.refresh();
   }
 
+  /**
+   * Primena formacije jednim izborom. Ranije se ovde postava mogla menjati
+   * SAMO klikom na dva igrača redom — a dugme "Popuni automatski" ostavlja
+   * neku svoju postavu, pa je jedini način da se dobije 3-5-2 bio sačuvati
+   * tim pa ga menjati na /moj-tim, gde dropdown postoji. Sad je isti izbor i
+   * ovde.
+   */
+  function applyFormation(def: number, mid: number, fwd: number) {
+    const need: Record<Position, number> = { GK: 1, DEF: def, MID: mid, FWD: fwd };
+    const next = new Set<string>();
+
+    for (const pos of POSITIONS) {
+      const ranked = selected
+        .filter((p) => p.position === pos)
+        .sort(
+          (a, b) =>
+            Number(startingIds.has(b.id)) - Number(startingIds.has(a.id)) ||
+            b.total_points - a.total_points ||
+            b.price - a.price
+        );
+      if (ranked.length < need[pos]) {
+        setNotice(
+          `Nemaš dovoljno igrača za ${def}-${mid}-${fwd} (${POSITION_LABELS[pos]}: treba ${need[pos]}, imaš ${ranked.length}).`
+        );
+        return;
+      }
+      ranked.slice(0, need[pos]).forEach((p) => next.add(p.id));
+    }
+
+    setSwapId(null);
+    setStartingIds(next);
+    setNotice(null);
+  }
+
   const swapPlayer = swapId ? playersById.get(swapId) ?? null : null;
 
   return (
@@ -362,6 +398,7 @@ export function SquadBuilder({
           <LineupStep
             selected={selected}
             startingIds={startingIds}
+            onFormation={applyFormation}
             captainId={captainId}
             viceCaptainId={viceCaptainId}
             swapPlayer={swapPlayer}
@@ -381,27 +418,49 @@ export function SquadBuilder({
         {notice && <p className="text-slate-300 text-sm mt-3">{notice}</p>}
       </div>
 
-      <div className="flex flex-col gap-4">
-        {step === "squad" ? (
-          <PlayerPicker
-            players={players}
-            lockedPosition={pendingPosition}
-            selectedIds={selectedIds}
-            blockedReason={blockedReason}
-            onPick={addPlayer}
-            onClearLock={() => setPendingPosition(null)}
-          />
-        ) : (
-          <SwapHelp swapPlayer={swapPlayer} />
-        )}
+      {/* Desna kolona se lepi za vrh, a NE dno.
+          Ranije je panel sa greškama i dugmetom bio `lg:sticky lg:bottom-4`
+          unutar kolone — pri dnu prozora bi legao PREKO liste igrača i
+          poklopio je. Sad cela kolona stoji, lista igrača skroluje unutar
+          svoje kutije, a panel je ispod nje u normalnom toku: uvek vidljiv,
+          nikad ne preklapa. */}
+      <div className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {step === "squad" ? (
+            <PlayerPicker
+              players={players}
+              lockedPosition={pendingPosition}
+              selectedIds={selectedIds}
+              blockedReason={blockedReason}
+              onPick={addPlayer}
+              onClearLock={() => setPendingPosition(null)}
+            />
+          ) : (
+            <SwapHelp swapPlayer={swapPlayer} />
+          )}
+        </div>
 
-        <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 lg:sticky lg:bottom-4">
+        <div className="shrink-0 bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
           {allErrors.length > 0 && (
-            <ul className="text-danger-400 text-xs bg-danger-400/10 rounded-lg px-3 py-2 mb-3 flex flex-col gap-1">
-              {allErrors.slice(0, 4).map((err, i) => (
-                <li key={i}>{err}</li>
-              ))}
-            </ul>
+            <details className="mb-3 group">
+              {/* Sažeto po pravilu: kad je tim prazan grešaka je pet i panel
+                  naraste preko pola ekrana. Broj je dovoljan da se zna da nešto
+                  fali; spisak je jedan klik daleko. */}
+              <summary className="text-danger-400 text-xs bg-danger-400/10 rounded-lg px-3 py-2 cursor-pointer list-none flex items-center justify-between gap-2">
+                <span>
+                  {allErrors.length === 1
+                    ? "1 stvar fali"
+                    : `${allErrors.length} stvari fali`}
+                </span>
+                <span className="text-[10px] opacity-70 group-open:hidden">prikaži</span>
+                <span className="text-[10px] opacity-70 hidden group-open:inline">sakrij</span>
+              </summary>
+              <ul className="text-danger-400 text-xs mt-2 px-3 flex flex-col gap-1 list-disc list-inside">
+                {allErrors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </details>
           )}
           {saveError && <p className="text-danger-400 text-sm mb-3">{saveError}</p>}
           <button
@@ -412,9 +471,6 @@ export function SquadBuilder({
           >
             {saving ? "Čuvam tim…" : "Sačuvaj tim"}
           </button>
-          <p className="text-[11px] text-slate-400 mt-2 text-center">
-            Izmene se upisuju tek na ovo dugme.
-          </p>
         </div>
       </div>
     </div>
@@ -521,6 +577,7 @@ function SquadStep({
                   detail={formatEUR(p.price)}
                   initials={p.club_name.slice(0, 3).toUpperCase()}
                   flag={p.status !== "available" ? p.status : null}
+                  isGoalkeeper={p.position === "GK"}
                   onRemove={() => onRemove(p.id)}
                 />
               ))}
@@ -543,6 +600,7 @@ function SquadStep({
 function LineupStep({
   selected,
   startingIds,
+  onFormation,
   captainId,
   viceCaptainId,
   swapPlayer,
@@ -553,6 +611,7 @@ function LineupStep({
 }: {
   selected: SelectablePlayer[];
   startingIds: Set<string>;
+  onFormation: (def: number, mid: number, fwd: number) => void;
   captainId: string | null;
   viceCaptainId: string | null;
   swapPlayer: SelectablePlayer | null;
@@ -578,6 +637,8 @@ function LineupStep({
       detail={formatEUR(p.price)}
       initials={p.club_name.slice(0, 3).toUpperCase()}
       flag={p.status !== "available" ? p.status : null}
+      isGoalkeeper={p.position === "GK"}
+      positionLabel={onPitch ? undefined : POSITION_SHORT[p.position]}
       isCaptain={p.id === captainId}
       isViceCaptain={p.id === viceCaptainId}
       active={swapPlayer?.id === p.id}
@@ -599,6 +660,36 @@ function LineupStep({
 
   return (
     <>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <label className="text-sm text-slate-300" htmlFor="formacija">
+          Formacija
+        </label>
+        <select
+          id="formacija"
+          value={formationLabel}
+          onChange={(e) => {
+            const f = FORMATIONS.find((x) => x.label === e.target.value);
+            if (f) onFormation(f.def, f.mid, f.fwd);
+          }}
+          disabled={swapPlayer !== null}
+          className="bg-navy-900 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-chalk-50 focus:border-gold-400 focus:outline-none disabled:opacity-40"
+        >
+          {/* Trenutna formacija ne mora biti u spisku (npr. posle ručne
+              zamene), pa se dodaje da <select> ne skoči na tuđu vrednost. */}
+          {!FORMATIONS.some((f) => f.label === formationLabel) && (
+            <option value={formationLabel}>{formationLabel}</option>
+          )}
+          {FORMATIONS.map((f) => (
+            <option key={f.label} value={f.label}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        {swapPlayer !== null && (
+          <span className="text-xs text-slate-500">Završi zamenu pa biraj formaciju</span>
+        )}
+      </div>
+
       <Pitch>
         <div className="flex flex-col gap-5 sm:gap-7">
           {rows.map((row, i) => (

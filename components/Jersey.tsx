@@ -40,6 +40,10 @@ export type JerseyProps = {
   isViceCaptain?: boolean;
   /** Prikazuje crveni indikator (povreda, suspenzija...). */
   flag?: string | null;
+  /** Golman nosi drugačiji dres od saigrača — i u stvarnosti i ovde. */
+  isGoalkeeper?: boolean;
+  /** Kratka oznaka pozicije iznad dresa (koristi se na klupi). */
+  positionLabel?: string;
   /** Vizuelno istaknut — npr. izabran za zamenu. */
   active?: boolean;
   /** Prigušen — npr. ne može da uđe u zamenu sa aktivnim igračem. */
@@ -58,6 +62,8 @@ export function Jersey({
   isCaptain,
   isViceCaptain,
   flag,
+  isGoalkeeper,
+  positionLabel,
   active,
   dimmed,
   onRemove,
@@ -73,6 +79,12 @@ export function Jersey({
         dimmed ? "opacity-35" : ""
       }`}
     >
+      {positionLabel && (
+        <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+          {positionLabel}
+        </span>
+      )}
+
       <button
         type="button"
         onClick={onClick}
@@ -86,9 +98,10 @@ export function Jersey({
           <path
             d={SHIRT_PATH}
             fill={color}
-            stroke="rgba(255,255,255,0.35)"
-            strokeWidth="2.5"
+            stroke={isGoalkeeper ? "#F0C868" : "rgba(255,255,255,0.35)"}
+            strokeWidth={isGoalkeeper ? 4 : 2.5}
             strokeLinejoin="round"
+            strokeDasharray={isGoalkeeper ? "7 4" : undefined}
           />
           {initials && (
             <text
@@ -109,6 +122,19 @@ export function Jersey({
           <span className="absolute inset-x-0 -bottom-1 h-0.5 rounded-full bg-gold-400" />
         )}
       </button>
+
+      {/* Golmanska rukavica. Zajedno sa isprekidanom zlatnom ivicom dresa
+          razdvaja golmana od saigrača i kad je slika sitna — boja kluba je
+          ista za sve, pa sama boja nije dovoljna. */}
+      {isGoalkeeper && (
+        <span
+          title="Golman"
+          aria-hidden
+          className="absolute -top-1 -left-1 w-[18px] h-[18px] rounded-full bg-gold-400 text-navy-950 text-[10px] font-bold grid place-items-center ring-2 ring-navy-950"
+        >
+          GK
+        </span>
+      )}
 
       {isCaptain && <Armband label="C" tone="gold" />}
       {!isCaptain && isViceCaptain && <Armband label="V" tone="chalk" />}

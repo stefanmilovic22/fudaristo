@@ -11,6 +11,7 @@ import {
   MAX_PLAYERS_PER_CLUB,
   POSITIONS,
   POSITION_LABELS,
+  POSITION_SHORT,
   STARTING_XI_BOUNDS,
   STARTING_XI_SIZE,
   formatEUR,
@@ -49,6 +50,7 @@ export function MyTeam({
   budgetRemaining,
   freeTransfers,
   preSeason,
+  opponentByClub,
 }: {
   gameweekId: string;
   gameweekNumber: number;
@@ -59,6 +61,8 @@ export function MyTeam({
   freeTransfers: number;
   /** Pre prvog roka su transferi neograničeni i bez penala. */
   preSeason: boolean;
+  /** club_id → "OFI (A)" za ovo kolo. Prazno dok kalendar nije poznat. */
+  opponentByClub: Record<string, string>;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -490,9 +494,15 @@ export function MyTeam({
       key={s.key}
       color={s.current.club_color}
       name={s.current.last_name}
-      detail={s.replacement ? "novi" : formatEUR(s.entry.purchasePrice)}
+      detail={
+        s.replacement
+          ? "novi"
+          : opponentByClub[s.current.club_id] ?? formatEUR(s.entry.purchasePrice)
+      }
       initials={s.current.club_name.slice(0, 3).toUpperCase()}
       flag={s.current.status !== "available" ? s.current.status : null}
+      isGoalkeeper={s.current.position === "GK"}
+      positionLabel={onPitch ? undefined : POSITION_SHORT[s.current.position]}
       isCaptain={s.state.captain}
       isViceCaptain={s.state.vice}
       active={swapSlot === s.key || transferSlot === s.key || Boolean(s.replacement)}
@@ -662,9 +672,11 @@ export function MyTeam({
               Poništi izmene
             </button>
           )}
-          <p className="text-[11px] text-slate-400 mt-1 text-center">
-            {dirty ? "Izmene još nisu upisane." : "Nema neupisanih izmena."}
-          </p>
+          {dirty && (
+            <p className="text-[11px] text-slate-400 mt-1 text-center">
+              Izmene još nisu upisane.
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -23,6 +23,14 @@ export const POSITION_LABELS: Record<Position, string> = {
   FWD: "Napad",
 };
 
+/** Skraćenice za mesta gde pun naziv ne staje — pločica dresa je široka 68px. */
+export const POSITION_SHORT: Record<Position, string> = {
+  GK: "GOL",
+  DEF: "ODB",
+  MID: "VEZ",
+  FWD: "NAP",
+};
+
 // Pun sastav (15 igrača): 2 GK / 5 DEF / 5 MID / 3 FWD — FPL standard.
 export const SQUAD_COMPOSITION: Record<Position, number> = {
   GK: 2,

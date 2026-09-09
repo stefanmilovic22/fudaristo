@@ -16,22 +16,32 @@ export type ChipState = {
   availableThisGameweek: boolean;
 };
 
-const CHIP_META: Record<ChipType, { name: string; blurb: string }> = {
+type ChipMeta = { name: string; effect: string; blurb: string; glyph: string };
+
+const CHIP_META: Record<ChipType, ChipMeta> = {
   triple_captain: {
     name: "Triple Captain",
-    blurb: "Kapiten nosi 3x umesto 2x poena u ovom kolu.",
+    effect: "3×",
+    glyph: "C",
+    blurb: "Kapiten nosi trostruke poene umesto dvostrukih.",
   },
   favorite_club_x2: {
-    name: "Favorite Club x2",
-    blurb: "Svi igrači tvog omiljenog kluba nose duple poene u ovom kolu.",
+    name: "Favorite Club",
+    effect: "2×",
+    glyph: "★",
+    blurb: "Svi igrači tvog omiljenog kluba nose duple poene.",
   },
   joker_1: {
     name: "Joker #1",
-    blurb: "Neograničeni transferi bez penala. Otvoren samo u zimskoj pauzi.",
+    effect: "∞",
+    glyph: "↺",
+    blurb: "Neograničeni transferi bez penala. Otvara se u zimskoj pauzi.",
   },
   joker_2: {
     name: "Joker #2",
-    blurb: "Neograničeni transferi bez penala. Otvoren samo pred plej-of.",
+    effect: "∞",
+    glyph: "↺",
+    blurb: "Neograničeni transferi bez penala. Otvara se pred plej-of.",
   },
 };
 
@@ -97,17 +107,25 @@ export function ChipsPanel({
 
   return (
     <div className="bg-navy-800 border border-navy-600 rounded-xl p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
-        <h3 className="font-display text-lg">Čipovi</h3>
-        <span className="text-xs text-slate-500">
-          Jedan po kolu · svaki jednom u sezoni
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 className="font-display text-lg leading-none">Čipovi</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Jedan po kolu · svaki jednom u sezoni
+          </p>
+        </div>
+        <span
+          className={`text-xs font-semibold rounded-full px-3 py-1 ${
+            activeChip
+              ? "bg-gold-400 text-navy-950"
+              : "bg-navy-700 text-slate-400"
+          }`}
+        >
+          {activeChip
+            ? `${gameweekNumber}. kolo: ${CHIP_META[activeChip.type].name}`
+            : `${gameweekNumber}. kolo: bez čipa`}
         </span>
       </div>
-      <p className="text-slate-400 text-sm mb-4">
-        {activeChip
-          ? `U ${gameweekNumber}. kolu je aktivan ${CHIP_META[activeChip.type].name}.`
-          : `Nijedan čip nije aktivan u ${gameweekNumber}. kolu.`}
-      </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {ORDER.map((type) => {
@@ -121,59 +139,91 @@ export function ChipsPanel({
           const needsFavorite = type === "favorite_club_x2" && !favoriteClubName;
 
           let reason: string | null = null;
-          if (spent) reason = `Iskorišćen u ${chip.usedInGameweek}. kolu.`;
-          else if (outOfWindow) reason = "Nije otvoren u ovom kolu.";
-          else if (needsFavorite) reason = "Prvo izaberi omiljeni klub u podešavanjima.";
-          else if (blockedByOther)
-            reason = `Već je aktivan ${CHIP_META[activeChip!.type].name}.`;
+          if (spent) reason = `Iskorišćen u ${chip.usedInGameweek}. kolu`;
+          else if (outOfWindow) reason = "Zaključan — nije ovo kolo";
+          else if (needsFavorite) reason = "Izaberi omiljeni klub u podešavanjima";
+          else if (blockedByOther) reason = `Već je aktivan ${CHIP_META[activeChip!.type].name}`;
+
+          const usable = !reason && !chip.activeNow;
 
           return (
             <div
               key={type}
-              className={`rounded-lg border p-4 flex flex-col gap-2 ${
+              className={`relative rounded-xl border overflow-hidden flex flex-col transition-colors ${
                 chip.activeNow
                   ? "border-gold-400 bg-navy-700"
-                  : reason
-                    ? "border-navy-700 opacity-60"
-                    : "border-navy-600"
+                  : usable
+                    ? "border-navy-600 bg-navy-800 hover:border-slate-500"
+                    : "border-navy-700 bg-navy-800/50"
               }`}
             >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-display text-sm">{meta.name}</span>
-                {chip.activeNow && (
-                  <span className="text-[10px] uppercase tracking-wide font-bold bg-gold-400 text-navy-950 px-1.5 py-0.5 rounded">
-                    aktivan
-                  </span>
+              {/* Zlatna traka uz ivicu je jedini element koji se vidi iz ugla
+                  oka — stanje čipa se čita bez čitanja teksta. */}
+              {chip.activeNow && <span className="absolute inset-y-0 left-0 w-1 bg-gold-400" />}
+
+              <div className={`flex items-start gap-3 p-4 ${reason ? "opacity-45" : ""}`}>
+                <span
+                  className={`shrink-0 w-11 h-11 rounded-lg grid place-items-center font-display font-bold text-lg ${
+                    chip.activeNow
+                      ? "bg-gold-400 text-navy-950"
+                      : "bg-navy-900 text-slate-300"
+                  }`}
+                  aria-hidden
+                >
+                  {meta.glyph}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-display text-sm truncate">{meta.name}</span>
+                    <span
+                      className={`text-xs font-bold tabular-nums ${
+                        chip.activeNow ? "text-gold-300" : "text-slate-400"
+                      }`}
+                    >
+                      {meta.effect}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed mt-1">
+                    {meta.blurb}
+                    {type === "favorite_club_x2" && favoriteClubName && (
+                      <span className="text-slate-300"> ({favoriteClubName})</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-auto border-t border-navy-700 px-4 py-2.5 flex items-center justify-between gap-2 min-h-[44px]">
+                {chip.activeNow ? (
+                  <>
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-gold-300">
+                      Aktivan
+                    </span>
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      disabled={working !== null}
+                      className="text-xs font-semibold text-slate-400 hover:text-danger-400 transition-colors disabled:opacity-50"
+                    >
+                      {working === "cancel" ? "Otkazujem…" : "Otkaži"}
+                    </button>
+                  </>
+                ) : reason ? (
+                  <span className="text-[11px] text-slate-500">{reason}</span>
+                ) : (
+                  <>
+                    <span className="text-[11px] text-slate-500">Slobodan</span>
+                    <button
+                      type="button"
+                      onClick={() => activate(type)}
+                      disabled={working !== null}
+                      className="text-xs font-bold bg-gold-400 text-navy-950 rounded-md px-3 py-1.5 hover:bg-gold-300 transition-colors disabled:opacity-50"
+                    >
+                      {working === type ? "Aktiviram…" : "Aktiviraj"}
+                    </button>
+                  </>
                 )}
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {meta.blurb}
-                {type === "favorite_club_x2" && favoriteClubName && (
-                  <span className="text-slate-300"> Tvoj klub: {favoriteClubName}.</span>
-                )}
-              </p>
-
-              {chip.activeNow ? (
-                <button
-                  type="button"
-                  onClick={cancel}
-                  disabled={working !== null}
-                  className="mt-auto text-sm font-semibold text-slate-300 border border-navy-600 rounded-lg px-3 py-1.5 hover:border-danger-400 hover:text-danger-400 transition-colors disabled:opacity-50"
-                >
-                  {working === "cancel" ? "Otkazujem…" : "Otkaži"}
-                </button>
-              ) : reason ? (
-                <span className="mt-auto text-xs text-slate-500">{reason}</span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => activate(type)}
-                  disabled={working !== null}
-                  className="mt-auto text-sm font-bold bg-gold-400 text-navy-950 rounded-lg px-3 py-1.5 hover:bg-gold-300 transition-colors disabled:opacity-50"
-                >
-                  {working === type ? "Aktiviram…" : "Aktiviraj"}
-                </button>
-              )}
             </div>
           );
         })}
