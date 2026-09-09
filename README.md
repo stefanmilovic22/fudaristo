@@ -82,6 +82,74 @@ git push
 Vercel automatski build-uje i deploy-uje. Proveri da cron job-ovi iz
 `vercel.json` postoje: Vercel Dashboard → Project → Cron Jobs.
 
+## 10. Provera izvora podataka (Faza 5)
+
+```bash
+npm run check-sources                      # sve tri provere
+npm run check-sources -- --event 2154321   # konkretan TheSportsDB meč
+npm run check-sources -- --skip-worldfootball
+```
+
+Odgovara na pitanje odakle vaditi igračku statistiku (minuti, golovi,
+asistencije, kartoni, odbrane) za grčku Super ligu. Ništa ne upisuje u bazu —
+čita, ispisuje nalaz i snima sirove odgovore u `tmp/` da se parser posle piše
+iz njih, bez novih poziva.
+
+- **TheSportsDB** — ima li `lookuplineup` / `lookuptimeline` / `lookupeventstats`
+  podatke za ovu ligu. Testira se besplatnim ključem `123`; ako vrati tačno 5
+  zapisa, to je tavanica besplatnog ključa a ne odsustvo podataka, i skripta to
+  kaže. Premium je $9/mesec i usput donosi livescores.
+  Sa premium ključem: `THESPORTSDB_KEY=xxx npm run check-sources`.
+- **API-Football** — polje `coverage.statistics_players` za **tekuću** sezonu.
+  Ranije sezone mogu biti pokrivene a ova ne, pa se zaključak izvodi samo iz
+  tekuće. Zahteva `API_FOOTBALL_KEY`; bez njega se preskače.
+- **worldfootball.net** — potvrda da izveštaj sa meča sadrži postavu, minute
+  izmena, golove, asistencije i kartone.
+
+⚠️ Skripta povlači dve worldfootball stranice, jednom, sa pauzom — to je
+dijagnostika. Pre nego što od toga nastane cron koji radi svake nedelje,
+pročitaj njihove opšte uslove (https://www.worldfootball.net/terms/).
+
+---
+
+## 11. Migracije baze (posle schema.sql)
+
+Pokreni redom u Supabase → SQL Editor. Bezbedno je pokrenuti više puta.
+
+```
+migrations/003-security-and-rpc.sql
+migrations/004-reset-squad.sql
+migrations/005-lineup-and-batch-transfers.sql
+migrations/006-ingestion-and-worldfootball.sql
+```
+
+⚠️ **Obavezno pre puštanja u rad.** Bez ove migracije:
+- svaki ulogovan korisnik može sam sebi da postavi `is_admin = true` i
+  proizvoljan budžet (RLS politika `users_update_own` je imala samo `USING`,
+  bez `WITH CHECK`, a `authenticated` rola je imala UPDATE na sve kolone)
+- sastav i transferi se upisuju iz browsera u 4 odvojena zahteva, bez
+  serverske provere roka — može se upisati tim za kolo koje je već odigrano
+- sastav se ne prenosi iz kola u kolo
+
+Posle migracija aplikacija zove `save_squad()`, `apply_transfers()`,
+`update_lineup()`, `carry_over_squad()` i `reset_squad()` umesto da piše
+direktno u tabele. (`make_transfer()` iz 003 ostaje u bazi kao pojedinačni
+transfer, ali ga UI više ne koristi — sve ide kroz `apply_transfers()`.)
+
+Migracija 006 dodaje `ingestion_runs` tabelu i dve kolone (`fixtures.worldfootball_url`,
+`players.api_worldfootball_id`) za Fazu 5 (automatski ingestion rezultata +
+admin panel). Ništa u njoj ne zahteva RPC pozive iz aplikacije — admin panel
+piše preko service role klijenta (`lib/supabase/server.ts` → `createServiceRoleClient()`),
+isti obrazac kao cron ruta.
+
+**Da bi admin panel radio, bar jedan korisnik mora imati `is_admin = true`.**
+Nijedan korisnik to ne može sam sebi da postavi (migracija 003 to sprečava) —
+postavi ga direktno u Supabase SQL Editor-u kao superuser:
+```sql
+update users set is_admin = true where team_name = 'Tvoj Tim';
+``` Ako migracija nije
+pokrenuta, čuvanje tima vraća grešku "function does not exist".
+
 ---
 
 ## Definition of done (Faza 0)

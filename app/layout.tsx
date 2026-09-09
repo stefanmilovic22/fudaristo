@@ -29,11 +29,14 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let profile: { team_name: string; team_color: string } | null = null;
+  // is_admin se čita ovde da bi link "Admin" uopšte postojao u navigaciji.
+  // Do sad ga nije bilo nigde — /admin je postojao, radio, ali se do njega
+  // moglo doći samo ručnim kucanjem URL-a.
+  let profile: { team_name: string; team_color: string; is_admin: boolean } | null = null;
   if (user) {
     const { data } = await supabase
       .from("users")
-      .select("team_name, team_color")
+      .select("team_name, team_color, is_admin")
       .eq("id", user.id)
       .single();
     profile = data;
@@ -43,7 +46,7 @@ export default async function RootLayout({
     <html lang="sr" className={`${oswald.variable} ${inter.variable}`}>
       <body className="font-body">
         <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-          <header className="flex items-center justify-between px-7 py-4 border-b border-navy-700">
+          <header className="flex items-center justify-between gap-4 flex-wrap px-4 sm:px-7 py-4 border-b border-navy-700">
             <Link href="/" className="flex items-baseline gap-2.5">
               <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                 Fudaristo
@@ -52,31 +55,45 @@ export default async function RootLayout({
                 Fantasy Ελλάδα
               </span>
             </Link>
-            <nav className="flex gap-1.5 bg-navy-800 p-1 rounded-lg">
+            <nav className="order-last w-full lg:order-none lg:w-auto flex gap-0.5 sm:gap-1.5 bg-navy-800 p-1 rounded-lg overflow-x-auto">
               <Link
                 href="/moj-tim"
-                className="text-sm font-semibold text-slate-300 hover:text-chalk-50 px-4 py-2 rounded-md transition-colors"
+                className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
               >
                 Moj klub
               </Link>
               <Link
-                href="/transferi"
-                className="text-sm font-semibold text-slate-300 hover:text-chalk-50 px-4 py-2 rounded-md transition-colors"
+                href="/raspored"
+                className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
               >
-                Transferi
+                Raspored
               </Link>
               <Link
                 href="/liga"
-                className="text-sm font-semibold text-slate-300 hover:text-chalk-50 px-4 py-2 rounded-md transition-colors"
+                className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
               >
                 Liga
               </Link>
               <Link
                 href="/statistike"
-                className="text-sm font-semibold text-slate-300 hover:text-chalk-50 px-4 py-2 rounded-md transition-colors"
+                className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
               >
                 Statistike
               </Link>
+              <Link
+                href="/podesavanja"
+                className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
+              >
+                Podešavanja
+              </Link>
+              {profile?.is_admin && (
+                <Link
+                  href="/admin"
+                  className="shrink-0 text-sm font-semibold text-gold-300 hover:text-gold-400 px-3 sm:px-4 py-2 rounded-md transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
 
             {profile ? (
@@ -103,7 +120,7 @@ export default async function RootLayout({
               </div>
             )}
           </header>
-          <main className="flex-1 px-7 py-6">{children}</main>
+          <main className="flex-1 px-4 sm:px-7 py-6">{children}</main>
         </div>
       </body>
     </html>

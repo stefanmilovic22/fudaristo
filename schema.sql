@@ -1,5 +1,5 @@
 -- ============================================================================
--- Fudaristo (Fudaristo) — Fantasy Grčka Super Liga
+-- Fudaristo — Fantasy Grčka Super Liga
 -- Database Schema — Supabase / PostgreSQL
 -- Verzija: Demo v1
 -- ============================================================================
@@ -63,10 +63,13 @@ CREATE TABLE players (
     price           NUMERIC(4,1) NOT NULL,        -- u milionima evra, npr. 6.5
     status          player_status NOT NULL DEFAULT 'available',
     total_points    INTEGER NOT NULL DEFAULT 0,    -- KEŠ zbira (izvor istine: SUM(player_gameweek_stats.fantasy_points))
+    market_value_eur NUMERIC(12, 2),               -- ručno preneta Transfermarkt vrednost, ulaz za formulu cena (GDD sekcija 17)
     api_football_id INTEGER UNIQUE,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE, -- npr. napustio ligu tokom sezone
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    UNIQUE (club_id, first_name, last_name)
 );
 
 CREATE INDEX idx_players_club ON players(club_id);
@@ -125,6 +128,7 @@ CREATE TABLE fixtures (
     away_score          SMALLINT,
     original_gameweek_id UUID REFERENCES gameweeks(id),  -- audit trail: gameweek u kom je MEČ TREBALO da bude odigran, ako je odložen i premešten (sekcija: odložene utakmice)
     api_football_id     INTEGER UNIQUE,
+    api_thesportsdb_id  TEXT UNIQUE,           -- koristi se za automatski import kalendara/rezultata (GDD sekcija 15)
     raw_api_data        JSONB,                       -- ceo API odgovor, za debug/audit
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),

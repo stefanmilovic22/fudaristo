@@ -1,9 +1,10 @@
+import { redirect } from "next/navigation";
+
+/**
+ * Transferi više nemaju svoju stranicu — ceo tok (× → izbor zamene → potvrda)
+ * živi na "Moj tim", kao na FPL-u. Ruta ostaje samo da stari linkovi i
+ * obeleživači ne vode u 404.
+ */
 export default function TransferiPage() {
-  // TODO Faza 3/8: lista igrača + transfer logika (videti fudaristo-mockup.html #transferi)
-  return (
-    <div>
-      <h2 className="font-display text-2xl mb-4">Transferi</h2>
-      <p className="text-slate-400">Lista igrača i transfer logika dolaze u Fazi 3/8.</p>
-    </div>
-  );
+  redirect("/moj-tim");
 }

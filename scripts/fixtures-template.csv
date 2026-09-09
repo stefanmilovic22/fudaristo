@@ -1,0 +1,162 @@
+round,home_club,away_club,kickoff_at_utc
+4,Olympiacos,OFI,2026-09-12 15:00
+4,Iraklis,Atromitos,2026-09-12 17:00
+4,Kalamata,Volos,2026-09-13 14:00
+4,Asteras Tripolis,AEK Athens,2026-09-13 15:00
+4,Kifisia,Levadiakos,2026-09-13 17:00
+4,PAOK,Aris,2026-09-13 17:00
+4,Panathinaikos,Panetolikos,2026-09-13 17:30
+5,Aris,Iraklis,2026-09-19 16:00
+5,Atromitos,Kifisia,2026-09-19 16:00
+5,Kalamata,Panathinaikos,2026-09-19 16:00
+5,Levadiakos,Olympiacos,2026-09-19 16:00
+5,OFI,Asteras Tripolis,2026-09-19 16:00
+5,Panetolikos,PAOK,2026-09-19 16:00
+5,Volos,AEK Athens,2026-09-19 16:00
+6,AEK Athens,OFI,2026-10-10 16:00
+6,Aris,Volos,2026-10-10 16:00
+6,Asteras Tripolis,Atromitos,2026-10-10 16:00
+6,Iraklis,Levadiakos,2026-10-10 16:00
+6,Kifisia,Panetolikos,2026-10-10 16:00
+6,Olympiacos,Panathinaikos,2026-10-10 16:00
+6,PAOK,Kalamata,2026-10-10 16:00
+7,Atromitos,AEK Athens,2026-10-17 16:00
+7,Kalamata,OFI,2026-10-17 16:00
+7,Kifisia,Aris,2026-10-17 16:00
+7,Levadiakos,Volos,2026-10-17 16:00
+7,Panathinaikos,Asteras Tripolis,2026-10-17 16:00
+7,Panetolikos,Olympiacos,2026-10-17 16:00
+7,PAOK,Iraklis,2026-10-17 16:00
+8,AEK Athens,Panetolikos,2026-10-24 16:00
+8,Aris,Atromitos,2026-10-24 16:00
+8,Asteras Tripolis,Levadiakos,2026-10-24 16:00
+8,Iraklis,Kifisia,2026-10-24 16:00
+8,OFI,PAOK,2026-10-24 16:00
+8,Olympiacos,Kalamata,2026-10-24 16:00
+8,Volos,Panathinaikos,2026-10-24 16:00
+9,Atromitos,Volos,2026-10-31 17:00
+9,Kalamata,Iraklis,2026-10-31 17:00
+9,Kifisia,Olympiacos,2026-10-31 17:00
+9,Levadiakos,Aris,2026-10-31 17:00
+9,Panathinaikos,AEK Athens,2026-10-31 17:00
+9,Panetolikos,OFI,2026-10-31 17:00
+9,PAOK,Asteras Tripolis,2026-10-31 17:00
+10,AEK Athens,Levadiakos,2026-11-07 17:00
+10,Aris,Panetolikos,2026-11-07 17:00
+10,Asteras Tripolis,Kalamata,2026-11-07 17:00
+10,Iraklis,Panathinaikos,2026-11-07 17:00
+10,OFI,Atromitos,2026-11-07 17:00
+10,Olympiacos,PAOK,2026-11-07 17:00
+10,Volos,Kifisia,2026-11-07 17:00
+11,Asteras Tripolis,Aris,2026-11-21 17:00
+11,Kalamata,AEK Athens,2026-11-21 17:00
+11,Levadiakos,Atromitos,2026-11-21 17:00
+11,Olympiacos,Iraklis,2026-11-21 17:00
+11,Panathinaikos,OFI,2026-11-21 17:00
+11,Panetolikos,Volos,2026-11-21 17:00
+11,PAOK,Kifisia,2026-11-21 17:00
+12,AEK Athens,PAOK,2026-11-28 17:00
+12,Aris,Olympiacos,2026-11-28 17:00
+12,Atromitos,Panathinaikos,2026-11-28 17:00
+12,Iraklis,Panetolikos,2026-11-28 17:00
+12,Kifisia,Kalamata,2026-11-28 17:00
+12,OFI,Levadiakos,2026-11-28 17:00
+12,Volos,Asteras Tripolis,2026-11-28 17:00
+13,Asteras Tripolis,Kifisia,2026-12-05 17:00
+13,Kalamata,Levadiakos,2026-12-05 17:00
+13,OFI,Iraklis,2026-12-05 17:00
+13,Olympiacos,AEK Athens,2026-12-05 17:00
+13,Panathinaikos,Aris,2026-12-05 17:00
+13,Panetolikos,Atromitos,2026-12-05 17:00
+13,PAOK,Volos,2026-12-05 17:00
+14,AEK Athens,Volos,2026-12-12 17:00
+14,Atromitos,Olympiacos,2026-12-12 17:00
+14,Iraklis,Aris,2026-12-12 17:00
+14,Kalamata,Panetolikos,2026-12-12 17:00
+14,Kifisia,OFI,2026-12-12 17:00
+14,Levadiakos,Asteras Tripolis,2026-12-12 17:00
+14,PAOK,Panathinaikos,2026-12-12 17:00
+15,Aris,AEK Athens,2026-12-19 17:00
+15,Asteras Tripolis,PAOK,2026-12-19 17:00
+15,Kifisia,Atromitos,2026-12-19 17:00
+15,OFI,Kalamata,2026-12-19 17:00
+15,Olympiacos,Panetolikos,2026-12-19 17:00
+15,Panathinaikos,Iraklis,2026-12-19 17:00
+15,Volos,Levadiakos,2026-12-19 17:00
+16,AEK Athens,Atromitos,2027-01-09 17:00
+16,Aris,PAOK,2027-01-09 17:00
+16,Asteras Tripolis,Panathinaikos,2027-01-09 17:00
+16,Iraklis,Volos,2027-01-09 17:00
+16,Kalamata,Olympiacos,2027-01-09 17:00
+16,Levadiakos,OFI,2027-01-09 17:00
+16,Panetolikos,Kifisia,2027-01-09 17:00
+17,AEK Athens,Kalamata,2027-01-16 17:00
+17,Atromitos,Panetolikos,2027-01-16 17:00
+17,Kifisia,Asteras Tripolis,2027-01-16 17:00
+17,Levadiakos,Iraklis,2027-01-16 17:00
+17,OFI,Panathinaikos,2027-01-16 17:00
+17,PAOK,Olympiacos,2027-01-16 17:00
+17,Volos,Aris,2027-01-16 17:00
+18,Aris,Kifisia,2027-01-23 17:00
+18,Iraklis,PAOK,2027-01-23 17:00
+18,Kalamata,Asteras Tripolis,2027-01-23 17:00
+18,Olympiacos,Levadiakos,2027-01-23 17:00
+18,Panathinaikos,Atromitos,2027-01-23 17:00
+18,Panetolikos,AEK Athens,2027-01-23 17:00
+18,Volos,OFI,2027-01-23 17:00
+19,Iraklis,Asteras Tripolis,2027-01-30 17:00
+19,Atromitos,Aris,2027-01-30 17:00
+19,Kifisia,Volos,2027-01-30 17:00
+19,Levadiakos,Kalamata,2027-01-30 17:00
+19,OFI,AEK Athens,2027-01-30 17:00
+19,Panathinaikos,Olympiacos,2027-01-30 17:00
+19,PAOK,Panetolikos,2027-01-30 17:00
+20,AEK Athens,Kifisia,2027-02-06 17:00
+20,Aris,Panathinaikos,2027-02-06 17:00
+20,Iraklis,OFI,2027-02-06 17:00
+20,Kalamata,PAOK,2027-02-06 17:00
+20,Olympiacos,Asteras Tripolis,2027-02-06 17:00
+20,Panetolikos,Levadiakos,2027-02-06 17:00
+20,Volos,Atromitos,2027-02-06 17:00
+21,Asteras Tripolis,Panetolikos,2027-02-13 17:00
+21,Atromitos,Iraklis,2027-02-13 17:00
+21,Levadiakos,Kifisia,2027-02-13 17:00
+21,OFI,Aris,2027-02-13 17:00
+21,Olympiacos,Volos,2027-02-13 17:00
+21,Panathinaikos,Kalamata,2027-02-13 17:00
+21,PAOK,AEK Athens,2027-02-13 17:00
+22,AEK Athens,Asteras Tripolis,2027-02-20 17:00
+22,Aris,Levadiakos,2027-02-20 17:00
+22,Atromitos,OFI,2027-02-20 17:00
+22,Iraklis,Olympiacos,2027-02-20 17:00
+22,Kifisia,PAOK,2027-02-20 17:00
+22,Panetolikos,Panathinaikos,2027-02-20 17:00
+22,Volos,Kalamata,2027-02-20 17:00
+23,Asteras Tripolis,OFI,2027-02-27 17:00
+23,Kalamata,Kifisia,2027-02-27 17:00
+23,Levadiakos,AEK Athens,2027-02-27 17:00
+23,Olympiacos,Aris,2027-02-27 17:00
+23,Panathinaikos,Volos,2027-02-27 17:00
+23,Panetolikos,Iraklis,2027-02-27 17:00
+23,PAOK,Atromitos,2027-02-27 17:00
+24,AEK Athens,Olympiacos,2027-03-06 17:00
+24,Aris,Asteras Tripolis,2027-03-06 17:00
+24,Atromitos,Levadiakos,2027-03-06 17:00
+24,Iraklis,Kalamata,2027-03-06 17:00
+24,Kifisia,Panathinaikos,2027-03-06 17:00
+24,OFI,Panetolikos,2027-03-06 17:00
+24,Volos,PAOK,2027-03-06 17:00
+25,Asteras Tripolis,Volos,2027-03-13 17:00
+25,Iraklis,AEK Athens,2027-03-13 17:00
+25,Kalamata,Atromitos,2027-03-13 17:00
+25,Olympiacos,Kifisia,2027-03-13 17:00
+25,Panathinaikos,Levadiakos,2027-03-13 17:00
+25,Panetolikos,Aris,2027-03-13 17:00
+25,PAOK,OFI,2027-03-13 17:00
+26,AEK Athens,Panathinaikos,2027-03-20 17:00
+26,Aris,Kalamata,2027-03-20 17:00
+26,Atromitos,Asteras Tripolis,2027-03-20 17:00
+26,Kifisia,Iraklis,2027-03-20 17:00
+26,Levadiakos,PAOK,2027-03-20 17:00
+26,OFI,Olympiacos,2027-03-20 17:00
+26,Volos,Panetolikos,2027-03-20 17:00

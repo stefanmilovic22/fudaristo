@@ -37,7 +37,7 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
       return;
     }
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -51,6 +51,32 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
 
     if (signUpError) {
       setError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    // signUp sam po sebi ne pravi red u public.users — to je odvojena tabela
+    // sa fantasy poljima (budžet, tim, itd.). Od migracije 003 to radi trigger
+    // on_auth_user_created, u istoj transakciji kao i signUp, pa korisnik ne
+    // može više da završi sa auth nalogom bez profila ako ovaj drugi zahtev
+    // padne. Ovaj upis ostaje kao fallback ako migracija još nije pokrenuta —
+    // ignoreDuplicates znači da ne smeta kad je trigger već odradio posao.
+    const { error: profileError } = await supabase
+      .from("users")
+      .upsert(
+        {
+          id: signUpData.user!.id,
+          team_name: teamName,
+          team_color: teamColor,
+          favorite_club_id: favoriteClubId,
+        },
+        { onConflict: "id", ignoreDuplicates: true }
+      );
+
+    if (profileError) {
+      setError(
+        "Nalog je kreiran, ali profil tima nije upisan: " + profileError.message
+      );
       setLoading(false);
       return;
     }
