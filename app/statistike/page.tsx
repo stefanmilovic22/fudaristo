@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { StatsBoard, type StatsData } from "./stats-board";
+import { DataLoadError } from "@/components/DataLoadError";
 
 export const metadata = { title: "Statistike — Fudaristo" };
 
@@ -40,12 +41,18 @@ export default async function StatistikePage() {
   ]);
 
   if (byPosition.error || scorers.error || assists.error || clubs.error) {
+    console.error("[/statistike]", {
+      byPosition: byPosition.error,
+      scorers: scorers.error,
+      assists: assists.error,
+      clubs: clubs.error,
+    });
     return (
       <Shell>
-        <p className="text-danger-400 text-sm">
-          Statistike se ne mogu učitati. Proveri da je <code>schema.sql</code> pokrenut — top
-          liste čitaju view-ove iz sekcije 16.
-        </p>
+        <DataLoadError
+          what="statistika"
+          error={byPosition.error ?? scorers.error ?? assists.error ?? clubs.error}
+        />
       </Shell>
     );
   }

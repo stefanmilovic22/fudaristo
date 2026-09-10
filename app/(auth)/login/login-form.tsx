@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -48,6 +49,7 @@ export function LoginForm() {
         <input
           type="email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
@@ -55,10 +57,19 @@ export function LoginForm() {
       </label>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        Lozinka
+        <span className="flex items-baseline justify-between gap-2">
+          Lozinka
+          <Link
+            href="/zaboravljena-lozinka"
+            className="text-xs font-semibold text-slate-400 hover:text-gold-300"
+          >
+            Zaboravljena?
+          </Link>
+        </span>
         <input
           type="password"
           required
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"

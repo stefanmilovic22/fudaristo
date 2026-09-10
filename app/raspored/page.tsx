@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { FixturesBoard, type GameweekFixtures } from "./fixtures-board";
+import { DataLoadError } from "@/components/DataLoadError";
 
 export const metadata = { title: "Raspored i rezultati — Fudaristo" };
 
@@ -21,12 +22,12 @@ export default async function RasporedPage() {
     .order("kickoff_at", { ascending: true });
 
   if (gwError || fxError) {
+    // U Vercel log ide ceo objekat; na stranicu ide poruka. Bez ovoga se nije
+    // videlo NIŠTA — ni koji od dva upita je pao, ni zašto.
+    console.error("[/raspored] gameweeks:", gwError, "fixtures:", fxError);
     return (
       <Shell>
-        <p className="text-danger-400 text-sm">
-          Raspored se ne može učitati. Proveri da je <code>schema.sql</code> pokrenut i da baza
-          odgovara.
-        </p>
+        <DataLoadError what="rasporeda" error={gwError ?? fxError} />
       </Shell>
     );
   }

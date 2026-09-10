@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { selectAllPages } from "@/lib/db-paging";
 import { StandingsTable, type StandingsRow } from "./standings-table";
+import { DataLoadError } from "@/components/DataLoadError";
 
 export const metadata = { title: "Globalna liga — Fudaristo" };
 
@@ -31,12 +32,10 @@ export default async function LigaPage() {
     .range(0, 999);
 
   if (error) {
+    console.error("[/liga] v_global_league_standings:", error);
     return (
       <Shell>
-        <p className="text-danger-400 text-sm">
-          Rang lista se ne može učitati. Proveri da je <code>schema.sql</code> pokrenut i da
-          view <code>v_global_league_standings</code> postoji.
-        </p>
+        <DataLoadError what="rang liste" error={error} />
       </Shell>
     );
   }
