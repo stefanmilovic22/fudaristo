@@ -19,9 +19,15 @@ const config: Config = {
           600: "#28405F",
         },
         pitch: {
-          700: "#175C36",
-          600: "#1E7A46",
-          500: "#278F53",
+          // Trava je posvetljena da odgovara stvarnom terenu Agia Sofia Arene:
+          // ranije je 700 (#175C36) bila skoro tamnozelena i teren je delovao
+          // kao noćni snimak. Nove vrednosti su u opsegu koji daje osvetljen
+          // travnjak pod reflektorima, a i dalje ostavljaju dovoljno kontrasta
+          // za bele linije i za dresove u svetlim bojama klubova.
+          700: "#2E8B52",
+          600: "#37A160",
+          500: "#43B771",
+          400: "#57C983",
         },
         gold: {
           400: "#E8B33D",

@@ -483,6 +483,8 @@ export function MyTeam({
 
   // --- Render ---------------------------------------------------------------
   const starterSlots = slots.filter((s) => s.state.starting);
+  // Golman se prikazuje odvojeno od klupe: njegov redosled nije prioritet
+  // ulaska, jer ga može zameniti samo drugi golman.
   const benchSlots = slots
     .filter((s) => !s.state.starting)
     .sort((a, b) => {
@@ -490,6 +492,9 @@ export function MyTeam({
       if (b.current.position === "GK" && a.current.position !== "GK") return -1;
       return b.current.price - a.current.price;
     });
+
+  const benchGk = benchSlots.find((s) => s.current.position === "GK") ?? null;
+  const benchOutfield = benchSlots.filter((s) => s.current.position !== "GK");
 
   const rows = POSITIONS.map((pos) =>
     starterSlots.filter((s) => s.current.position === pos)
@@ -509,10 +514,16 @@ export function MyTeam({
           ? "novi"
           : opponentByClub[s.current.club_id] ?? formatEUR(s.entry.purchasePrice)
       }
-      initials={s.current.club_name.slice(0, 3).toUpperCase()}
+      initials={s.current.club_short}
       flag={s.current.status !== "available" ? s.current.status : null}
       isGoalkeeper={s.current.position === "GK"}
-      positionLabel={onPitch ? undefined : POSITION_SHORT[s.current.position]}
+      positionLabel={
+        onPitch
+          ? undefined
+          : s.current.position === "GK"
+            ? POSITION_SHORT.GK
+            : `${benchOutfield.findIndex((b) => b.key === s.key) + 1} · ${POSITION_SHORT[s.current.position]}`
+      }
       isCaptain={s.state.captain}
       isViceCaptain={s.state.vice}
       active={swapSlot === s.key || transferSlot === s.key || Boolean(s.replacement)}
@@ -602,8 +613,11 @@ export function MyTeam({
             ))}
           </div>
         </Pitch>
-        <Bench note={tPitch("formation", { label: formation })}>
-          {benchSlots.map((s) => renderSlot(s, false))}
+        <Bench
+          note={tPitch("formation", { label: formation })}
+          goalkeeper={benchGk ? renderSlot(benchGk, false) : undefined}
+        >
+          {benchOutfield.map((s) => renderSlot(s, false))}
         </Bench>
 
         {flash && <p className="text-gold-300 text-sm mt-3">{flash}</p>}

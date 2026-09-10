@@ -588,7 +588,7 @@ function SquadStep({
                   color={p.club_color}
                   name={p.last_name}
                   detail={formatEUR(p.price)}
-                  initials={p.club_name.slice(0, 3).toUpperCase()}
+                  initials={p.club_short}
                   flag={p.status !== "available" ? p.status : null}
                   isGoalkeeper={p.position === "GK"}
                   onRemove={() => onRemove(p.id)}
@@ -644,16 +644,27 @@ function LineupStep({
       return b.price - a.price;
     });
 
+  // Golman se prikazuje odvojeno: njegov redosled na klupi nije prioritet
+  // ulaska, jer ga može zameniti samo drugi golman.
+  const benchGk = bench.find((p) => p.position === "GK") ?? null;
+  const benchOutfield = bench.filter((p) => p.position !== "GK");
+
   const render = (p: SelectablePlayer, onPitch: boolean) => (
     <Jersey
       key={p.id}
       color={p.club_color}
       name={p.last_name}
       detail={formatEUR(p.price)}
-      initials={p.club_name.slice(0, 3).toUpperCase()}
+      initials={p.club_short}
       flag={p.status !== "available" ? p.status : null}
       isGoalkeeper={p.position === "GK"}
-      positionLabel={onPitch ? undefined : POSITION_SHORT[p.position]}
+      positionLabel={
+        onPitch
+          ? undefined
+          : p.position === "GK"
+            ? POSITION_SHORT.GK
+            : `${benchOutfield.findIndex((b) => b.id === p.id) + 1} · ${POSITION_SHORT[p.position]}`
+      }
       isCaptain={p.id === captainId}
       isViceCaptain={p.id === viceCaptainId}
       active={swapPlayer?.id === p.id}
@@ -712,7 +723,12 @@ function LineupStep({
           ))}
         </div>
       </Pitch>
-      <Bench note={tPitch("formation", { label: formationLabel })}>{bench.map((p) => render(p, false))}</Bench>
+      <Bench
+        note={tPitch("formation", { label: formationLabel })}
+        goalkeeper={benchGk ? render(benchGk, false) : undefined}
+      >
+        {benchOutfield.map((p) => render(p, false))}
+      </Bench>
     </>
   );
 }

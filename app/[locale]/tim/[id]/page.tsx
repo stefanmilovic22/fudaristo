@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { Pitch } from "@/components/Pitch";
+import { Pitch, Bench } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
 
 /**
@@ -108,7 +108,14 @@ export default async function TimPage({
   }));
 
   const starters = entries.filter((e) => e.isStarting);
-  const bench = entries.filter((e) => !e.isStarting).sort((a, b) => a.squadOrder - b.squadOrder);
+  const benchAll = entries
+    .filter((e) => !e.isStarting)
+    .sort((a, b) => a.squadOrder - b.squadOrder);
+  // Golman odvojeno — squad_order mu je najniži na klupi, pa je stajao prvi i
+  // izgledao kao „prvi na redu za ulazak”. Njega može zameniti samo drugi
+  // golman, tako da uopšte ne učestvuje u tom redosledu.
+  const benchGk = benchAll.find((e) => e.position === "GK") ?? null;
+  const bench = benchAll.filter((e) => e.position !== "GK");
 
   const rows = (["GK", "DEF", "MID", "FWD"] as const).map((pos) =>
     starters.filter((e) => e.position === pos)
@@ -135,22 +142,24 @@ export default async function TimPage({
         </div>
       </Pitch>
 
-      <div className="mt-4">
-        <h3 className="font-display text-sm uppercase tracking-wide text-slate-400 mb-2">
-          {tPitch("bench")}
-        </h3>
-        <div className="flex gap-2 sm:gap-4 flex-wrap">
-          {bench.map((e) => (
-            <PlayerCard key={e.id} entry={e} muted autoSubLabel={tPitch("autoSubbedIn")} />
-          ))}
-        </div>
-      </div>
+      <Bench
+        goalkeeper={
+          benchGk ? (
+            <PlayerCard entry={benchGk} muted autoSubLabel={tPitch("autoSubbedIn")} />
+          ) : undefined
+        }
+      >
+        {bench.map((e) => (
+          <PlayerCard key={e.id} entry={e} muted autoSubLabel={tPitch("autoSubbedIn")} />
+        ))}
+      </Bench>
     </Shell>
   );
 }
 
 type Entry = {
   id: string;
+  position: string;
   lastName: string;
   short: string;
   color: string;

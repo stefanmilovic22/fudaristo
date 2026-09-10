@@ -66,6 +66,12 @@ export type SelectablePlayer = {
   status: string;
   club_id: string;
   club_name: string;
+  /**
+   * Zvanična skraćenica iz clubs.short_name — NIKAD izvedena iz imena.
+   * `club_name.slice(0, 3)` je i Panathinaikos i Panetolikos pretvarao u "PAN",
+   * pa je na dresu i u prikazu protivnika stajao isti kod za dva kluba.
+   */
+  club_short: string;
   club_color: string;
   total_points: number;
 };

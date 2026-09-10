@@ -26,6 +26,36 @@ const POSITION_ORDER = ["GK", "DEF", "MID", "FWD"] as const;
 
 type TabKey = "fantasy" | "scorers" | "assists" | "clubs";
 
+/** Ikonice tabova — ugrađeni SVG, isti pristup kao u glavnoj navigaciji. */
+const TAB_ICON: Record<TabKey, (p: { className?: string }) => React.ReactElement> = {
+  fantasy: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path
+        d="m12 3 2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8L12 3Z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  scorers: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m12 7 3.5 2.5-1.3 4.1H9.8L8.5 9.5 12 7Z" strokeLinejoin="round" />
+    </svg>
+  ),
+  assists: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M4 17c4-8 12-8 16 0" strokeLinecap="round" />
+      <path d="M16 5h4v4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 5 13 12" strokeLinecap="round" />
+    </svg>
+  ),
+  clubs: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M12 3l7 3v6c0 4.4-2.9 8-7 9-4.1-1-7-4.6-7-9V6l7-3Z" strokeLinejoin="round" />
+    </svg>
+  ),
+};
+
 const TAB_KEYS: { key: TabKey; label: "tabFantasy" | "tabScorers" | "tabAssists" | "tabClubs" }[] = [
   { key: "fantasy", label: "tabFantasy" },
   { key: "scorers", label: "tabScorers" },
@@ -40,19 +70,25 @@ export function StatsBoard({ data }: { data: StatsData }) {
   return (
     <div>
       <div className="flex gap-1 bg-navy-800 p-1 rounded-lg mb-5 overflow-x-auto">
-        {TAB_KEYS.map((tab_) => (
-          <button
-            key={tab_.key}
-            onClick={() => setTab(tab_.key)}
-            className={`shrink-0 text-sm font-semibold px-3 sm:px-4 py-2 rounded-md transition-colors ${
-              tab === tab_.key
-                ? "bg-gold-400 text-navy-950"
-                : "text-slate-300 hover:text-chalk-50"
-            }`}
-          >
-            {t(tab_.label)}
-          </button>
-        ))}
+        {TAB_KEYS.map((tab_) => {
+          const active = tab === tab_.key;
+          const Icon = TAB_ICON[tab_.key];
+          return (
+            <button
+              key={tab_.key}
+              onClick={() => setTab(tab_.key)}
+              aria-pressed={active}
+              className={`shrink-0 flex items-center gap-1.5 text-sm font-semibold px-3 sm:px-4 py-2 rounded-md transition-colors ${
+                active
+                  ? "bg-gold-400 text-navy-950"
+                  : "text-slate-300 hover:text-chalk-50 hover:bg-navy-700"
+              }`}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              {t(tab_.label)}
+            </button>
+          );
+        })}
       </div>
 
       {tab === "fantasy" && <FantasyByPosition entries={data.byPosition} />}

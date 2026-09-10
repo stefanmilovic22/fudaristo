@@ -7,6 +7,7 @@ import "../globals.css";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { MainNav } from "@/components/MainNav";
 import { Link } from "@/i18n/navigation";
 import { routing, LOCALE_META, type Locale } from "@/i18n/routing";
 
@@ -70,14 +71,6 @@ export default async function LocaleLayout({
     profile = data;
   }
 
-  const navLinks = [
-    { href: "/moj-tim", label: t("myTeam") },
-    { href: "/raspored", label: t("fixtures") },
-    { href: "/liga", label: t("league") },
-    { href: "/statistike", label: t("stats") },
-    { href: "/podesavanja", label: t("settings") },
-  ] as const;
-
   return (
     <html
       lang={LOCALE_META[locale as Locale].htmlLang}
@@ -94,25 +87,7 @@ export default async function LocaleLayout({
                 <span className="text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
               </Link>
 
-              <nav className="order-last w-full lg:order-none lg:w-auto flex gap-0.5 sm:gap-1.5 bg-navy-800 p-1 rounded-lg overflow-x-auto">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="shrink-0 text-sm font-semibold text-slate-300 hover:text-chalk-50 px-3 sm:px-4 py-2 rounded-md transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                {profile?.is_admin && (
-                  <Link
-                    href="/admin"
-                    className="shrink-0 text-sm font-semibold text-gold-300 hover:text-gold-400 px-3 sm:px-4 py-2 rounded-md transition-colors"
-                  >
-                    {t("admin")}
-                  </Link>
-                )}
-              </nav>
+              <MainNav isAdmin={Boolean(profile?.is_admin)} />
 
               <div className="flex items-center gap-3">
                 <LocaleSwitcher />
