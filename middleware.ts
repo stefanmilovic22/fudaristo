@@ -1,43 +1,59 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import createIntlMiddleware from "next-intl/middleware";
 import { NextResponse, type NextRequest } from "next/server";
+import { routing } from "./i18n/routing";
 
-// Zaštićene rute — zahtevaju login. Javne rute (liga, statistike, tim/[id])
-// namerno NISU ovde jer sekcija 9 GDD-a kaže da su javno vidljive svima.
+const intlMiddleware = createIntlMiddleware(routing);
+
+// Zaštićene rute — zahtevaju login. Javne (liga, statistike, raspored,
+// tim/[id]) namerno NISU ovde: GDD sekcija 9 kaže da su vidljive svima.
 const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin"];
 
+/**
+ * Skida prefiks jezika sa putanje pre provere zaštite.
+ *
+ * Bez ovoga bi /sr/moj-tim prošao neproverem, jer ne počinje sa "/moj-tim" —
+ * tiha rupa u kojoj bi zaštićena stranica bila dostupna svakome ko doda
+ * prefiks jezika. Provera se radi nad putanjom BEZ prefiksa.
+ */
+function stripLocale(pathname: string) {
+  const segments = pathname.split("/");
+  if (segments.length > 1 && (routing.locales as readonly string[]).includes(segments[1])) {
+    return "/" + segments.slice(2).join("/");
+  }
+  return pathname;
+}
+
 function isProtectedPath(pathname: string) {
-  return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const bare = stripLocale(pathname);
+  return PROTECTED_PREFIXES.some((prefix) => bare === prefix || bare.startsWith(prefix + "/"));
 }
 
 function redirectToLogin(request: NextRequest) {
-  const loginUrl = new URL("/login", request.url);
+  // Prefiks jezika se čuva da korisnik posle prijave ostane na svom jeziku.
+  const segments = request.nextUrl.pathname.split("/");
+  const prefix =
+    segments.length > 1 && (routing.locales as readonly string[]).includes(segments[1])
+      ? `/${segments[1]}`
+      : "";
+  const loginUrl = new URL(`${prefix}/login`, request.url);
   loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
   return NextResponse.redirect(loginUrl);
 }
 
 /**
- * Middleware hvata SVE rute (videti matcher dole), pa svaka greška ovde ruši
- * ceo sajt sa MIDDLEWARE_INVOCATION_FAILED — ne samo stranicu koja je u
- * pitanju. Zato ovde ništa ne sme da baci izuzetak.
+ * Middleware hvata SVE rute, pa svaka greška ovde ruši ceo sajt sa
+ * MIDDLEWARE_INVOCATION_FAILED — ne samo stranicu u pitanju. Zato ništa ovde
+ * ne sme da baci izuzetak.
  *
- * Ranije je bilo dva načina da pukne:
- *
- *   1. `process.env.NEXT_PUBLIC_SUPABASE_URL!` — uzvičnik je samo obećanje
- *      TypeScript-u, u runtime-u ne znači ništa. Ako varijabla nije podešena
- *      na Vercel-u (ili je dodata POSLE poslednjeg builda, ili postoji samo za
- *      Production a ovo je Preview deploy), createServerClient dobije
- *      undefined i baci — na svakom zahtevu, za svaku rutu.
- *
- *   2. `supabase.auth.getUser()` obično vraća grešku u objektu umesto da baca,
- *      ali mrežni prekid ka Supabase-u baca pravi izuzetak. Trenutni ispad
- *      Supabase-a je time obarao ceo sajt, uključujući javne stranice kojima
- *      auth uopšte ne treba.
- *
- * Ponašanje sad: kad auth ne radi, JAVNE rute se serviraju normalno, a
- * zaštićene idu na /login. Zatvaramo se, ne otvaramo — nepoznat korisnik nikad
- * ne prolazi kroz grešku.
+ * Redosled je bitan: PRVO next-intl, koji odlučuje jezik i pravi odgovor sa
+ * prepisanom putanjom, pa TEK ONDA Supabase, koji na taj isti odgovor kači
+ * kolačiće sesije. Obrnuto bi značilo da intl napravi nov odgovor i baci
+ * osvežene kolačiće — korisnik bi se povremeno odjavljivao bez razloga.
  */
 export async function middleware(request: NextRequest) {
+  const response = intlMiddleware(request);
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -47,12 +63,8 @@ export async function middleware(request: NextRequest) {
         "Proveri Environment Variables na Vercel-u za OVO okruženje (Production/Preview) " +
         "i redeploy-uj — NEXT_PUBLIC_ varijable se ugrađuju u build."
     );
-    return isProtectedPath(request.nextUrl.pathname)
-      ? redirectToLogin(request)
-      : NextResponse.next({ request });
+    return isProtectedPath(request.nextUrl.pathname) ? redirectToLogin(request) : response;
   }
-
-  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -60,8 +72,6 @@ export async function middleware(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options)
         );
@@ -87,6 +97,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Sve osim statike, API ruta i /auth/potvrda (link iz mejla — ne sme da
+    // dobije prefiks jezika, jer je adresa upisana u Supabase podešavanjima).
+    "/((?!api|auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

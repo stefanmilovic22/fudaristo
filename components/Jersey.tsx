@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 /**
  * Dres — osnovna vizuelna jedinica terena, po uzoru na FPL.
  *
@@ -71,6 +73,7 @@ export function Jersey({
   onCaptain,
   onViceCaptain,
 }: JerseyProps) {
+  const t = useTranslations("pitch");
   const ink = readableInk(color);
 
   return (
@@ -89,7 +92,7 @@ export function Jersey({
         type="button"
         onClick={onClick}
         disabled={!onClick}
-        aria-label={name ? `${name}${detail ? `, ${detail}` : ""}` : "Igrač"}
+        aria-label={name ? `${name}${detail ? `, ${detail}` : ""}` : t("player")}
         className={`relative block w-[52px] sm:w-[58px] rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
           onClick ? "hover:-translate-y-0.5 cursor-pointer" : "cursor-default"
         } ${active ? "-translate-y-1" : ""}`}
@@ -128,7 +131,7 @@ export function Jersey({
           ista za sve, pa sama boja nije dovoljna. */}
       {isGoalkeeper && (
         <span
-          title="Golman"
+          title={t("goalkeeper")}
           aria-hidden
           className="absolute -top-1 -left-1 w-[18px] h-[18px] rounded-full bg-gold-400 text-navy-950 text-[10px] font-bold grid place-items-center ring-2 ring-navy-950"
         >
@@ -150,7 +153,7 @@ export function Jersey({
         <button
           type="button"
           onClick={onRemove}
-          aria-label={name ? `Ukloni ${name}` : "Ukloni igrača"}
+          aria-label={name ? t("remove", { name }) : t("removeGeneric")}
           className="absolute -top-1.5 -right-1 w-5 h-5 rounded-full bg-navy-950 border border-slate-500 text-slate-300 text-[11px] leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300"
         >
           ×
@@ -222,12 +225,13 @@ export function EmptySlot({
   onAdd: () => void;
   highlighted?: boolean;
 }) {
+  const t = useTranslations("pitch");
   return (
     <div className="w-[68px] sm:w-[76px] flex flex-col items-center">
       <button
         type="button"
         onClick={onAdd}
-        aria-label={`Dodaj igrača — ${label}`}
+        aria-label={t("add", { label })}
         className={`block w-[52px] sm:w-[58px] rounded-md transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
           highlighted ? "-translate-y-0.5" : ""
         }`}

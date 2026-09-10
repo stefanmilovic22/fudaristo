@@ -1,16 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 export function LogoutButton() {
-  const router = useRouter();
+  const t = useTranslations("nav");
+  const locale = useLocale();
   const supabase = createClient();
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // Puna navigacija iz istog razloga kao kod prijave: server mora da iscrta
+    // stranicu BEZ sesije, a klijentski keš rutera bi i dalje držao staru.
+    navigateAfterAuth(resolveAuthRedirect(null, locale, "/login"));
   }
 
   return (
@@ -18,7 +21,7 @@ export function LogoutButton() {
       onClick={handleLogout}
       className="text-xs text-slate-400 hover:text-chalk-50 transition-colors"
     >
-      Odjava
+      {t("logout")}
     </button>
   );
 }

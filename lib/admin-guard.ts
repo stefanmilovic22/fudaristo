@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { localePath } from "@/lib/locale-path";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -44,8 +45,11 @@ export async function getAdminAccess(): Promise<AdminAccess> {
 export async function requireAdmin() {
   const access = await getAdminAccess();
   if (!access.ok) {
-    if (access.reason === "anon") redirect("/login?redirect=/admin");
-    redirect("/moj-tim");
+    redirect(
+      await localePath(
+        access.reason === "anon" ? "/login?redirect=/admin" : "/moj-tim"
+      )
+    );
   }
   return { userId: access.userId, teamName: access.teamName, supabase: access.supabase };
 }

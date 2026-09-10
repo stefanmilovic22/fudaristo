@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 /**
  * Teren — pravi fudbalski teren, ne samo zeleni okvir.
  *
@@ -96,27 +100,26 @@ export function PitchRow({ children }: { children: React.ReactNode }) {
 /** Klupa — traka ispod terena, kao na FPL-u. */
 export function Bench({
   children,
-  title = "Klupa",
+  title,
   note,
 }: {
   children: React.ReactNode;
   title?: string;
   note?: string;
 }) {
+  const t = useTranslations("pitch");
   return (
     <div className="mt-3 rounded-xl overflow-hidden ring-1 ring-black/25">
       {/* Traka zaglavlja u boji terena povezuje klupu sa terenom iznad —
           ranije je bio isti ravan pravougaonik kao bilo koja druga kartica,
           pa se nije čitalo da je deo iste celine. */}
       <div className="flex items-baseline justify-between bg-pitch-700/40 border-b border-black/25 px-4 py-2">
-        <h3 className="font-display text-sm uppercase tracking-wider text-chalk-50">{title}</h3>
+        <h3 className="font-display text-sm uppercase tracking-wider text-chalk-50">{title ?? t("bench")}</h3>
         {note && <span className="text-[11px] text-slate-300">{note}</span>}
       </div>
       <div className="bg-navy-800 px-3 py-4">
         <div className="flex justify-center gap-1.5 sm:gap-4 flex-wrap">{children}</div>
-        <p className="text-[11px] text-slate-500 text-center mt-3">
-          Redosled klupe odlučuje ko prvi ulazi ako neko ne odigra nijedan minut.
-        </p>
+        <p className="text-[11px] text-slate-500 text-center mt-3">{t("benchNote")}</p>
       </div>
     </div>
   );

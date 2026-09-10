@@ -1,7 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -10,6 +12,7 @@ import { createClient } from "@/lib/supabase/client";
  * i sama funkcija u bazi to odbija bez obzira na to šta UI prikazuje.
  */
 export function ResetSquadButton({ gameweekId }: { gameweekId: string }) {
+  const t = useTranslations("reset");
   const router = useRouter();
   const supabase = createClient();
   const [confirming, setConfirming] = useState(false);
@@ -46,7 +49,7 @@ export function ResetSquadButton({ gameweekId }: { gameweekId: string }) {
 
   return (
     <span className="flex items-center gap-2 text-sm">
-      <span className="text-slate-300">Ukloniti svih 15 igrača?</span>
+      <span className="text-slate-300">{t("confirmClear")}</span>
       <button
         type="button"
         onClick={reset}

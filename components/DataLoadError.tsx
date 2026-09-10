@@ -10,17 +10,20 @@
  * Prikazuju se na stranici namerno: ovo je greška infrastrukture koju vidi
  * vlasnik aplikacije, a poruka ne sadrži ni ključeve ni podatke korisnika.
  */
-export function DataLoadError({
-  what,
+import { getTranslations } from "next-intl/server";
+
+export async function DataLoadError({
+  whatKey,
   error,
 }: {
-  /** Šta se učitavalo, u genitivu — npr. "rasporeda". */
-  what: string;
+  /** Ključ iz errors.* koji imenuje šta se učitavalo — npr. "whatFixtures". */
+  whatKey: "whatFixtures" | "whatLeague" | "whatStats";
   error: { message: string; code?: string; hint?: string | null; details?: string | null } | null;
 }) {
+  const t = await getTranslations("errors");
   return (
     <div className="bg-navy-800 border border-danger-400/40 rounded-lg p-5 text-sm max-w-2xl">
-      <p className="text-danger-400 font-semibold mb-2">Učitavanje {what} nije uspelo.</p>
+      <p className="text-danger-400 font-semibold mb-2">{t("loadFailed", { what: t(whatKey) })}</p>
 
       {error ? (
         <>
@@ -29,19 +32,19 @@ export function DataLoadError({
             <dl className="mt-3 text-xs text-slate-400 flex flex-col gap-1">
               {error.code && (
                 <div>
-                  <dt className="inline font-semibold">Kod: </dt>
+                  <dt className="inline font-semibold">{t("code")}: </dt>
                   <dd className="inline">{error.code}</dd>
                 </div>
               )}
               {error.details && (
                 <div>
-                  <dt className="inline font-semibold">Detalji: </dt>
+                  <dt className="inline font-semibold">{t("details")}: </dt>
                   <dd className="inline">{error.details}</dd>
                 </div>
               )}
               {error.hint && (
                 <div>
-                  <dt className="inline font-semibold">Savet: </dt>
+                  <dt className="inline font-semibold">{t("hint")}: </dt>
                   <dd className="inline">{error.hint}</dd>
                 </div>
               )}
@@ -49,14 +52,10 @@ export function DataLoadError({
           )}
         </>
       ) : (
-        <p className="text-slate-300">Nepoznata greška — pogledaj log na Vercel-u.</p>
+        <p className="text-slate-300">{t("unknown")}</p>
       )}
 
-      <p className="text-slate-500 text-xs mt-4 leading-relaxed">
-        Ako poruka pominje vezu između tabela (<code>relationship</code>,{" "}
-        <code>PGRST200</code>), Supabase-u je zastarela shema posle migracije. Pokreni u SQL
-        Editor-u: <code className="text-slate-400">notify pgrst, &apos;reload schema&apos;;</code>
-      </p>
+      <p className="text-slate-500 text-xs mt-4 leading-relaxed">{t("staleSchema")}</p>
     </div>
   );
 }

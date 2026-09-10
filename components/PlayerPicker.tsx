@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   POSITIONS,
   POSITION_LABELS,
@@ -12,11 +13,11 @@ import {
 
 type SortKey = "price_desc" | "price_asc" | "points_desc" | "name_asc";
 
-const SORT_LABELS: Record<SortKey, string> = {
-  price_desc: "Cena — najskuplji prvo",
-  price_asc: "Cena — najjeftiniji prvo",
-  points_desc: "Poeni",
-  name_asc: "Prezime",
+const SORT_KEYS: Record<SortKey, string> = {
+  price_desc: "sortPriceDesc",
+  price_asc: "sortPriceAsc",
+  points_desc: "sortPoints",
+  name_asc: "sortName",
 };
 
 const PRICE_CAPS = [15, 12, 10, 8, 6, 5];
@@ -40,6 +41,9 @@ export function PlayerPicker({
   onPick,
   onClearLock,
 }: PickerProps) {
+  const t = useTranslations("picker");
+  const tPos = useTranslations("positions");
+  const tCommon = useTranslations("common");
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position | "ALL">("ALL");
   const [clubId, setClubId] = useState<string>("ALL");
@@ -87,7 +91,7 @@ export function PlayerPicker({
     <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 flex flex-col gap-3 h-fit">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-display text-lg">
-          {lockedPosition ? `Izaberi: ${POSITION_LABELS[lockedPosition]}` : "Svi igrači"}
+          {lockedPosition ? t("choose", { position: tPos(lockedPosition) }) : t("allPlayers")}
         </h3>
         {lockedPosition && onClearLock && (
           <button
@@ -95,14 +99,14 @@ export function PlayerPicker({
             onClick={onClearLock}
             className="text-xs text-slate-300 hover:text-chalk-50 underline underline-offset-2"
           >
-            prikaži sve
+            {t("showAll")}
           </button>
         )}
       </div>
 
       <input
         type="search"
-        placeholder="Traži po imenu ili klubu"
+        placeholder={t("search")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className={inputClass}
@@ -121,7 +125,7 @@ export function PlayerPicker({
                   : "text-slate-300 hover:text-chalk-50"
               }`}
             >
-              {pos === "ALL" ? "Sve" : pos}
+              {pos === "ALL" ? t("allPositions") : tPos(pos as never)}
             </button>
           ))}
         </div>
@@ -131,7 +135,7 @@ export function PlayerPicker({
         <label className="flex flex-col gap-1 text-[11px] text-slate-400">
           Klub
           <select value={clubId} onChange={(e) => setClubId(e.target.value)} className={inputClass}>
-            <option value="ALL">Svi klubovi</option>
+            <option value="ALL">{t("allClubs")}</option>
             {clubs.map(([id, name]) => (
               <option key={id} value={id}>
                 {name}
@@ -146,7 +150,7 @@ export function PlayerPicker({
             onChange={(e) => setMaxPrice(e.target.value === "ALL" ? null : Number(e.target.value))}
             className={inputClass}
           >
-            <option value="ALL">Bez ograničenja</option>
+            <option value="ALL">{t("noLimit")}</option>
             {PRICE_CAPS.map((cap) => (
               <option key={cap} value={cap}>
                 {cap.toFixed(1)}M
@@ -157,28 +161,28 @@ export function PlayerPicker({
       </div>
 
       <label className="flex flex-col gap-1 text-[11px] text-slate-400">
-        Poređaj
+        {t("sort")}
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
           className={inputClass}
         >
-          {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+          {(Object.keys(SORT_KEYS) as SortKey[]).map((k) => (
             <option key={k} value={k}>
-              {SORT_LABELS[k]}
+              {t(SORT_KEYS[k] as never)}
             </option>
           ))}
         </select>
       </label>
 
       <p className="text-[11px] text-slate-400">
-        {visible.length} {visible.length === 1 ? "igrač" : "igrača"}
+        {t("count", { count: visible.length })}
       </p>
 
       <div className="flex flex-col gap-1 max-h-[420px] overflow-y-auto pr-1 -mr-1">
         {visible.map((p) => {
           const chosen = selectedIds.has(p.id);
-          const reason = chosen ? "Već u timu" : blockedReason(p);
+          const reason = chosen ? tCommon("alreadyInSquad") : blockedReason(p);
           return (
             <button
               key={p.id}
@@ -220,7 +224,7 @@ export function PlayerPicker({
         })}
         {visible.length === 0 && (
           <p className="text-slate-400 text-sm py-6 text-center">
-            Nijedan igrač ne odgovara ovim filterima. Probaj šire ograničenje cene ili drugi klub.
+            {t("noMatch")}
           </p>
         )}
       </div>

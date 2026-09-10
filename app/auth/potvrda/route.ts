@@ -19,18 +19,27 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
+
+  // Ruta je van [locale] jer je njena adresa upisana u Supabase podešavanjima
+  // i ne sme da se menja sa jezikom. Jezik se čita iz kolačića koji postavlja
+  // next-intl, da korisnik posle klika iz mejla ostane na svom jeziku.
+  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
+  const prefix =
+    cookieLocale && cookieLocale !== "en" && ["sr", "el"].includes(cookieLocale)
+      ? `/${cookieLocale}`
+      : "";
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
 
-  const failed = NextResponse.redirect(`${origin}/zaboravljena-lozinka?greska=link`);
+  const failed = NextResponse.redirect(`${origin}${prefix}/zaboravljena-lozinka?greska=link`);
 
   const supabase = await createClient();
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) return failed;
-    return NextResponse.redirect(`${origin}/nova-lozinka`);
+    return NextResponse.redirect(`${origin}${prefix}/nova-lozinka`);
   }
 
   if (tokenHash && type) {
@@ -39,7 +48,7 @@ export async function GET(request: NextRequest) {
       token_hash: tokenHash,
     });
     if (error) return failed;
-    return NextResponse.redirect(`${origin}/nova-lozinka`);
+    return NextResponse.redirect(`${origin}${prefix}/nova-lozinka`);
   }
 
   // Ni jedno ni drugo — verovatno je neko otvorio rutu direktno.
