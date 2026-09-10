@@ -23,3 +23,5 @@ next-env.d.ts
 
 # sirovi odgovori iz check-sources (dijagnostika, ne izvorni kod)
 /tmp/
+
+.next/
