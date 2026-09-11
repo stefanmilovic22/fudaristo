@@ -12,7 +12,9 @@
     "admin": "Διαχείριση",
     "login": "Σύνδεση",
     "register": "Εγγραφή",
-    "logout": "Αποσύνδεση"
+    "logout": "Αποσύνδεση",
+    "openMenu": "Άνοιγμα μενού",
+    "closeMenu": "Κλείσιμο μενού"
   },
   "home": {
     "headline": "Οδήγησε την ομάδα σου στην ελληνική Super League.",
@@ -101,7 +103,12 @@
     "statusFinished": "τελικό",
     "statusPostponed": "αναβλήθηκε",
     "statusCancelled": "ακυρώθηκε",
-    "noFixturesInGameweek": "Δεν έχουν εισαχθεί αγώνες για αυτή την αγωνιστική ακόμη."
+    "noFixturesInGameweek": "Δεν έχουν εισαχθεί αγώνες για αυτή την αγωνιστική ακόμη.",
+    "selectGameweek": "Αγωνιστική",
+    "singleGameweek": "Μία αγωνιστική",
+    "wholeSeason": "Όλη η σεζόν",
+    "gameweekOption": "Αγων. {number}",
+    "gameweekPlayed": "Αγων. {number} · έγινε"
   },
   "positions": {
     "GK": "Τερματοφύλακες",

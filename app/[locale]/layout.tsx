@@ -91,8 +91,8 @@ export default async function LocaleLayout({
       <body className="font-body">
         <NextIntlClientProvider>
           <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-            <header className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
-              <Link href="/" className="flex items-baseline gap-2.5 shrink-0">
+            <header className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+              <Link href="/" className="order-1 flex items-baseline gap-2.5 shrink-0">
                 <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                   Fudaristo
                 </span>
@@ -101,7 +101,7 @@ export default async function LocaleLayout({
 
               <MainNav isAdmin={Boolean(profile?.is_admin)} />
 
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="order-2 lg:order-3 flex items-center gap-2 sm:gap-3 min-w-0">
                 <LocaleSwitcher />
 
                 {profile ? (

@@ -12,7 +12,9 @@
     "admin": "Admin",
     "login": "Prijava",
     "register": "Registruj se",
-    "logout": "Odjava"
+    "logout": "Odjava",
+    "openMenu": "Otvori meni",
+    "closeMenu": "Zatvori meni"
   },
   "home": {
     "headline": "Vodi svoj klub kroz grčku Super ligu.",
@@ -101,7 +103,12 @@
     "statusFinished": "kraj",
     "statusPostponed": "odloženo",
     "statusCancelled": "otkazano",
-    "noFixturesInGameweek": "Za ovo kolo još nema uvezenih utakmica."
+    "noFixturesInGameweek": "Za ovo kolo još nema uvezenih utakmica.",
+    "selectGameweek": "Kolo",
+    "singleGameweek": "Jedno kolo",
+    "wholeSeason": "Cela sezona",
+    "gameweekOption": "Kolo {number}",
+    "gameweekPlayed": "Kolo {number} · odigrano"
   },
   "positions": {
     "GK": "Golmani",

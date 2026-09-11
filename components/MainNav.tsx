@@ -1,22 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
 /**
- * Glavna navigacija.
+ * Glavna navigacija — bočni meni na telefonu, traka sa tabovima od 1024px.
  *
- * Klijentska je zbog jedne stvari: `usePathname` — bez nje se nije videlo na
- * kojoj si stranici. Svih pet linkova je izgledalo isto, pa se orijentacija
- * svodila na čitanje adrese.
+ * Zašto meni: šest stavki sa ikonicama u vodoravnom skrolu znači da se pola
+ * njih ne vidi dok se ne prevuče. Korisnik ne zna ni koliko ih ima ni gde je
+ * „Statistike”. U meniju stoje jedna ispod druge, sve odjednom, sa dovoljno
+ * velikom površinom za prst.
  *
  * `usePathname` iz @/i18n/navigation vraća putanju BEZ prefiksa jezika, pa
- * poređenje radi isto na /liga i /sr/liga.
- *
- * Ikonice su ugrađeni SVG, ne biblioteka: pet sličica ne opravdava novu
- * zavisnost, a ovako nema ni dodatnog zahteva ni treperenja pri učitavanju.
- * Sve dele isti viewBox 24 i `currentColor`, pa prate boju teksta u svakom
- * stanju.
+ * isticanje aktivne stavke radi isto na /liga i na /sr/liga.
  */
 
 type IconProps = { className?: string };
@@ -73,39 +70,151 @@ const LINKS: { key: NavKey; href: string }[] = [
 export function MainNav({ isAdmin }: { isAdmin: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   const items = isAdmin ? [...LINKS, { key: "admin" as NavKey, href: "/admin" }] : LINKS;
 
-  return (
-    <nav className="order-last w-full lg:order-none lg:w-auto flex gap-0.5 sm:gap-1 bg-navy-800 p-1 rounded-lg overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {items.map(({ key, href }) => {
-        // Poklapanje po prefiksu, da /admin/mecevi/... i dalje ističe "Admin".
-        const active = pathname === href || pathname.startsWith(href + "/");
-        const Icon = ICONS[key];
-        const isAdminLink = key === "admin";
+  // Poklapanje po prefiksu, da /admin/mecevi/... i dalje ističe "Admin".
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            className={`shrink-0 flex items-center gap-1 sm:gap-1.5 text-[13px] sm:text-sm font-semibold px-2 sm:px-3.5 py-2 rounded-md transition-colors ${
-              active
-                ? "bg-navy-950 text-chalk-50 shadow-sm ring-1 ring-navy-600"
-                : isAdminLink
-                  ? "text-gold-300 hover:text-gold-400"
-                  : "text-slate-300 hover:text-chalk-50"
-            }`}
-          >
-            <Icon
-              className={`w-4 h-4 shrink-0 ${
-                active ? "text-gold-300" : isAdminLink ? "text-gold-300" : "text-slate-400"
+  // Meni se zatvara pri promeni stranice. Bez ovoga bi ostao otvoren preko
+  // novog sadržaja, jer klijentska navigacija ne odmontira komponentu.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  // Dok je meni otvoren, pozadina ne sme da skroluje ispod njega.
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Dugme za meni — samo ispod 1024px */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={t("openMenu")}
+        aria-expanded={open}
+        className="order-3 lg:hidden shrink-0 w-10 h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="w-5 h-5"
+        >
+          <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      {/* Traka sa tabovima — od 1024px */}
+      <nav className="order-2 hidden lg:flex gap-1 bg-navy-800 p-1 rounded-lg">
+        {items.map(({ key, href }) => {
+          const active = isActive(href);
+          const Icon = ICONS[key];
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`shrink-0 flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-md transition-colors ${
+                active
+                  ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
+                  : key === "admin"
+                    ? "text-gold-300 hover:text-gold-400"
+                    : "text-slate-300 hover:text-chalk-50"
               }`}
-            />
-            {t(key)}
-          </Link>
-        );
-      })}
-    </nav>
+            >
+              <Icon
+                className={`w-4 h-4 shrink-0 ${
+                  active || key === "admin" ? "text-gold-300" : "text-slate-400"
+                }`}
+              />
+              {t(key)}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Bočni meni */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <button
+            type="button"
+            aria-label={t("closeMenu")}
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
+          />
+
+          <div className="relative ml-auto h-full w-[78%] max-w-[300px] bg-navy-900 border-l border-navy-700 flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-navy-700">
+              <span className="font-display font-bold text-lg bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
+                Fudaristo
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={t("closeMenu")}
+                className="w-9 h-9 grid place-items-center rounded-lg text-slate-400 hover:text-chalk-50 hover:bg-navy-800 transition-colors"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="w-5 h-5"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-2">
+              {items.map(({ key, href }) => {
+                const active = isActive(href);
+                const Icon = ICONS[key];
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-3 rounded-lg font-semibold transition-colors ${
+                      active
+                        ? "bg-navy-800 text-chalk-50 ring-1 ring-navy-600"
+                        : key === "admin"
+                          ? "text-gold-300 hover:bg-navy-800"
+                          : "text-slate-300 hover:bg-navy-800 hover:text-chalk-50"
+                    }`}
+                  >
+                    <Icon
+                      className={`w-5 h-5 shrink-0 ${
+                        active || key === "admin" ? "text-gold-300" : "text-slate-400"
+                      }`}
+                    />
+                    {t(key)}
+                    {active && (
+                      <span aria-hidden className="ml-auto w-1.5 h-1.5 rounded-full bg-gold-300" />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

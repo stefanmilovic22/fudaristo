@@ -12,7 +12,9 @@
     "admin": "Admin",
     "login": "Log in",
     "register": "Sign up",
-    "logout": "Log out"
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "home": {
     "headline": "Run your club through the Greek Super League.",
@@ -101,7 +103,12 @@
     "statusFinished": "FT",
     "statusPostponed": "postponed",
     "statusCancelled": "cancelled",
-    "noFixturesInGameweek": "No matches have been imported for this gameweek yet."
+    "noFixturesInGameweek": "No matches have been imported for this gameweek yet.",
+    "selectGameweek": "Gameweek",
+    "singleGameweek": "One gameweek",
+    "wholeSeason": "Whole season",
+    "gameweekOption": "GW {number}",
+    "gameweekPlayed": "GW {number} · played"
   },
   "positions": {
     "GK": "Goalkeepers",

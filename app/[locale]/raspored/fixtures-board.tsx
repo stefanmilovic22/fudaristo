@@ -33,6 +33,7 @@ const STATUS_KEY: Record<Match["status"], string | null> = {
 export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) {
   const t = useTranslations("fixtures");
   const tCommon = useTranslations("common");
+  const locale = useLocale();
 
   // Podrazumevano otvori kolo koje je na redu — prvo čiji rok još nije prošao,
   // a ako je sezona gotova, poslednje odigrano.
@@ -49,43 +50,77 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex gap-1 overflow-x-auto py-1 -my-1">
-          {gameweeks.map((gw) => {
-            const played = gw.matches.some((m) => m.status === "finished");
-            return (
-              <button
-                key={gw.id}
-                type="button"
-                onClick={() => {
-                  setActiveNumber(gw.number);
-                  setShowAll(false);
-                }}
-                className={`shrink-0 w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
-                  !showAll && gw.number === activeNumber
-                    ? "bg-gold-400 text-navy-950"
-                    : played
-                      ? "bg-navy-700 text-slate-300 hover:text-chalk-50"
-                      : "bg-navy-800 text-slate-400 hover:text-chalk-50"
-                }`}
-                title={`Kolo ${gw.number}`}
-              >
-                {gw.number}
-              </button>
-            );
-          })}
+      {/* Izbor kola: padajuća lista do 640px, dugmad iznad.
+          Dvadeset šest kvadratića u vodoravnom skrolu na telefonu znači da
+          korisnik ne vidi ni koje je kolo aktivno ni koliko ih ima — mora da
+          prevlači i pogađa. Lista pokazuje sve odjednom i staje u jedan red. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4">
+        <label className="sm:hidden flex items-center gap-2">
+          <span className="text-sm text-slate-300 shrink-0">{t("selectGameweek")}</span>
+          <select
+            value={showAll ? "all" : String(activeNumber)}
+            onChange={(e) => {
+              if (e.target.value === "all") {
+                setShowAll(true);
+                return;
+              }
+              setShowAll(false);
+              setActiveNumber(Number(e.target.value));
+            }}
+            className="flex-1 bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50 focus:border-gold-400 focus:outline-none"
+          >
+            {gameweeks.map((gw) => {
+              const played = gw.matches.some((m) => m.status === "finished");
+              return (
+                <option key={gw.id} value={gw.number}>
+                  {played
+                    ? t("gameweekPlayed", { number: gw.number })
+                    : t("gameweekOption", { number: gw.number })}
+                </option>
+              );
+            })}
+            <option value="all">{t("wholeSeason")}</option>
+          </select>
+        </label>
+
+        <div className="hidden sm:flex items-center gap-3">
+          <div className="flex gap-1 overflow-x-auto py-1 -my-1">
+            {gameweeks.map((gw) => {
+              const played = gw.matches.some((m) => m.status === "finished");
+              return (
+                <button
+                  key={gw.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveNumber(gw.number);
+                    setShowAll(false);
+                  }}
+                  className={`shrink-0 w-10 h-10 rounded-lg text-sm font-semibold transition-colors ${
+                    !showAll && gw.number === activeNumber
+                      ? "bg-gold-400 text-navy-950"
+                      : played
+                        ? "bg-navy-700 text-slate-300 hover:text-chalk-50"
+                        : "bg-navy-800 text-slate-400 hover:text-chalk-50"
+                  }`}
+                  title={t("gameweekOption", { number: gw.number })}
+                >
+                  {gw.number}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className={`shrink-0 text-sm font-semibold px-3 py-2 rounded-lg border transition-colors ${
+              showAll
+                ? "bg-gold-400 text-navy-950 border-gold-400"
+                : "border-navy-600 text-slate-300 hover:text-chalk-50"
+            }`}
+          >
+            {showAll ? t("singleGameweek") : t("wholeSeason")}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className={`shrink-0 text-sm font-semibold px-3 py-2 rounded-lg border transition-colors ${
-            showAll
-              ? "bg-gold-400 text-navy-950 border-gold-400"
-              : "border-navy-600 text-slate-300 hover:text-chalk-50"
-          }`}
-        >
-          {showAll ? "Jedno kolo" : "Cela sezona"}
-        </button>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -94,7 +129,8 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
             <div className="flex items-baseline gap-3 mb-2">
               <h3 className="font-display text-lg">{tCommon("gameweekN", { number: gw.number })}</h3>
               <span className="text-slate-400 text-xs">
-                rok {new Date(gw.deadlineAt).toLocaleString("sr-RS", {
+                {tCommon("deadline")}{" "}
+                {new Date(gw.deadlineAt).toLocaleString(locale, {
                   day: "numeric",
                   month: "short",
                   hour: "2-digit",
