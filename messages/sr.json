@@ -207,7 +207,20 @@
     "title": "Napravi svoj klub",
     "subtitle": "Traje manje od minuta — bez email verifikacije.",
     "noClubsWarning": "Nema klubova u bazi još — pokreni faza1-run-in-supabase.sql u Supabase SQL Editor-u pre registracije.",
-    "profileFailed": "Nalog je kreiran, ali profil tima nije upisan: {message}"
+    "profileFailed": "Nalog je kreiran, ali profil tima nije upisan: {message}",
+    "email": "Email",
+    "password": "Lozinka",
+    "teamName": "Naziv tvog kluba",
+    "teamNamePlaceholder": "npr. Olimpos United",
+    "teamColor": "Boja kluba",
+    "pickColor": "Izaberi boju {color}",
+    "favoriteClub": "Omiljeni klub",
+    "createClub": "Napravi klub",
+    "creatingClub": "Kreiram klub…",
+    "confirmEmailTitle": "Još samo jedan korak — potvrdi email.",
+    "confirmEmailBody": "Poslali smo link za potvrdu na <b>{email}</b>. Otvori ga i klub je spreman.",
+    "signUpFailed": "Registracija nije uspela. Pokušaj ponovo za koji minut.",
+    "nameTakenDb": "To ime kluba je zauzeto — vrati se i izaberi drugo."
   },
   "publicTeam": {
     "noFinalized": "Nijedno kolo još nije zaključano. Sastavi se javno prikazuju tek kad kolo bude obračunato — pre roka je tuđi tim tajna.",

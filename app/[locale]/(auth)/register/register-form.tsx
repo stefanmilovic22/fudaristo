@@ -1,10 +1,9 @@
 "use client";
 
-import { useTranslations, useLocale } from "next-intl";
-import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
-
 import { useState, type FormEvent } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 type Club = { id: string; name: string };
 
@@ -22,13 +21,14 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const [favoriteClubId, setFavoriteClubId] = useState(clubs[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    // Brz fidbek pre signUp-a (baza i dalje enforce-uje UNIQUE kao backstop)
+    // Brz fidbek pre signUp-a; UNIQUE u bazi je i dalje pravi čuvar.
     const { count } = await supabase
       .from("users")
       .select("*", { count: "exact", head: true })
@@ -44,6 +44,8 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
       email,
       password,
       options: {
+        // Trigger on_auth_user_created (migracija 003) čita ove vrednosti iz
+        // raw_user_meta_data i od njih pravi red u public.users.
         data: {
           team_name: teamName,
           team_color: teamColor,
@@ -53,31 +55,33 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Ako trigger padne na UNIQUE ograničenju imena, Supabase to vrati kao
+      // uopšteno "Database error saving new user" — bez ovoga bi korisnik
+      // dobio poruku iz koje se ne vidi šta da promeni.
+      const raw = signUpError.message.toLowerCase();
+      setError(
+        raw.includes("database error") || raw.includes("duplicate")
+          ? t("nameTakenDb")
+          : signUpError.message
+      );
       setLoading(false);
       return;
     }
 
-    // signUp sam po sebi ne pravi red u public.users — to je odvojena tabela
-    // sa fantasy poljima (budžet, tim, itd.). Od migracije 003 to radi trigger
-    // on_auth_user_created, u istoj transakciji kao i signUp, pa korisnik ne
-    // može više da završi sa auth nalogom bez profila ako ovaj drugi zahtev
-    // padne. Ovaj upis ostaje kao fallback ako migracija još nije pokrenuta —
-    // ignoreDuplicates znači da ne smeta kad je trigger već odradio posao.
-    const { error: profileError } = await supabase
-      .from("users")
-      .upsert(
-        {
-          id: signUpData.user!.id,
-          team_name: teamName,
-          team_color: teamColor,
-          favorite_club_id: favoriteClubId,
-        },
-        { onConflict: "id", ignoreDuplicates: true }
-      );
+    // NAMERNO nema upisa u public.users odavde.
+    //
+    // Ranije je ovde stajao upsert kao rezerva ako trigger nije postavljen. On
+    // je bio uzrok greške "new row violates row-level security policy for table
+    // users": `ignoreDuplicates` se prevodi u ON CONFLICT DO NOTHING, ali RLS
+    // proveru Postgres radi PRE razrešavanja konflikta. Politika traži
+    // auth.uid() = id, a kad je u Supabase-u uključena potvrda mejla, signUp NE
+    // vraća sesiju — zahtev ide kao anoniman, auth.uid() je NULL i provera pada.
+    // Red je pri tome već postojao, napravio ga je trigger u istoj transakciji.
 
-    if (profileError) {
-      setError(t("profileFailed", { message: profileError.message }));
+    if (!signUpData.session) {
+      // Nema sesije = uključena je potvrda mejla. Preusmeravanje na /moj-tim bi
+      // ga middleware odmah vratio na /login, bez objašnjenja.
+      setNeedsConfirmation(true);
       setLoading(false);
       return;
     }
@@ -85,39 +89,56 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
     navigateAfterAuth(resolveAuthRedirect(null, locale));
   }
 
+  if (needsConfirmation) {
+    return (
+      <div className="bg-navy-800 border border-navy-600 rounded-lg p-5 text-sm">
+        <p className="text-chalk-50 font-semibold mb-2">{t("confirmEmailTitle")}</p>
+        <p className="text-slate-300 leading-relaxed">
+          {t.rich("confirmEmailBody", {
+            email: email.trim(),
+            b: (chunks) => <span className="text-chalk-50">{chunks}</span>,
+          })}
+        </p>
+      </div>
+    );
+  }
+
+  const inputClass =
+    "bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50 focus:border-gold-400 focus:outline-none";
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">
-          {error}
-        </p>
+        <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">{error}</p>
       )}
 
       <label className="flex flex-col gap-1.5 text-sm">
-        Email
+        {t("email")}
         <input
           type="email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+          className={inputClass}
         />
       </label>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        Lozinka
+        {t("password")}
         <input
           type="password"
           required
           minLength={6}
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+          className={inputClass}
         />
       </label>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        Naziv tvog kluba
+        {t("teamName")}
         <input
           type="text"
           required
@@ -125,37 +146,38 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
           maxLength={30}
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
-          placeholder="npr. Olimpos United"
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+          placeholder={t("teamNamePlaceholder")}
+          className={inputClass}
         />
       </label>
 
       <div className="flex flex-col gap-1.5 text-sm">
-        Boja kluba
+        {t("teamColor")}
         <div className="flex gap-2">
           {PRESET_COLORS.map((c) => (
             <button
               type="button"
               key={c}
               onClick={() => setTeamColor(c)}
-              className="w-8 h-8 rounded-full border-2 transition-colors"
+              className="w-9 h-9 rounded-full border-2 transition-colors"
               style={{
                 backgroundColor: c,
                 borderColor: teamColor === c ? "#F4F6F8" : "transparent",
               }}
-              aria-label={`Izaberi boju ${c}`}
+              aria-pressed={teamColor === c}
+              aria-label={t("pickColor", { color: c })}
             />
           ))}
         </div>
       </div>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        Omiljeni klub
+        {t("favoriteClub")}
         <select
           required
           value={favoriteClubId}
           onChange={(e) => setFavoriteClubId(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+          className={inputClass}
         >
           {clubs.length === 0 && <option value="">{t("noClubsOption")}</option>}
           {clubs.map((c) => (
@@ -171,7 +193,7 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
         disabled={loading || clubs.length === 0}
         className="bg-gold-400 text-navy-950 font-bold text-sm px-6 py-3 rounded-lg disabled:opacity-50"
       >
-        {loading ? "Kreiram klub..." : "Napravi klub"}
+        {loading ? t("creatingClub") : t("createClub")}
       </button>
     </form>
   );

@@ -21,6 +21,7 @@ const RICH: Record<string, Record<string, unknown>> = {
   "auth.newPasswordFor": { email: "a@b.c", b: (c: React.ReactNode) => <span>{c}</span> },
   "team.selling": { name: "M. Pelkas", price: "5.0M", budget: "7.5M", b: (c: React.ReactNode) => <b>{c}</b> },
   "builder.swapHelpActive": { name: "M. Pelkas", b: (c: React.ReactNode) => <b>{c}</b> },
+  "register.confirmEmailBody": { email: "a@b.c", b: (c: React.ReactNode) => <span>{c}</span> },
 };
 
 /** Vrednosti za obične zamenike, po ključu. */
@@ -41,6 +42,9 @@ const VALUES: Record<string, Record<string, unknown>> = {
   "pitch.formation": { label: "4-4-2" },
   "common.gameweekN": { number: 4 },
   "register.profileFailed": { message: "boom" },
+  "register.pickColor": { color: "#E8B33D" },
+  "fixtures.gameweekOption": { number: 4 },
+  "fixtures.gameweekPlayed": { number: 4 },
   "adminDenied.accountNoAdmin": { team: "Arsenal FC" },
   "publicTeam.noSquad": { number: 4 },
   "publicTeam.squadFrom": { number: 4 },

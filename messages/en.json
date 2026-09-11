@@ -207,7 +207,20 @@
     "title": "Create your club",
     "subtitle": "Takes under a minute — no email verification.",
     "noClubsWarning": "No clubs in the database yet — run faza1-run-in-supabase.sql in the Supabase SQL Editor before registering.",
-    "profileFailed": "The account was created but the team profile was not saved: {message}"
+    "profileFailed": "The account was created but the team profile was not saved: {message}",
+    "email": "Email",
+    "password": "Password",
+    "teamName": "Your club name",
+    "teamNamePlaceholder": "e.g. Olimpos United",
+    "teamColor": "Club colour",
+    "pickColor": "Pick colour {color}",
+    "favoriteClub": "Favourite club",
+    "createClub": "Create club",
+    "creatingClub": "Creating club…",
+    "confirmEmailTitle": "Almost there — confirm your email.",
+    "confirmEmailBody": "We sent a confirmation link to <b>{email}</b>. Open it and your club is ready.",
+    "signUpFailed": "Registration failed. Try again in a minute.",
+    "nameTakenDb": "That club name is taken — go back and pick another."
   },
   "publicTeam": {
     "noFinalized": "No gameweek has been finalised yet. Squads become public only once a gameweek is scored — before the deadline another manager's team is secret.",
