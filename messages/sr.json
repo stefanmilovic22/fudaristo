@@ -129,7 +129,8 @@
     "maxFromClub": "Već 3 iz kluba",
     "saving": "Čuvam…",
     "undo": "poništi",
-    "gameweekN": "Kolo {number}"
+    "gameweekN": "Kolo {number}",
+    "deadline": "rok"
   },
   "chips": {
     "title": "Čipovi",

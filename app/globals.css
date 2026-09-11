@@ -24,4 +24,21 @@ body {
   ::placeholder {
     color: #64718a;
   }
+
+  /* iOS Safari automatski zumira stranicu kad se fokusira polje sa fontom
+     manjim od 16px. Umesto zabrane zumiranja (loše za pristupačnost), polja
+     na telefonu prosto imaju 16px; od 640px naviše vraćaju se na 14px. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  @media (min-width: 640px) {
+    input,
+    select,
+    textarea {
+      font-size: inherit;
+    }
+  }
 }

@@ -358,7 +358,7 @@ export function SquadBuilder({
   const swapPlayer = swapId ? playersById.get(swapId) ?? null : null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 sm:gap-5">
       <div>
         <StatusBar
           selectedCount={selected.length}
@@ -452,7 +452,12 @@ export function SquadBuilder({
           )}
         </div>
 
-        <div className="shrink-0 bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
+{/* Na telefonu se lepi za DNO ekrana: desna kolona je ispod terena, pa je
+              dugme za čuvanje inače bilo daleko van vidokruga — posle svake
+              izmene trebalo je skrolovati kroz ceo teren i listu igrača.
+              Na širokom ekranu kolona ionako stoji, pa se vraća u normalan tok. */}
+          <div className="shrink-0 sticky bottom-0 z-20 -mx-3 px-3 pb-3 pt-2 bg-navy-950/95 backdrop-blur border-t border-navy-700 lg:static lg:mx-0 lg:px-0 lg:pb-0 lg:pt-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
+          <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-3 sm:p-4">
           {allErrors.length > 0 && (
             <details className="mb-3 group">
               {/* Sažeto po pravilu: kad je tim prazan grešaka je pet i panel
@@ -483,6 +488,7 @@ export function SquadBuilder({
           >
             {saving ? t("savingSquad") : t("saveSquad")}
           </button>
+          </div>
         </div>
       </div>
     </div>
@@ -573,7 +579,7 @@ function SquadStep({
 }) {
   return (
     <Pitch>
-      <div className="flex flex-col gap-5 sm:gap-7">
+      <div className="flex flex-col gap-3 xs:gap-4 sm:gap-7">
         {POSITIONS.map((pos) => {
           const inRow = selected
             .filter((p) => p.position === pos)
@@ -717,7 +723,7 @@ function LineupStep({
       </div>
 
       <Pitch>
-        <div className="flex flex-col gap-5 sm:gap-7">
+        <div className="flex flex-col gap-3 xs:gap-4 sm:gap-7">
           {rows.map((row, i) => (
             <PitchRow key={i}>{row.map((p) => render(p, true))}</PitchRow>
           ))}

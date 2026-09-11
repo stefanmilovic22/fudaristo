@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Bench, Pitch, PitchRow } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
@@ -66,6 +66,7 @@ export function MyTeam({
   opponentByClub: Record<string, string>;
 }) {
   const t = useTranslations("team");
+  const locale = useLocale();
   const tCommon = useTranslations("common");
   const tPos = useTranslations("positions");
   const tPitch = useTranslations("pitch");
@@ -540,9 +541,9 @@ export function MyTeam({
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 sm:gap-5">
       <div>
-        <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 px-4 py-3 mb-4 flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
+        <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 px-3 sm:px-4 py-3 mb-3 sm:mb-4 flex flex-wrap items-baseline gap-x-4 sm:gap-x-6 gap-y-1 text-[13px] sm:text-sm">
           <span>
             <span className="text-slate-400">{t("gameweek")} </span>
             <span className="font-display text-lg">{gameweekNumber}</span>
@@ -601,13 +602,13 @@ export function MyTeam({
               )}
             </select>
           </label>
-          <span className="text-slate-400 w-full lg:w-auto">
-            rok {new Date(deadlineAt).toLocaleString("sr-RS")}
+          <span className="text-slate-400 w-full lg:w-auto text-xs sm:text-[13px]">
+            {tCommon("deadline")} {new Date(deadlineAt).toLocaleString(locale)}
           </span>
         </div>
 
         <Pitch>
-          <div className="flex flex-col gap-5 sm:gap-7">
+          <div className="flex flex-col gap-3 xs:gap-4 sm:gap-7">
             {rows.map((row, i) => (
               <PitchRow key={i}>{row.map((s) => renderSlot(s, true))}</PitchRow>
             ))}
@@ -667,7 +668,12 @@ export function MyTeam({
           </>
         )}
 
-        <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 lg:sticky lg:bottom-4">
+{/* Na telefonu se lepi za DNO ekrana: desna kolona je ispod terena, pa je
+              dugme za čuvanje inače bilo daleko van vidokruga — posle svake
+              izmene trebalo je skrolovati kroz ceo teren i listu igrača.
+              Na širokom ekranu kolona ionako stoji, pa se vraća u normalan tok. */}
+          <div className="sticky bottom-0 z-20 -mx-3 px-3 pb-3 pt-2 bg-navy-950/95 backdrop-blur border-t border-navy-700 lg:static lg:mx-0 lg:px-0 lg:pb-0 lg:pt-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
+          <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-3 sm:p-4">
           {problems.length > 0 && (
             <ul className="text-danger-400 text-xs bg-danger-400/10 rounded-lg px-3 py-2 mb-3 flex flex-col gap-1">
               {problems.slice(0, 4).map((p, i) => (
@@ -704,6 +710,7 @@ export function MyTeam({
               {t("notSavedYet")}
             </p>
           )}
+          </div>
         </div>
       </div>
     </div>
@@ -720,6 +727,7 @@ function PendingPanel({
   onCancel: (key: string) => void;
 }) {
   const t = useTranslations("team");
+  const locale = useLocale();
   const tCommon = useTranslations("common");
   if (pending.length === 0) return null;
   return (
@@ -762,6 +770,7 @@ function PendingPanel({
 
 function HelpPanel({ swapping }: { swapping: boolean }) {
   const t = useTranslations("team");
+  const locale = useLocale();
   return (
     <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 text-sm">
       <h3 className="font-display text-lg mb-2">{t("howToChange")}</h3>

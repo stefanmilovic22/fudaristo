@@ -129,7 +129,8 @@
     "maxFromClub": "Ήδη 3 από την ομάδα",
     "saving": "Αποθήκευση…",
     "undo": "αναίρεση",
-    "gameweekN": "Αγων. {number}"
+    "gameweekN": "Αγων. {number}",
+    "deadline": "προθεσμία"
   },
   "chips": {
     "title": "Chips",

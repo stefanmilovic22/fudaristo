@@ -5,6 +5,15 @@ import type { Config } from "tailwindcss";
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
+    screens: {
+      // Prelomna tačka za uske telefone (iPhone SE je 375px). Dresovi na terenu
+      // moraju da stanu u jedan red i na njoj, pa im treba korak ispod sm.
+      xs: "400px",
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+    },
     extend: {
       colors: {
         navy: {

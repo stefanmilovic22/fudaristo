@@ -78,7 +78,7 @@ export function Jersey({
 
   return (
     <div
-      className={`relative w-[68px] sm:w-[76px] flex flex-col items-center transition-opacity ${
+      className={`relative w-[54px] xs:w-[62px] sm:w-[72px] md:w-[76px] flex flex-col items-center transition-opacity ${
         dimmed ? "opacity-35" : ""
       }`}
     >
@@ -93,7 +93,7 @@ export function Jersey({
         onClick={onClick}
         disabled={!onClick}
         aria-label={name ? `${name}${detail ? `, ${detail}` : ""}` : t("player")}
-        className={`relative block w-[52px] sm:w-[58px] rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
+        className={`relative block w-[44px] xs:w-[50px] sm:w-[56px] md:w-[58px] rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
           onClick ? "hover:-translate-y-0.5 cursor-pointer" : "cursor-default"
         } ${active ? "-translate-y-1" : ""}`}
       >
@@ -133,7 +133,7 @@ export function Jersey({
         <span
           title={t("goalkeeper")}
           aria-hidden
-          className="absolute -top-1 -left-1 w-[18px] h-[18px] rounded-full bg-gold-400 text-navy-950 text-[10px] font-bold grid place-items-center ring-2 ring-navy-950"
+          className="absolute -top-1 -left-1 w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full bg-gold-400 text-navy-950 text-[9px] sm:text-[10px] font-bold grid place-items-center ring-2 ring-navy-950"
         >
           GK
         </span>
@@ -154,16 +154,16 @@ export function Jersey({
           type="button"
           onClick={onRemove}
           aria-label={name ? t("remove", { name }) : t("removeGeneric")}
-          className="absolute -top-1.5 -right-1 w-5 h-5 rounded-full bg-navy-950 border border-slate-500 text-slate-300 text-[11px] leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300"
+          className="absolute -top-1.5 -right-1 w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full bg-navy-950 border border-slate-500 text-slate-300 text-[10px] sm:text-[11px] leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300"
         >
           ×
         </button>
       )}
 
-      <div className="w-full mt-1 rounded-t-[3px] bg-chalk-50 text-navy-950 text-[10px] sm:text-[11px] font-semibold leading-tight px-1 py-[3px] text-center truncate">
+      <div className="w-full mt-1 rounded-t-[3px] bg-chalk-50 text-navy-950 text-[9px] sm:text-[11px] font-semibold leading-tight px-0.5 sm:px-1 py-[2px] sm:py-[3px] text-center truncate">
         {name ?? "—"}
       </div>
-      <div className="w-full rounded-b-[3px] bg-navy-950/85 text-chalk-50 text-[10px] leading-tight px-1 py-[3px] text-center truncate">
+      <div className="w-full rounded-b-[3px] bg-navy-950/85 text-chalk-50 text-[9px] sm:text-[10px] leading-tight px-0.5 sm:px-1 py-[2px] sm:py-[3px] text-center truncate">
         {detail ?? ""}
       </div>
 
@@ -173,7 +173,7 @@ export function Jersey({
             <button
               type="button"
               onClick={onCaptain}
-              className={`w-5 h-5 rounded-full text-[10px] font-bold border transition-colors ${
+              className={`w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold border transition-colors ${
                 isCaptain
                   ? "bg-gold-400 text-navy-950 border-gold-400"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-gold-400"
@@ -187,7 +187,7 @@ export function Jersey({
             <button
               type="button"
               onClick={onViceCaptain}
-              className={`w-5 h-5 rounded-full text-[10px] font-bold border transition-colors ${
+              className={`w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold border transition-colors ${
                 isViceCaptain
                   ? "bg-chalk-50 text-navy-950 border-chalk-50"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-chalk-50"
@@ -206,7 +206,7 @@ export function Jersey({
 function Armband({ label, tone }: { label: string; tone: "gold" | "chalk" }) {
   return (
     <span
-      className={`absolute -top-1.5 -left-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-navy-950 ${
+      className={`absolute -top-1.5 -left-1 w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center border-2 border-navy-950 ${
         tone === "gold" ? "bg-gold-400 text-navy-950" : "bg-chalk-50 text-navy-950"
       }`}
     >
@@ -227,12 +227,12 @@ export function EmptySlot({
 }) {
   const t = useTranslations("pitch");
   return (
-    <div className="w-[68px] sm:w-[76px] flex flex-col items-center">
+    <div className="w-[54px] xs:w-[62px] sm:w-[72px] md:w-[76px] flex flex-col items-center">
       <button
         type="button"
         onClick={onAdd}
         aria-label={t("add", { label })}
-        className={`block w-[52px] sm:w-[58px] rounded-md transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
+        className={`block w-[44px] xs:w-[50px] sm:w-[56px] md:w-[58px] rounded-md transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
           highlighted ? "-translate-y-0.5" : ""
         }`}
       >

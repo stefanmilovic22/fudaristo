@@ -66,7 +66,7 @@ export function StandingsTable({
             {t("showMe", { rank: myRank })}
           </button>
         )}
-        <span className="text-xs text-slate-500 ml-auto">
+        <span className="text-xs text-slate-500 w-full sm:w-auto sm:ml-auto">
           {t("teamsShown", { shown: visible.length, total: rows.length })}
         </span>
       </div>
@@ -77,7 +77,7 @@ export function StandingsTable({
         </p>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="text-slate-400 text-xs uppercase tracking-wide">

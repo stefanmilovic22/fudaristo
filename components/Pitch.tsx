@@ -30,7 +30,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
       <Goal />
 
       {/* Travnjak. Gornji razmak nosi gol i reklame. */}
-      <div className="relative mx-2 mb-2 mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden bg-pitch-700 ring-1 ring-gold-400/25">
+      <div className="relative mx-1.5 mb-1.5 mt-[56px] xs:mx-2 xs:mb-2 xs:mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden bg-pitch-700 ring-1 ring-gold-400/25">
         <div
           aria-hidden
           className="absolute inset-0"
@@ -75,7 +75,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
 
         {/* pb je namerno velik: poslednji red (napad) nosi pločice sa imenom i
             poenima ISPOD dresa, a one su ranije izlazile iz okvira terena. */}
-        <div className="relative px-2 pt-5 pb-8 sm:px-5 sm:pt-6 sm:pb-10">{children}</div>
+        <div className="relative px-1 pt-4 pb-7 xs:px-2 sm:px-5 sm:pt-6 sm:pb-10">{children}</div>
       </div>
     </div>
   );
@@ -90,7 +90,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
  */
 function Goal() {
   return (
-    <div aria-hidden className="absolute inset-x-0 top-0 h-[68px] sm:h-[84px] pointer-events-none">
+    <div aria-hidden className="absolute inset-x-0 top-0 h-[56px] xs:h-[68px] sm:h-[84px] pointer-events-none">
       <svg
         viewBox="0 0 120 40"
         className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[46%] max-w-[230px]"
@@ -117,7 +117,14 @@ function Goal() {
 
 /** Jedan red igrača na terenu (linija formacije). */
 export function PitchRow({ children }: { children: React.ReactNode }) {
-  return <div className="flex justify-center gap-1.5 sm:gap-4 flex-wrap">{children}</div>;
+  // flex-nowrap na telefonu: red formacije NE sme da se prelomi — pet
+  // odbrambenih u dva reda više ne liči na 5-3-2. Dresovi se već smanjuju
+  // dovoljno da stanu, a min-w-0 dozvoljava da se skupe ako zatreba.
+  return (
+    <div className="flex justify-center gap-1 xs:gap-1.5 sm:gap-4 flex-nowrap sm:flex-wrap">
+      {children}
+    </div>
+  );
 }
 
 /**
@@ -150,8 +157,8 @@ export function Bench({
         {note && <span className="text-[11px] text-slate-300">{note}</span>}
       </div>
 
-      <div className="bg-navy-800 px-3 py-4">
-        <div className="flex justify-center items-start gap-1.5 sm:gap-4 flex-wrap">
+      <div className="bg-navy-800 px-2 py-3 sm:px-3 sm:py-4">
+        <div className="flex justify-center items-start gap-1 xs:gap-1.5 sm:gap-4 flex-wrap">
           {children}
           {goalkeeper && (
             <>

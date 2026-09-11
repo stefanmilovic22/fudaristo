@@ -77,7 +77,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
   const items = isAdmin ? [...LINKS, { key: "admin" as NavKey, href: "/admin" }] : LINKS;
 
   return (
-    <nav className="order-last w-full lg:order-none lg:w-auto flex gap-0.5 sm:gap-1 bg-navy-800 p-1 rounded-lg overflow-x-auto">
+    <nav className="order-last w-full lg:order-none lg:w-auto flex gap-0.5 sm:gap-1 bg-navy-800 p-1 rounded-lg overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map(({ key, href }) => {
         // Poklapanje po prefiksu, da /admin/mecevi/... i dalje ističe "Admin".
         const active = pathname === href || pathname.startsWith(href + "/");
@@ -89,7 +89,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`shrink-0 flex items-center gap-1.5 text-sm font-semibold px-2.5 sm:px-3.5 py-2 rounded-md transition-colors ${
+            className={`shrink-0 flex items-center gap-1 sm:gap-1.5 text-[13px] sm:text-sm font-semibold px-2 sm:px-3.5 py-2 rounded-md transition-colors ${
               active
                 ? "bg-navy-950 text-chalk-50 shadow-sm ring-1 ring-navy-600"
                 : isAdminLink

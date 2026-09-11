@@ -129,7 +129,8 @@
     "maxFromClub": "Already 3 from club",
     "saving": "Saving…",
     "undo": "undo",
-    "gameweekN": "GW {number}"
+    "gameweekN": "GW {number}",
+    "deadline": "deadline"
   },
   "chips": {
     "title": "Chips",

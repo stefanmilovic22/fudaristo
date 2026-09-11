@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Oswald, Inter } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
@@ -25,6 +25,18 @@ const inter = Inter({
   subsets: ["latin", "greek", "cyrillic"],
   variable: "--font-inter",
 });
+
+/**
+ * Eksplicitan viewport. Next ima podrazumevani, ali `maximumScale` namerno
+ * NIJE postavljen — zabrana zumiranja je problem pristupačnosti, a jedini
+ * razlog zbog kog se obično dodaje (Safari zumira polja sa fontom < 16px)
+ * rešen je time što polja za unos imaju bar 16px na telefonu.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0B1526",
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -79,29 +91,29 @@ export default async function LocaleLayout({
       <body className="font-body">
         <NextIntlClientProvider>
           <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-            <header className="flex items-center justify-between gap-4 flex-wrap px-4 sm:px-7 py-4 border-b border-navy-700">
-              <Link href="/" className="flex items-baseline gap-2.5">
+            <header className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+              <Link href="/" className="flex items-baseline gap-2.5 shrink-0">
                 <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                   Fudaristo
                 </span>
-                <span className="text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
+                <span className="hidden xs:inline text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
               </Link>
 
               <MainNav isAdmin={Boolean(profile?.is_admin)} />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <LocaleSwitcher />
 
                 {profile ? (
-                  <div className="flex items-center gap-3 bg-navy-800 rounded-full pl-1.5 pr-4 py-1.5 border border-navy-600">
+                  <div className="flex items-center gap-2 sm:gap-3 bg-navy-800 rounded-full pl-1.5 pr-3 sm:pr-4 py-1.5 border border-navy-600 min-w-0 max-w-[190px] sm:max-w-none">
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-xs"
                       style={{ backgroundColor: profile.team_color }}
                     >
                       {profile.team_name.slice(0, 2).toUpperCase()}
                     </div>
-                    <div className="leading-tight">
-                      <div className="text-xs font-semibold">{profile.team_name}</div>
+                    <div className="leading-tight min-w-0">
+                      <div className="text-xs font-semibold truncate">{profile.team_name}</div>
                       <LogoutButton />
                     </div>
                   </div>
@@ -118,7 +130,7 @@ export default async function LocaleLayout({
               </div>
             </header>
 
-            <main className="flex-1 px-4 sm:px-7 py-6">{children}</main>
+            <main className="flex-1 px-3 sm:px-7 py-4 sm:py-6">{children}</main>
           </div>
         </NextIntlClientProvider>
       </body>
