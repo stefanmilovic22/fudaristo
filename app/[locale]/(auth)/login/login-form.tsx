@@ -5,11 +5,16 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordField } from "@/components/PasswordField";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
   const locale = useLocale();
+
+  // Ruta /auth/potvrda vraća ovamo kad link iz mejla ne valja — bez ovoga bi
+  // korisnik samo video formu za prijavu, bez ijedne reči zašto.
+  const linkError = searchParams.get("greska");
   const t = useTranslations("auth");
   const supabase = createClient();
 
@@ -40,6 +45,11 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {linkError && !error && (
+        <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">
+          {linkError === "link-istekao" ? t("linkExpired") : t("linkBroken")}
+        </p>
+      )}
       {error && (
         <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">
           {error}
@@ -58,25 +68,20 @@ export function LoginForm() {
         />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="flex items-baseline justify-between gap-2">
-          {t("password")}
+      <PasswordField
+        label={t("password")}
+        value={password}
+        onChange={setPassword}
+        autoComplete="current-password"
+        labelSuffix={
           <Link
             href="/zaboravljena-lozinka"
             className="text-xs font-semibold text-slate-400 hover:text-gold-300"
           >
             {t("forgot")}
           </Link>
-        </span>
-        <input
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
-        />
-      </label>
+        }
+      />
 
       <button
         type="submit"

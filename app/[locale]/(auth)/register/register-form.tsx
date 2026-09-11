@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordField } from "@/components/PasswordField";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 type Club = { id: string; name: string };
@@ -11,11 +12,13 @@ const PRESET_COLORS = ["#E8B33D", "#3FA46A", "#E2574C", "#4A90D9", "#9B59B6"];
 
 export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const t = useTranslations("register");
+  const tAuth = useTranslations("auth");
   const locale = useLocale();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamColor, setTeamColor] = useState(PRESET_COLORS[0]);
   const [favoriteClubId, setFavoriteClubId] = useState(clubs[0]?.id ?? "");
@@ -26,6 +29,14 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Provera pre bilo kakvog mrežnog poziva — greška u kucanju lozinke se
+    // vidi odmah, bez čekanja na odgovor servera.
+    if (password !== passwordConfirm) {
+      setError(tAuth("passwordsDiffer"));
+      return;
+    }
+
     setLoading(true);
 
     // Brz fidbek pre signUp-a; UNIQUE u bazi je i dalje pravi čuvar.
@@ -44,6 +55,11 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
       email,
       password,
       options: {
+        // Bez ovoga Supabase u mejl stavlja svoj "Site URL", a on je i dalje
+        // http://localhost:3000 — na telefonu to znači sam telefon, pa potvrda
+        // pada na ERR_CONNECTION_REFUSED. Origin iz pregledača radi i lokalno
+        // i na produkciji, bez podešavanja po okruženju.
+        emailRedirectTo: `${window.location.origin}/auth/potvrda?next=/moj-tim`,
         // Trigger on_auth_user_created (migracija 003) čita ove vrednosti iz
         // raw_user_meta_data i od njih pravi red u public.users.
         data: {
@@ -124,18 +140,32 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
         />
       </label>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        {t("password")}
-        <input
-          type="password"
-          required
-          minLength={6}
+      <PasswordField
+        label={t("password")}
+        value={password}
+        onChange={setPassword}
+        autoComplete="new-password"
+        minLength={6}
+      />
+
+      <div>
+        <PasswordField
+          label={t("repeatPassword")}
+          value={passwordConfirm}
+          onChange={setPasswordConfirm}
           autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className={inputClass}
+          minLength={6}
+          // Crveno tek kad je drugo polje počelo da se popunjava — inače bi
+          // svetlelo dok korisnik još kuca prvi znak.
+          invalid={passwordConfirm.length > 0 && password !== passwordConfirm}
+          describedBy="lozinka-pomoc"
         />
-      </label>
+        {passwordConfirm.length > 0 && password !== passwordConfirm && (
+          <p id="lozinka-pomoc" className="text-danger-400 text-xs mt-1.5">
+            {tAuth("repeatPasswordHint")}
+          </p>
+        )}
+      </div>
 
       <label className="flex flex-col gap-1.5 text-sm">
         {t("teamName")}
@@ -190,7 +220,7 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
 
       <button
         type="submit"
-        disabled={loading || clubs.length === 0}
+        disabled={loading || clubs.length === 0 || password !== passwordConfirm}
         className="bg-gold-400 text-navy-950 font-bold text-sm px-6 py-3 rounded-lg disabled:opacity-50"
       >
         {loading ? t("creatingClub") : t("createClub")}

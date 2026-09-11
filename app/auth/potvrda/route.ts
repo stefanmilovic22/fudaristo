@@ -1,56 +1,77 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { routing } from "@/i18n/routing";
 
 /**
- * Odredište linka iz mejla za reset lozinke.
+ * Odredište SVIH linkova iz mejla — i potvrde registracije i reseta lozinke.
  *
- * Tok: korisnik klikne link → Supabase proveri token na SVOJOJ strani →
- * preusmeri ovamo sa kodom → ovde se kod menja za sesiju → korisnik ide na
- * /nova-lozinka, gde je već prijavljen i sme da postavi lozinku.
+ * Tok: korisnik klikne link → Supabase proveri token na svojoj strani →
+ * preusmeri ovamo → ovde se kod menja za sesiju → korisnik ide dalje.
  *
  * Zašto ruta a ne stranica: `exchangeCodeForSession` mora da upiše kolačiće
  * sesije, a to se radi u Route Handler-u. Uz to, PKCE verifier koji je klijent
- * ostavio u kolačiću čita server preko @supabase/ssr — zato razmena radi i kad
- * je korisnik otvorio link u istom pregledaču u kom je tražio reset.
+ * ostavio u kolačiću čita server preko @supabase/ssr.
  *
- * Podržana su OBA oblika koja Supabase šalje, jer zavise od podešenog email
- * šablona: `?code=` (PKCE, podrazumevano za @supabase/ssr) i
- * `?token_hash=&type=recovery` (noviji šablon sa {{ .TokenHash }}).
+ * Ruta je van [locale] jer je njena adresa upisana u Supabase podešavanjima i
+ * ne sme da se menja sa jezikom; jezik se čita iz kolačića koji postavlja
+ * next-intl.
+ *
+ * KUDA DALJE: `?next=` koji pozivalac zada. Registracija šalje /moj-tim, reset
+ * lozinke /nova-lozinka. Ranije je uvek vodilo na /nova-lozinka, pa bi korisnik
+ * posle potvrde mejla završio na stranici za promenu lozinke koju nije tražio.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
 
-  // Ruta je van [locale] jer je njena adresa upisana u Supabase podešavanjima
-  // i ne sme da se menja sa jezikom. Jezik se čita iz kolačića koji postavlja
-  // next-intl, da korisnik posle klika iz mejla ostane na svom jeziku.
   const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
   const prefix =
-    cookieLocale && cookieLocale !== "en" && ["sr", "el"].includes(cookieLocale)
+    cookieLocale &&
+    cookieLocale !== routing.defaultLocale &&
+    (routing.locales as readonly string[]).includes(cookieLocale)
       ? `/${cookieLocale}`
       : "";
+
+  // Samo interna putanja — `next` dolazi iz adrese, pa bi inače bio otvoreno
+  // preusmerenje na tuđi sajt odmah posle potvrde naloga.
+  const rawNext = searchParams.get("next");
+  const next = rawNext && /^\/(?!\/)/.test(rawNext) ? rawNext : "/nova-lozinka";
+
+  const fail = (reason: string) =>
+    NextResponse.redirect(`${origin}${prefix}/login?greska=${reason}`);
+
+  // Supabase sam javlja grešku u adresi kad je token istekao ili već iskorišćen.
+  // Bez ove provere bi se to tumačilo kao "neko je otvorio rutu direktno".
+  const supabaseError = searchParams.get("error_code") ?? searchParams.get("error");
+  if (supabaseError) {
+    return fail(supabaseError.includes("expired") ? "link-istekao" : "link");
+  }
+
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
-
-  const failed = NextResponse.redirect(`${origin}${prefix}/zaboravljena-lozinka?greska=link`);
 
   const supabase = await createClient();
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) return failed;
-    return NextResponse.redirect(`${origin}${prefix}/nova-lozinka`);
+    if (error) return fail("link");
+    return NextResponse.redirect(`${origin}${prefix}${next}`);
   }
 
   if (tokenHash && type) {
     const { error } = await supabase.auth.verifyOtp({
-      type: type as "recovery" | "email",
+      // Supabase šalje "signup" pri potvrdi registracije, "recovery" pri
+      // resetu, "email_change" pri promeni adrese. Ranije je tip bio kastovan
+      // samo na recovery|email, pa je potvrda registracije prolazila slučajno.
+      type: type as "signup" | "recovery" | "email" | "email_change" | "invite",
       token_hash: tokenHash,
     });
-    if (error) return failed;
-    return NextResponse.redirect(`${origin}${prefix}/nova-lozinka`);
+    if (error) return fail("link");
+
+    // Ako pozivalac nije zadao odredište, izvedi ga iz tipa linka.
+    const fallback = type === "recovery" ? "/nova-lozinka" : "/moj-tim";
+    return NextResponse.redirect(`${origin}${prefix}${rawNext ? next : fallback}`);
   }
 
-  // Ni jedno ni drugo — verovatno je neko otvorio rutu direktno.
-  return failed;
+  return fail("link");
 }

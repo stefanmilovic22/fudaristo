@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordField } from "@/components/PasswordField";
 
 export function NewPasswordForm() {
   const locale = useLocale();
@@ -57,35 +58,34 @@ export function NewPasswordForm() {
         <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">{error}</p>
       )}
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        {t("newPassword")}
-        <input
-          type="password"
-          required
-          minLength={6}
-          autoComplete="new-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
-        />
-      </label>
+      <PasswordField
+        label={t("newPassword")}
+        value={password}
+        onChange={setPassword}
+        autoComplete="new-password"
+        minLength={6}
+      />
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        {t("repeatPassword")}
-        <input
-          type="password"
-          required
-          minLength={6}
-          autoComplete="new-password"
+      <div>
+        <PasswordField
+          label={t("repeatPassword")}
           value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          className="bg-navy-800 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50"
+          onChange={setConfirm}
+          autoComplete="new-password"
+          minLength={6}
+          invalid={confirm.length > 0 && password !== confirm}
+          describedBy="nova-lozinka-pomoc"
         />
-      </label>
+        {confirm.length > 0 && password !== confirm && (
+          <p id="nova-lozinka-pomoc" className="text-danger-400 text-xs mt-1.5">
+            {t("repeatPasswordHint")}
+          </p>
+        )}
+      </div>
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || password !== confirm}
         className="bg-gold-400 text-navy-950 font-bold text-sm px-6 py-3 rounded-lg disabled:opacity-50"
       >
         {loading ? t("saving") : t("savePassword")}

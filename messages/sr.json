@@ -58,7 +58,12 @@
     "requestNewLink": "Zatraži novi link",
     "wrongCredentials": "Pogrešan email ili lozinka.",
     "signIn": "Prijavi se",
-    "signingIn": "Prijavljujem…"
+    "signingIn": "Prijavljujem…",
+    "linkExpired": "Link je istekao. Zatraži novi.",
+    "linkBroken": "Link nije važeći. Zatraži novi.",
+    "showPassword": "Prikaži lozinku",
+    "hidePassword": "Sakrij lozinku",
+    "repeatPasswordHint": "Upiši istu lozinku još jednom."
   },
   "league": {
     "title": "Globalna liga",
@@ -220,7 +225,8 @@
     "confirmEmailTitle": "Još samo jedan korak — potvrdi email.",
     "confirmEmailBody": "Poslali smo link za potvrdu na <b>{email}</b>. Otvori ga i klub je spreman.",
     "signUpFailed": "Registracija nije uspela. Pokušaj ponovo za koji minut.",
-    "nameTakenDb": "To ime kluba je zauzeto — vrati se i izaberi drugo."
+    "nameTakenDb": "To ime kluba je zauzeto — vrati se i izaberi drugo.",
+    "repeatPassword": "Ponovi lozinku"
   },
   "publicTeam": {
     "noFinalized": "Nijedno kolo još nije zaključano. Sastavi se javno prikazuju tek kad kolo bude obračunato — pre roka je tuđi tim tajna.",

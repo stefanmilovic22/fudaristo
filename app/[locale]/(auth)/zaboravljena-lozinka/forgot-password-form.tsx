@@ -29,7 +29,7 @@ export function ForgotPasswordForm() {
       // Supabase prvo proverava token na svojoj strani, pa preusmerava OVDE sa
       // kodom u query stringu. Origin se čita iz pregledača da isti kod radi i
       // lokalno i na produkciji bez podešavanja.
-      redirectTo: `${window.location.origin}/auth/potvrda`,
+      redirectTo: `${window.location.origin}/auth/potvrda?next=/nova-lozinka`,
     });
 
     setLoading(false);

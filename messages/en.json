@@ -58,7 +58,12 @@
     "requestNewLink": "Request a new link",
     "wrongCredentials": "Wrong email or password.",
     "signIn": "Log in",
-    "signingIn": "Logging in…"
+    "signingIn": "Logging in…",
+    "linkExpired": "That link has expired. Request a new one.",
+    "linkBroken": "That link is not valid. Request a new one.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "repeatPasswordHint": "Type the same password again."
   },
   "league": {
     "title": "Global league",
@@ -220,7 +225,8 @@
     "confirmEmailTitle": "Almost there — confirm your email.",
     "confirmEmailBody": "We sent a confirmation link to <b>{email}</b>. Open it and your club is ready.",
     "signUpFailed": "Registration failed. Try again in a minute.",
-    "nameTakenDb": "That club name is taken — go back and pick another."
+    "nameTakenDb": "That club name is taken — go back and pick another.",
+    "repeatPassword": "Repeat password"
   },
   "publicTeam": {
     "noFinalized": "No gameweek has been finalised yet. Squads become public only once a gameweek is scored — before the deadline another manager's team is secret.",
