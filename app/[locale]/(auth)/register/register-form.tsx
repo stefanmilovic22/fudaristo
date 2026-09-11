@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordField } from "@/components/PasswordField";
+import { registerAction } from "./actions";
+import { useRecaptcha } from "@/lib/use-recaptcha";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 type Club = { id: string; name: string };
@@ -13,6 +15,7 @@ const PRESET_COLORS = ["#E8B33D", "#3FA46A", "#E2574C", "#4A90D9", "#9B59B6"];
 export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const t = useTranslations("register");
   const tAuth = useTranslations("auth");
+  const { execute: executeRecaptcha } = useRecaptcha();
   const locale = useLocale();
   const supabase = createClient();
 
@@ -24,7 +27,6 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const [favoriteClubId, setFavoriteClubId] = useState(clubs[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,84 +41,45 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
 
     setLoading(true);
 
-    // Brz fidbek pre signUp-a; UNIQUE u bazi je i dalje pravi čuvar.
-    const { count } = await supabase
-      .from("users")
-      .select("*", { count: "exact", head: true })
-      .eq("team_name", teamName);
+    // Akcija ("registracija") se proverava i na serveru — bez toga bi token
+    // uzet sa bilo koje druge stranice prošao i ovde.
+    const recaptchaToken = await executeRecaptcha("registracija");
 
-    if (count && count > 0) {
-      setError(t("nameTaken"));
-      setLoading(false);
-      return;
-    }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // Nalog pravi server (admin API), bez ijednog mejla — videti actions.ts.
+    // Sve provere se tamo ponavljaju; ove ovde su samo za brz odgovor.
+    const result = await registerAction({
       email,
       password,
-      options: {
-        // Bez ovoga Supabase u mejl stavlja svoj "Site URL", a on je i dalje
-        // http://localhost:3000 — na telefonu to znači sam telefon, pa potvrda
-        // pada na ERR_CONNECTION_REFUSED. Origin iz pregledača radi i lokalno
-        // i na produkciji, bez podešavanja po okruženju.
-        emailRedirectTo: `${window.location.origin}/auth/potvrda?next=/moj-tim`,
-        // Trigger on_auth_user_created (migracija 003) čita ove vrednosti iz
-        // raw_user_meta_data i od njih pravi red u public.users.
-        data: {
-          team_name: teamName,
-          team_color: teamColor,
-          favorite_club_id: favoriteClubId,
-        },
-      },
+      teamName,
+      teamColor,
+      favoriteClubId,
+      recaptchaToken,
     });
 
-    if (signUpError) {
-      // Ako trigger padne na UNIQUE ograničenju imena, Supabase to vrati kao
-      // uopšteno "Database error saving new user" — bez ovoga bi korisnik
-      // dobio poruku iz koje se ne vidi šta da promeni.
-      const raw = signUpError.message.toLowerCase();
-      setError(
-        raw.includes("database error") || raw.includes("duplicate")
-          ? t("nameTakenDb")
-          : signUpError.message
-      );
+    if (!result.ok) {
+      const messages = {
+        invalid: t("invalidInput"),
+        nameTaken: t("nameTaken"),
+        emailTaken: t("emailTaken"),
+        throttled: t("throttled"),
+        captcha: t("captchaFailed"),
+        failed: result.detail ?? t("signUpFailed"),
+      } as const;
+      setError(messages[result.reason]);
       setLoading(false);
       return;
     }
 
-    // NAMERNO nema upisa u public.users odavde.
-    //
-    // Ranije je ovde stajao upsert kao rezerva ako trigger nije postavljen. On
-    // je bio uzrok greške "new row violates row-level security policy for table
-    // users": `ignoreDuplicates` se prevodi u ON CONFLICT DO NOTHING, ali RLS
-    // proveru Postgres radi PRE razrešavanja konflikta. Politika traži
-    // auth.uid() = id, a kad je u Supabase-u uključena potvrda mejla, signUp NE
-    // vraća sesiju — zahtev ide kao anoniman, auth.uid() je NULL i provera pada.
-    // Red je pri tome već postojao, napravio ga je trigger u istoj transakciji.
-
-    if (!signUpData.session) {
-      // Nema sesije = uključena je potvrda mejla. Preusmeravanje na /moj-tim bi
-      // ga middleware odmah vratio na /login, bez objašnjenja.
-      setNeedsConfirmation(true);
+    // Nalog je već potvrđen, pa prijava prolazi odmah — nema ekrana
+    // "potvrdi mejl" i nema čekanja.
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError(t("signInFailed"));
       setLoading(false);
       return;
     }
 
     navigateAfterAuth(resolveAuthRedirect(null, locale));
-  }
-
-  if (needsConfirmation) {
-    return (
-      <div className="bg-navy-800 border border-navy-600 rounded-lg p-5 text-sm">
-        <p className="text-chalk-50 font-semibold mb-2">{t("confirmEmailTitle")}</p>
-        <p className="text-slate-300 leading-relaxed">
-          {t.rich("confirmEmailBody", {
-            email: email.trim(),
-            b: (chunks) => <span className="text-chalk-50">{chunks}</span>,
-          })}
-        </p>
-      </div>
-    );
   }
 
   const inputClass =

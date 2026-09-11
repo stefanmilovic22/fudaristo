@@ -21,7 +21,6 @@ const RICH: Record<string, Record<string, unknown>> = {
   "auth.newPasswordFor": { email: "a@b.c", b: (c: React.ReactNode) => <span>{c}</span> },
   "team.selling": { name: "M. Pelkas", price: "5.0M", budget: "7.5M", b: (c: React.ReactNode) => <b>{c}</b> },
   "builder.swapHelpActive": { name: "M. Pelkas", b: (c: React.ReactNode) => <b>{c}</b> },
-  "register.confirmEmailBody": { email: "a@b.c", b: (c: React.ReactNode) => <span>{c}</span> },
 };
 
 /** Vrednosti za obične zamenike, po ključu. */
@@ -97,7 +96,33 @@ for (const [locale, messages] of Object.entries(CATALOGS)) {
   }
 }
 
+// Mrtvi ključevi: ostaju posle uklanjanja ekrana i tiho trunu u sva tri
+// kataloga. Dinamički sastavljeni ključevi (t(nesto as never)) se ne mogu
+// otkriti ovako, pa se cele te grupe preskaču.
+const DINAMICKI = ["positions.", "chips.", "picker.sort", "fixtures.status", "errors.what", "builder.", "nav."];
+function citajRekurzivno(dir: string): string[] {
+  const fs = require("fs") as typeof import("fs");
+  const path = require("path") as typeof import("path");
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) return citajRekurzivno(full);
+    return /\.tsx?$/.test(e.name) ? [fs.readFileSync(full, "utf-8")] : [];
+  });
+}
+
+const kod = ["app", "components", "lib"].flatMap(citajRekurzivno).join("\n");
+
+const mrtvi = flatten(en as unknown as Record<string, unknown>).filter((key) => {
+  if (DINAMICKI.some((p) => key.startsWith(p))) return false;
+  const leaf = key.split(".").pop()!;
+  return !kod.includes(`"${leaf}"`) && !kod.includes(`'${leaf}'`) && !kod.includes(`(${leaf})`);
+});
+
 console.log(`${pass} poruka renderovano`);
+if (mrtvi.length) {
+  console.log(`\n${mrtvi.length} ključ(eva) se ne koristi nigde u kodu:`);
+  mrtvi.forEach((k) => console.log("  " + k));
+}
 if (failures.length) {
   console.log(`\n${failures.length} problema:`);
   failures.forEach((f) => console.log("  " + f));
