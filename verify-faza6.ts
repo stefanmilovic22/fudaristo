@@ -419,6 +419,19 @@ async function main() {
     await throwsWith("neodigran meč puca", () => runScoringForGameweek(client, GW, "admin-1"), "nije odigrano");
   }
 
+  // --- 5f2) Kolo u statusu "upcoming" sa odigranim mečevima ------------------
+  {
+    // Rezultati uneti ručno (SQL) ne menjaju gameweeks.status. Ranije je
+    // obračun to odbijao i kolo se nije moglo zaključati bez ručne izmene
+    // statusa u bazi.
+    const db = buildDb({ users: 1 });
+    db.gameweeks[0].status = "upcoming";
+    const { client } = makeMock(db);
+    const res = await runScoringForGameweek(client, GW, "admin-1");
+    eq("upcoming + odigrani mečevi se obračunava", [res.ok, res.finalized], [true, true]);
+    eq("upcoming: kolo je zaključano", db.gameweeks[0].status, "finalized");
+  }
+
   // --- 5f) Otkazan meč sme da bude prazan -----------------------------------
   {
     const db = buildDb({ users: 1, emptyFixture: true });

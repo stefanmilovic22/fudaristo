@@ -58,13 +58,13 @@ export type IngestionResult = {
 async function findDueRounds(supabase: SupabaseClient): Promise<number[]> {
   const { data: fixturesToCheck } = await supabase
     .from("fixtures")
-    .select("status, kickoff_at, gameweeks(number)")
+    .select("status, kickoff_at, gameweek:gameweek_id(number)")
     .in("status", ["scheduled", "live"]);
 
   const now = Date.now();
   const result = new Set<number>();
   for (const f of fixturesToCheck ?? []) {
-    const gw = f.gameweeks as unknown as { number: number } | null;
+    const gw = f.gameweek as unknown as { number: number } | null;
     if (!gw) continue;
     if (f.status === "live" || (f.kickoff_at && new Date(f.kickoff_at).getTime() < now)) {
       result.add(gw.number);
@@ -205,7 +205,7 @@ async function recheckPostponed(
 ): Promise<{ rechecked: number; touched: number; touchedGameweekIds: Set<string> }> {
   const { data: postponedFixtures } = await supabase
     .from("fixtures")
-    .select("id, gameweek_id, original_gameweek_id, api_thesportsdb_id, gameweeks(number)")
+    .select("id, gameweek_id, original_gameweek_id, api_thesportsdb_id, gameweek:gameweek_id(number)")
     .eq("status", "postponed");
 
   const rows = (postponedFixtures ?? []).filter((f) => f.api_thesportsdb_id);
@@ -236,7 +236,7 @@ async function recheckPostponed(
       const kickoffAt =
         parseUtcTimestamp(ev.strTimestamp) ?? parseUtcTimestamp(`${ev.dateEvent} ${ev.strTime ?? "00:00"}`);
 
-      const currentRound = (f.gameweeks as unknown as { number: number } | null)?.number ?? null;
+      const currentRound = (f.gameweek as unknown as { number: number } | null)?.number ?? null;
       const newRound = ev.intRound ? Number(ev.intRound) : null;
       const moved = newRound !== null && newRound !== currentRound;
 

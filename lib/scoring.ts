@@ -280,11 +280,18 @@ export async function runScoringForGameweek(
     .eq("id", gameweekId)
     .single();
   if (!gw) throw new Error("Kolo ne postoji.");
-  if (gw.status === "upcoming" || gw.status === "in_progress") {
-    throw new Error(
-      `Kolo ${gw.number} još nije spremno za obračun (status: ${gw.status}) — sačekaj da svi mečevi budu odigrani/otkazani.`
-    );
-  }
+  // NAMERNO nema provere gw.status ovde.
+  //
+  // Ranije je kolo u statusu "upcoming" ili "in_progress" bilo odbijeno. To je
+  // izgledalo kao razumna zaštita, ali je status polje koje menja SAMO
+  // ingestion — ako admin unese rezultate ručno (SQL, ispravka odloženog
+  // meča), mečevi su odigrani a status je i dalje "upcoming", pa se kolo nije
+  // moglo obračunati iako je sve spremno.
+  //
+  // Prava provera je stanje mečeva, i ona ionako sledi niže: svi moraju biti
+  // finished ili cancelled, svaki odigran mora imati statistiku, i sva
+  // statistika mora biti potvrđena. Te tri provere pokrivaju sve što je status
+  // trebalo da spreči, i daju konkretniju poruku o tome šta tačno fali.
 
   // Isti dnevnik kao Faza 5 (ingestion_runs) — "kind" razlikuje unos, ostatak
   // kolona se prirodno preklapa (rounds_checked = [broj kola], fixtures_touched
@@ -357,7 +364,9 @@ export async function runScoringForGameweek(
       );
     }
 
-    if (gw.status === "data_pulled") {
+    // Iz BILO KOG stanja pre finalized — ne samo iz data_pulled — da ručno
+    // unet rezultat ne ostavi kolo zauvek u "upcoming".
+    if (gw.status !== "admin_reviewed" && gw.status !== "finalized") {
       await supabase.from("gameweeks").update({ status: "admin_reviewed" }).eq("id", gameweekId);
     }
 

@@ -8,8 +8,10 @@ import {
   backfillFixtureIdsAction,
   refreshResultsAction,
   importFixturesAction,
+  skipGameweekAction,
 } from "./actions";
 import { MaintenancePanel } from "./maintenance-panel";
+import { PrepareStatsButton } from "./prepare-stats-button";
 
 /**
  * Poslovi održavanja zovu TheSportsDB sa pauzama zbog rate limita, pa im
@@ -29,6 +31,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const GW_STATUS_LABEL: Record<string, string> = {
+  skipped: "ne obračunava se",
   upcoming: "predstojeće",
   in_progress: "u toku",
   data_pulled: "podaci povučeni — čeka pregled",
@@ -73,14 +76,44 @@ export default async function AdminPage() {
     .from("v_gameweek_stat_review")
     .select("gameweek_id, total, reviewed");
 
+  // Isto, ali po MEČU — da se u spisku vidi gde je stalo, umesto samo zbira
+  // na nivou kola. "0/437" ne govori ni gde da se počne.
+  const { data: perFixture } = await supabase
+    .from("player_gameweek_stats")
+    .select("fixture_id, is_admin_reviewed")
+    .order("fixture_id");
+
+  const fixtureReview = new Map<string, { total: number; reviewed: number }>();
+  for (const row of (perFixture ?? []) as any[]) {
+    const c = fixtureReview.get(row.fixture_id) ?? { total: 0, reviewed: 0 };
+    c.total++;
+    if (row.is_admin_reviewed) c.reviewed++;
+    fixtureReview.set(row.fixture_id, c);
+  }
+
   const reviewCounts = new Map<string, { total: number; reviewed: number }>(
     (statFlags ?? []).map((s: any) => [s.gameweek_id, { total: s.total, reviewed: s.reviewed }])
   );
 
-  // Fokus panela: kola koja nisu ni upcoming ni finalized — tu treba pažnja.
-  const attentionGws = (gameweeks ?? []).filter(
-    (g) => g.status === "in_progress" || g.status === "data_pulled" || g.status === "admin_reviewed"
-  );
+  // Fokus panela: sve što nije zaključano, a ima ikakvog traga odigravanja.
+  //
+  // Ranije se gledao SAMO status kola. Problem: status menja jedino ingestion,
+  // pa kolo kom su rezultati uneti ručno ostaje "upcoming" — i tada se u
+  // panelu nije pojavljivalo UOPŠTE. Nijedan meč nije bio klikabilan, a "Sva
+  // kola" ispod su obični <span>, pa se do statistike nije moglo doći ni
+  // zaobilazno.
+  const attentionGws = (gameweeks ?? []).filter((g) => {
+    if (g.status === "finalized" || g.status === "skipped") return false;
+    if (g.status === "in_progress" || g.status === "data_pulled" || g.status === "admin_reviewed") {
+      return true;
+    }
+    // "upcoming", ali mečevi su se već odigrali (ručni unos, odloženi meč).
+    return (fixtures ?? []).some(
+      (f: any) =>
+        f.gameweek_id === g.id &&
+        (f.status === "finished" || f.status === "cancelled" || f.status === "live")
+    );
+  });
   const finalizedGws = (gameweeks ?? []).filter((g) => g.status === "finalized");
 
   return (
@@ -100,15 +133,19 @@ export default async function AdminPage() {
       <section>
         <h3 className="font-display text-lg mb-2">Kola koja traže pažnju</h3>
         {attentionGws.length === 0 ? (
-          <p className="text-slate-400 text-sm">
-            Nijedno kolo trenutno nije u toku, ne čeka pregled, niti čeka obračun.
+          <p className="text-gold-300 text-sm bg-gold-400/10 border border-gold-400/30 rounded-lg px-4 py-3">
+            Sve je obračunato. Nijedno kolo ne čeka unos statistike ni obračun poena.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
             {attentionGws.map((gw) => {
               const gwFixtures = (fixtures ?? []).filter((f: any) => f.gameweek_id === gw.id);
               return (
-                <div key={gw.id} className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
+                <div
+                  key={gw.id}
+                  id={`kolo-${gw.number}`}
+                  className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 scroll-mt-4"
+                >
                   <div className="flex items-baseline gap-3 mb-3">
                     <h4 className="font-display text-lg">Kolo {gw.number}</h4>
                     <span className="text-slate-300 text-sm">{GW_STATUS_LABEL[gw.status] ?? gw.status}</span>
@@ -134,16 +171,37 @@ export default async function AdminPage() {
                           <span className="text-slate-400 w-20 text-right">
                             {STATUS_LABEL[f.status] ?? f.status}
                           </span>
-                          {!f.worldfootball_url && (
-                            <span className="text-danger-400 text-xs">bez URL-a</span>
-                          )}
+                          {(() => {
+                            const fr = fixtureReview.get(f.id);
+                            if (!fr) {
+                              return <span className="text-slate-500 text-xs w-24 text-right">bez statistike</span>;
+                            }
+                            const done = fr.reviewed === fr.total;
+                            return (
+                              <span
+                                className={`text-xs w-24 text-right ${
+                                  done ? "text-gold-300" : "text-danger-400"
+                                }`}
+                              >
+                                {done ? "potvrđeno" : `${fr.reviewed}/${fr.total} potvrđeno`}
+                              </span>
+                            );
+                          })()}
                         </Link>
                       </li>
                     ))}
                   </ul>
 
-                  {(gw.status === "data_pulled" || gw.status === "admin_reviewed") && (
-                    <FinalizeGameweekControl gw={gw} gwFixtures={gwFixtures} reviewCounts={reviewCounts} />
+                  {/* Dugme se nudi za svako nezaključano kolo. Da li je stvarno
+                      spremno odlučuje runScoringForGameweek, po stanju mečeva —
+                      i to je jedino mesto gde ta odluka sme da živi. */}
+                  {gw.status !== "finalized" && (
+                    <FinalizeGameweekControl
+                      gw={gw}
+                      gwFixtures={gwFixtures}
+                      reviewCounts={reviewCounts}
+                      fixtureReview={fixtureReview}
+                    />
                   )}
                 </div>
               );
@@ -226,17 +284,28 @@ export default async function AdminPage() {
       <section>
         <h3 className="font-display text-lg mb-2">Sva kola</h3>
         <div className="flex gap-1.5 flex-wrap">
-          {(gameweeks ?? []).map((gw) => (
-            <span
-              key={gw.id}
-              className={`text-xs px-2.5 py-1.5 rounded-lg ${
-                gw.is_current ? "bg-gold-400 text-navy-950 font-semibold" : "bg-navy-800 text-slate-300"
-              }`}
-              title={GW_STATUS_LABEL[gw.status] ?? gw.status}
-            >
-              {gw.number}
-            </span>
-          ))}
+          {(gameweeks ?? []).map((gw) => {
+            // Kola iz gornje liste vode na svoju karticu; ostala nemaju gde.
+            const linkable = attentionGws.some((a) => a.id === gw.id);
+            const className = `text-xs px-2.5 py-1.5 rounded-lg ${
+              gw.is_current
+                ? "bg-gold-400 text-navy-950 font-semibold"
+                : linkable
+                  ? "bg-navy-700 text-chalk-50 hover:bg-navy-600 transition-colors"
+                  : "bg-navy-800 text-slate-400"
+            }`;
+            const title = GW_STATUS_LABEL[gw.status] ?? gw.status;
+
+            return linkable ? (
+              <a key={gw.id} href={`#kolo-${gw.number}`} className={className} title={title}>
+                {gw.number}
+              </a>
+            ) : (
+              <span key={gw.id} className={className} title={title}>
+                {gw.number}
+              </span>
+            );
+          })}
         </div>
       </section>
 
@@ -289,10 +358,12 @@ function FinalizeGameweekControl({
   gw,
   gwFixtures,
   reviewCounts,
+  fixtureReview,
 }: {
   gw: { id: string; number: number; status: string };
   gwFixtures: any[];
   reviewCounts: Map<string, { total: number; reviewed: number }>;
+  fixtureReview: Map<string, { total: number; reviewed: number }>;
 }) {
   const allFixturesDone =
     gwFixtures.length > 0 && gwFixtures.every((f) => f.status === "finished" || f.status === "cancelled");
@@ -300,22 +371,66 @@ function FinalizeGameweekControl({
   const allReviewed = !!rc && rc.total > 0 && rc.reviewed === rc.total;
   const ready = allFixturesDone && allReviewed;
 
+  // Odigrani mečevi bez ijednog reda statistike — njih „Pripremi statistiku"
+  // rešava jednim klikom, umesto da se URL traži i lepi za svaki posebno.
+  const finishedCount = gwFixtures.filter((f) => f.status === "finished").length;
+  const missingStats = rc ? (finishedCount > 0 && rc.total === 0 ? finishedCount : 0) : finishedCount;
+
+  const pendingFixtures = gwFixtures.filter((f) => {
+    if (f.status !== "finished") return false;
+    const fr = fixtureReview.get(f.id);
+    return !fr || fr.reviewed < fr.total;
+  });
+
   return (
-    <div className="mt-3 pt-3 border-t border-navy-700/60 flex items-center justify-between gap-3">
-      <p className="text-slate-400 text-xs">
-        {!allFixturesDone && "Čeka da svi mečevi budu odigrani ili otkazani."}
-        {allFixturesDone && !allReviewed && rc && `${rc.reviewed}/${rc.total} redova statistike potvrđeno.`}
-        {ready && "Spremno za obračun."}
-      </p>
-      <form action={finalizeGameweekAction}>
-        <input type="hidden" name="gameweekId" value={gw.id} />
-        <button
-          type="submit"
-          className="bg-gold-400 text-navy-950 font-bold text-sm px-4 py-2 rounded-lg hover:bg-gold-300 transition-colors whitespace-nowrap"
-        >
-          Obračunaj poene
-        </button>
-      </form>
+    <div className="mt-3 pt-3 border-t border-navy-700/60">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-slate-400 text-xs">
+          {!allFixturesDone && "Čeka da svi mečevi budu odigrani ili otkazani."}
+          {allFixturesDone && missingStats > 0 && `${missingStats} meč(eva) bez statistike.`}
+          {allFixturesDone && missingStats === 0 && !allReviewed && (
+            <>
+              {pendingFixtures.length} od {gwFixtures.filter((f) => f.status === "finished").length}{" "}
+              meč(eva) čeka potvrdu statistike. Otvori ih iz spiska iznad, upiši minute i golove
+              onima koji su igrali, pa „Sačuvaj i potvrdi”.
+            </>
+          )}
+          {ready && "Spremno za obračun."}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Kola odigrana pre nego što je iko imao sastav — zatvaraju se bez
+              obračuna. Nudi se samo dok poeni nisu obračunati. */}
+          <form action={skipGameweekAction}>
+            <input type="hidden" name="gameweekId" value={gw.id} />
+            <button
+              type="submit"
+              className="text-slate-400 text-xs font-semibold px-3 py-2 rounded-lg border border-navy-600 hover:text-chalk-50 hover:border-slate-500 transition-colors whitespace-nowrap"
+            >
+              Ne obračunavaj ovo kolo
+            </button>
+          </form>
+
+          <form action={finalizeGameweekAction}>
+            <input type="hidden" name="gameweekId" value={gw.id} />
+            <button
+              type="submit"
+              disabled={!ready}
+              // Onemogućeno dok kolo stvarno nije spremno. Ranije je dugme
+              // uvek bilo aktivno, pa je jedini način da se sazna šta fali bio
+              // da se klikne i pročita greška.
+              title={ready ? undefined : "Kolo još nije spremno — vidi poruku levo."}
+              className="bg-gold-400 text-navy-950 font-bold text-sm px-4 py-2 rounded-lg hover:bg-gold-300 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gold-400"
+            >
+              Obračunaj poene
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {allFixturesDone && missingStats > 0 && (
+        <PrepareStatsButton gameweekId={gw.id} missingCount={missingStats} />
+      )}
     </div>
   );
 }

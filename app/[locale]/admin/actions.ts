@@ -3,8 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-guard";
 import { createServiceRoleClient } from "@/lib/supabase/server";
+import {
+  BROWSER_HEADERS,
+  fetchReportIndex,
+  findReportUrl,
+} from "@/lib/worldfootball-fixtures";
 import { runResultsIngestion } from "@/lib/ingestion";
-import { parseWorldfootballLineup } from "@/lib/worldfootball-parser";
+import {
+  parseWorldfootballLineup,
+  extractMatchStats,
+  extractMatchStatsFromText,
+  type ExtractedMatch,
+} from "@/lib/worldfootball-parser";
 import { runScoringForGameweek } from "@/lib/scoring";
 import {
   backfillFixtureIds,
@@ -93,7 +103,7 @@ export async function pullWorldfootballAction(
   await supabase.from("fixtures").update({ worldfootball_url: url }).eq("id", fixtureId);
 
   const res = await fetch(url, {
-    headers: { "User-Agent": "Fudaristo-admin-pull/1.0 (rucno pokrenuto iz admin panela)" },
+    headers: BROWSER_HEADERS,
   });
   if (!res.ok) throw new Error(`Stranica nije dostupna (HTTP ${res.status}).`);
   const html = await res.text();
@@ -217,21 +227,38 @@ export async function saveWorldfootballStatsAction(formData: FormData) {
   }
 
   const errors: string[] = [];
-  for (const playerId of playerIds) {
-    const values: Record<string, number> = {};
-    for (const field of STAT_FIELDS) {
-      const raw = formData.get(`stats[${playerId}][${field}]`);
-      values[field] = raw === "" || raw === null ? 0 : Number(raw);
-    }
-    const clean_sheet = values.goals_conceded === 0 && values.minutes_played >= 60;
 
-    const { error } = await supabase
-      .from("player_gameweek_stats")
-      .update({ ...values, clean_sheet, is_admin_reviewed: true })
-      .eq("player_id", playerId)
-      .eq("fixture_id", fixtureId);
+  // Priprema pravi red za SVAKOG igrača oba kluba — oko 60 po meču. Red po red
+  // to je 60 uzastopnih HTTP poziva i traje neprijatno dugo; u grupama po 20
+  // paralelno je isti posao za tri kruga. Ograničenje na 20 je zato da se ne
+  // otvori šezdeset konekcija odjednom.
+  const ids = [...playerIds];
+  const CHUNK = 20;
 
-    if (error) errors.push(`${playerId}: ${error.message}`);
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const results = await Promise.all(
+      chunk.map(async (playerId) => {
+        const values: Record<string, number> = {};
+        for (const field of STAT_FIELDS) {
+          const raw = formData.get(`stats[${playerId}][${field}]`);
+          values[field] = raw === "" || raw === null ? 0 : Number(raw);
+        }
+        // Čista mreža se IZVODI, ne unosi: igrač mora da odigra bar 60 minuta
+        // i da njegov tim ne primi gol. Ručni unos tog polja bi bio još jedna
+        // prilika za grešku.
+        const clean_sheet = values.goals_conceded === 0 && values.minutes_played >= 60;
+
+        const { error } = await supabase
+          .from("player_gameweek_stats")
+          .update({ ...values, clean_sheet, is_admin_reviewed: true })
+          .eq("player_id", playerId)
+          .eq("fixture_id", fixtureId);
+
+        return error ? `${playerId}: ${error.message}` : null;
+      })
+    );
+    errors.push(...results.filter((r): r is string => r !== null));
   }
 
   if (errors.length > 0) throw new Error(`Neki redovi nisu sačuvani: ${errors.join("; ")}`);
@@ -356,4 +383,405 @@ export async function importFixturesAction(): Promise<TaskResult> {
   revalidatePath("/admin");
   revalidatePath("/raspored");
   return result;
+}
+
+// ----------------------------------------------------------------------------
+// Priprema statistike za celo kolo
+// ----------------------------------------------------------------------------
+
+export type PrepareResult = {
+  prepared: number;
+  alreadyHadStats: number;
+  seededRows: number;
+  failed: { fixture: string; reason: string }[];
+  /** Poruka ako URL-ovi nisu mogli da se povuku — priprema je svejedno gotova. */
+  urlNote?: string;
+};
+
+/**
+ * Za SVE mečeve kola koji još nemaju statistiku: nađi worldfootball izveštaj,
+ * upiši mu URL i pripremi redove za unos.
+ *
+ * Ovo zamenjuje sedam ručnih koraka (otvori worldfootball → nađi meč →
+ * kopiraj URL → otvori meč u panelu → nalepi → povuci) jednim klikom.
+ *
+ * ⚠️ NE OBRAČUNAVA POENE I NE POTVRĐUJE STATISTIKU, i to nije propust.
+ * Parser namerno ne izvlači minute, golove, asistencije ni kartone — ranija
+ * verzija je to pokušavala i pripisivala golove pogrešnim igračima (videti
+ * komentar u lib/worldfootball-parser.ts). Automatsko potvrđivanje praznih
+ * redova bi svakom igraču upisalo 0 minuta: auto-sub bi zamenio ceo tim, svi
+ * bi dobili nulu, a kolo bi se zaključalo kao da je sve u redu. Brojeve i
+ * dalje upisuje čovek, gledajući u isti izveštaj.
+ */
+export async function prepareGameweekStatsAction(gameweekId: string): Promise<PrepareResult> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: fixtures, error } = await supabase
+    .from("fixtures")
+    .select("id, gameweek_id, home_club_id, away_club_id, worldfootball_url, home:home_club_id(name), away:away_club_id(name)")
+    .eq("gameweek_id", gameweekId)
+    .eq("status", "finished");
+  if (error) throw new Error(error.message);
+
+  const result: PrepareResult = { prepared: 0, alreadyHadStats: 0, failed: [], seededRows: 0 };
+  if (!fixtures || fixtures.length === 0) return result;
+
+  const { data: existingRows } = await supabase
+    .from("player_gameweek_stats")
+    .select("fixture_id")
+    .in("fixture_id", fixtures.map((f: any) => f.id));
+  const withStats = new Set((existingRows ?? []).map((r: any) => r.fixture_id));
+
+  const todo = fixtures.filter((f: any) => !withStats.has(f.id));
+  result.alreadyHadStats = fixtures.length - todo.length;
+  if (todo.length === 0) return result;
+
+  // Svi igrači svih klubova iz ovih mečeva, jednim upitom.
+  const clubIds = [...new Set(todo.flatMap((f: any) => [f.home_club_id, f.away_club_id]))];
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, club_id")
+    .in("club_id", clubIds);
+
+  const byClub = new Map<string, { id: string; club_id: string }[]>();
+  for (const p of (players ?? []) as any[]) {
+    if (!byClub.has(p.club_id)) byClub.set(p.club_id, []);
+    byClub.get(p.club_id)!.push(p);
+  }
+
+  for (const fixture of todo) {
+    const label = `${(fixture.home as any)?.name ?? "?"} — ${(fixture.away as any)?.name ?? "?"}`;
+    const roster = [
+      ...(byClub.get(fixture.home_club_id) ?? []),
+      ...(byClub.get(fixture.away_club_id) ?? []),
+    ];
+
+    if (roster.length === 0) {
+      result.failed.push({ fixture: label, reason: "Nijedan igrač ovih klubova nije u bazi." });
+      continue;
+    }
+
+    // Jedan upsert po meču umesto reda po reda. Za 7 mečeva × ~50 igrača to je
+    // 7 poziva umesto 700 — isti razlog kao u scoring engine-u.
+    const { error: seedError } = await supabase.from("player_gameweek_stats").upsert(
+      roster.map((p) => ({
+        player_id: p.id,
+        club_id: p.club_id,
+        gameweek_id: fixture.gameweek_id,
+        fixture_id: fixture.id,
+        raw_api_data: { source: "roster", seeded_at: new Date().toISOString() },
+        is_admin_reviewed: false,
+      })),
+      { onConflict: "player_id,fixture_id", ignoreDuplicates: false }
+    );
+
+    if (seedError) {
+      result.failed.push({ fixture: label, reason: seedError.message });
+      continue;
+    }
+
+    result.prepared++;
+    result.seededRows += roster.length;
+  }
+
+  // Worldfootball URL je POGODNOST, ne uslov: admin ga otvara da gleda brojeve
+  // dok ih upisuje. Ako sajt odbije zahtev (403 sa servera je čest — blokiraju
+  // po User-Agentu i po IP opsegu), priprema je već završena i to se ovde samo
+  // prijavljuje kao napomena.
+  const needUrl = todo.filter((f: any) => !f.worldfootball_url);
+  if (needUrl.length > 0) {
+    try {
+      const index = await fetchReportIndex();
+      for (const fixture of needUrl) {
+        const found = findReportUrl(
+          index,
+          (fixture.home as any)?.name ?? "",
+          (fixture.away as any)?.name ?? ""
+        );
+        if (found.url !== null) {
+          await supabase
+            .from("fixtures")
+            .update({ worldfootball_url: found.url })
+            .eq("id", fixture.id);
+        }
+      }
+    } catch (e) {
+      result.urlNote = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  revalidatePath("/admin");
+  return result;
+}
+
+// ----------------------------------------------------------------------------
+// Preskakanje kola
+// ----------------------------------------------------------------------------
+
+/**
+ * Zatvara kolo BEZ obračuna. Za kola odigrana pre nego što je iko imao sastav
+ * — obračun bi im dodelio poene nikome, a zaključavanje kao "finalized" bi
+ * kasnije izgledalo kao da je obračun urađen pa nešto nije radilo.
+ */
+export async function skipGameweekAction(formData: FormData) {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const gameweekId = String(formData.get("gameweekId") ?? "");
+  if (!gameweekId) throw new Error("Kolo nije prosleđeno.");
+
+  const { count } = await supabase
+    .from("user_gameweek_points")
+    .select("id", { count: "exact", head: true })
+    .eq("gameweek_id", gameweekId);
+
+  if ((count ?? 0) > 0) {
+    throw new Error(
+      `Ovo kolo već ima obračunate poene za ${count} korisnika — ne može se označiti kao preskočeno.`
+    );
+  }
+
+  const { error } = await supabase
+    .from("gameweeks")
+    .update({ status: "skipped" })
+    .eq("id", gameweekId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin");
+}
+
+// ----------------------------------------------------------------------------
+// Automatsko punjenje statistike — PREGLED pa PRIMENA
+// ----------------------------------------------------------------------------
+
+export type PreviewRow = {
+  playerId: string;
+  playerName: string;
+  clubName: string;
+  minutes_played: number;
+  goals: number;
+  assists: number;
+  goals_conceded: number;
+  yellow_cards: number;
+  red_cards: number;
+  own_goals: number;
+  /** Šta je parser stvarno našao, a šta je ostalo na nuli jer nije znao. */
+  filled: boolean;
+};
+
+export type PreviewResult = {
+  rows: PreviewRow[];
+  warnings: string[];
+  homeScore: number | null;
+  awayScore: number | null;
+  matchedCount: number;
+  unmatchedPageNames: string[];
+};
+
+/**
+ * Pročita izveštaj i vrati ŠTA BI UPISAO — bez ijednog upisa u bazu.
+ *
+ * Odvojeno od primene namerno. Parser radi na strukturi stranice koju ne
+ * kontrolišemo; ako se sajt promeni ili obrazac ne odgovara, rezultat može
+ * biti prazan ili pogrešan. Pregled znači da to vidiš pre nego što uđe u
+ * bazu, umesto da otkrivaš posle obračuna.
+ */
+/**
+ * Zajedničko za oba puta (URL i nalepljen tekst): upari izvučene igrače sa
+ * našom bazom i napravi redove pregleda.
+ */
+async function buildPreview(
+  fixtureId: string,
+  extracted: ExtractedMatch
+): Promise<PreviewResult> {
+  const supabase = createServiceRoleClient();
+
+  const { data: fixture } = await supabase
+    .from("fixtures")
+    .select("home_club_id, away_club_id")
+    .eq("id", fixtureId)
+    .maybeSingle();
+  if (!fixture) throw new Error("Meč nije nađen.");
+
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, club_id, clubs(name)")
+    .in("club_id", [fixture.home_club_id, fixture.away_club_id]);
+
+  const normalize = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  const keyOf = (p: { worldfootballId: number | null; nameOnPage: string }) =>
+    p.worldfootballId !== null ? `id:${p.worldfootballId}` : `name:${p.nameOnPage.toLowerCase()}`;
+
+  const rows: PreviewRow[] = [];
+  const usedPageKeys = new Set<string>();
+
+  for (const player of (players ?? []) as any[]) {
+    const lastName = normalize(player.last_name);
+    const hit = extracted.players.find((p) => {
+      const n = normalize(p.nameOnPage);
+      return n === lastName || n.endsWith(" " + lastName) || n.includes(lastName);
+    });
+
+    const isHomeClub = player.club_id === fixture.home_club_id;
+    const resolvedMinutes = hit ? (hit.minutesPlayed === null ? 90 : hit.minutesPlayed) : 0;
+
+    // Primljeni golovi se računaju po MINUTIMA, ne kao pun rezultat meča.
+    // Igrač koji je ušao u 80. minutu pri 3:0 nije primio ta tri gola, a
+    // igrač koji je izašao u 20. nije primio one posle. Bez minuta golova to
+    // se nije moglo razlikovati; sad se može.
+    const onFrom = hit?.cameOnAt ?? 0;
+    const onUntil = hit?.cameOnAt != null ? 90 : resolvedMinutes;
+
+    let goalsConceded = 0;
+    if (resolvedMinutes > 0) {
+      const goalMinutes = extracted.goalMinutes;
+      if (goalMinutes && goalMinutes.length > 0) {
+        goalsConceded = goalMinutes.filter(
+          (g) => g.forHome === !isHomeClub && g.minute >= onFrom && g.minute <= onUntil
+        ).length;
+      } else {
+        // Bez minuta golova ostaje pun rezultat — grublje, ali vidljivo u pregledu.
+        goalsConceded = isHomeClub ? extracted.awayScore ?? 0 : extracted.homeScore ?? 0;
+      }
+    }
+
+    if (hit) usedPageKeys.add(keyOf(hit));
+
+    rows.push({
+      playerId: player.id,
+      playerName: `${player.first_name} ${player.last_name}`,
+      clubName: (player.clubs as any)?.name ?? "?",
+      minutes_played: resolvedMinutes,
+      goals: hit?.goals ?? 0,
+      assists: hit?.assists ?? 0,
+      goals_conceded: goalsConceded,
+      yellow_cards: hit?.yellowCards ?? 0,
+      red_cards: hit?.redCards ?? 0,
+      own_goals: hit?.ownGoals ?? 0,
+      filled: Boolean(hit),
+    });
+  }
+
+  return {
+    rows: rows.sort(
+      (a, b) => b.minutes_played - a.minutes_played || a.playerName.localeCompare(b.playerName, "sr")
+    ),
+    warnings: extracted.warnings,
+    homeScore: extracted.homeScore,
+    awayScore: extracted.awayScore,
+    matchedCount: usedPageKeys.size,
+    unmatchedPageNames: extracted.players
+      .filter((p) => !usedPageKeys.has(keyOf(p)))
+      .map((p) => p.nameOnPage),
+  };
+}
+
+/**
+ * Pregled iz URL-a. Radi samo ako worldfootball prihvati zahtev sa servera —
+ * često ne prihvata (HTTP 403 za data centre). Tada se koristi nalepljen tekst.
+ */
+export async function previewWorldfootballAction(
+  fixtureId: string,
+  url: string
+): Promise<PreviewResult> {
+  await requireAdmin();
+
+  if (!/^https?:\/\/(www\.)?worldfootball\.net\//.test(url)) {
+    throw new Error("To ne izgleda kao worldfootball.net URL.");
+  }
+
+  const res = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(15000) });
+  if (!res.ok) {
+    throw new Error(
+      res.status === 403
+        ? "Worldfootball odbija zahtev sa servera (HTTP 403). Otvori stranicu u pregledaču, kopiraj je celu i nalepi ispod."
+        : `Stranica nije dostupna (HTTP ${res.status}).`
+    );
+  }
+
+  return buildPreview(fixtureId, extractMatchStats(await res.text()));
+}
+
+/**
+ * Pregled iz NALEPLJENOG sadržaja.
+ *
+ * Zaobilazi blokadu potpuno: stranicu dohvata tvoj pregledač, ne naš server.
+ * Prima i HTML (ako je kopiran izvor stranice) i običan tekst (Ctrl+A, Ctrl+C
+ * sa prikazane stranice) — HTML nosi više podataka, pa se prepoznaje i koristi
+ * kad postoji.
+ */
+export async function previewPastedAction(
+  fixtureId: string,
+  pasted: string
+): Promise<PreviewResult> {
+  await requireAdmin();
+
+  const trimmed = pasted.trim();
+  if (trimmed.length < 50) {
+    throw new Error("Nalepljeni sadržaj je prekratak — kopiraj celu stranicu sa postavama.");
+  }
+
+  const looksLikeHtml = /<(table|tr|div|a\s)/i.test(trimmed);
+  const extracted = looksLikeHtml
+    ? extractMatchStats(trimmed)
+    : extractMatchStatsFromText(trimmed);
+
+  return buildPreview(fixtureId, extracted);
+}
+
+/**
+ * Upisuje pregledane vrednosti — i dalje kao NEPOTVRĐENE.
+ *
+ * Potvrda ostaje zaseban, svestan klik na formi ispod. Automatsko punjenje
+ * skraćuje kucanje, ne zamenjuje pregled: obračun i dalje traži da je čovek
+ * pogledao svaki meč.
+ */
+export async function applyWorldfootballStatsAction(fixtureId: string, rows: PreviewRow[]) {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: fixture } = await supabase
+    .from("fixtures")
+    .select("gameweek_id")
+    .eq("id", fixtureId)
+    .maybeSingle();
+  if (!fixture) throw new Error("Meč nije nađen.");
+
+  const CHUNK = 20;
+  const errors: string[] = [];
+
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const results = await Promise.all(
+      rows.slice(i, i + CHUNK).map(async (r) => {
+        const clean_sheet = r.goals_conceded === 0 && r.minutes_played >= 60;
+        const { error } = await supabase
+          .from("player_gameweek_stats")
+          .update({
+            minutes_played: r.minutes_played,
+            goals: r.goals,
+            assists: r.assists,
+            goals_conceded: r.goals_conceded,
+            yellow_cards: r.yellow_cards,
+            red_cards: r.red_cards,
+            own_goals: r.own_goals,
+            clean_sheet,
+            // NAMERNO false: popunjeno je, ali nije pregledano.
+            is_admin_reviewed: false,
+          })
+          .eq("player_id", r.playerId)
+          .eq("fixture_id", fixtureId);
+        return error ? `${r.playerName}: ${error.message}` : null;
+      })
+    );
+    errors.push(...results.filter((x): x is string => x !== null));
+  }
+
+  if (errors.length > 0) throw new Error(`Neki redovi nisu upisani: ${errors.join("; ")}`);
+
+  revalidatePath(`/admin/mecevi/${fixtureId}`);
+  revalidatePath("/admin");
+  return { written: rows.length };
 }
