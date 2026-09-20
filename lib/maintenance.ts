@@ -47,6 +47,14 @@ const DEFAULT_DELAY_MS = 1500;
  * Uparuje po PARU KLUBOVA, ne po datumu: termin se pomera (odloženi mečevi, TV
  * raspored), par se ne menja.
  *
+ * ⚠️ NE koristi se `eventsseason.php` (kao ranije) — besplatan tier na tom
+ * pozivu vraća najviše 15 događaja UKUPNO za sezonu (isto ograničenje kao kod
+ * `importFixtures`, videti napomenu tamo), što je ~2 kola od 14 klubova. Sve
+ * dalje kolo (npr. kolo 5) se nikad ne bi pojavilo u odgovoru, pa bi backfill
+ * za njega ćutke i trajno javljao "nije nađeno" bez obzira koliko puta se
+ * pokrene. Zato se ovde, kao i u `lib/ingestion.ts`, ide PO KOLU preko
+ * `eventsround.php` — jedan poziv po kolu koje stvarno ima meč bez ID-ja.
+ *
  * `apply: false` je probni prolaz — ništa se ne upisuje.
  */
 export async function backfillFixtureIds(
@@ -61,7 +69,7 @@ export async function backfillFixtureIds(
 
   const { data: fixtures, error: fxError } = await supabase
     .from("fixtures")
-    .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id");
+    .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id, gameweeks(number)");
   if (fxError) throw new Error(fxError.message);
 
   const missing = (fixtures ?? []).filter((f) => !f.api_thesportsdb_id);
@@ -72,26 +80,54 @@ export async function backfillFixtureIds(
     return { ok: true, summary: "Svi mečevi već imaju ID — nema šta da se popuni.", lines, warnings, remaining: 0 };
   }
 
-  const url = `${thesportsdbBase()}/eventsseason.php?id=${THESPORTSDB_LEAGUE_ID}&s=${THESPORTSDB_SEASON}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`TheSportsDB nije dostupan (HTTP ${res.status}).`);
-  const json = (await res.json()) as { events: TheSportsDbEvent[] | null };
-  const events = json.events ?? [];
-  lines.push(`TheSportsDB je vratio ${events.length} mečeva za sezonu ${THESPORTSDB_SEASON}.`);
+  const missingByRound = new Map<number, typeof missing>();
+  let noRound = 0;
+  for (const fx of missing) {
+    const round = (fx.gameweeks as unknown as { number: number } | null)?.number ?? null;
+    if (round === null) {
+      noRound++;
+      continue;
+    }
+    if (!missingByRound.has(round)) missingByRound.set(round, []);
+    missingByRound.get(round)!.push(fx);
+  }
+  if (noRound > 0) {
+    warnings.push(`${noRound} meč(eva) bez kola (gameweek) — preskačem, ne mogu se povezati sa API-jem po kolu.`);
+  }
+
+  const rounds = [...missingByRound.keys()].sort((a, b) => a - b);
+  lines.push(`Kola koja treba proveriti: ${rounds.join(", ") || "—"}`);
 
   const byPair = new Map<string, TheSportsDbEvent[]>();
   const unresolved = new Set<string>();
-  for (const ev of events) {
-    const home = resolveClubId(clubs ?? [], ev.strHomeTeam);
-    const away = resolveClubId(clubs ?? [], ev.strAwayTeam);
-    if (!home || !away) {
-      unresolved.add(`${ev.strHomeTeam} — ${ev.strAwayTeam}`);
+  let eventsSeen = 0;
+
+  for (let i = 0; i < rounds.length; i++) {
+    if (i > 0) await sleep(1500); // free tier: 30 poziva/min
+    const round = rounds[i];
+    const url = `${thesportsdbBase()}/eventsround.php?id=${THESPORTSDB_LEAGUE_ID}&r=${round}&s=${THESPORTSDB_SEASON}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      warnings.push(`Kolo ${round}: HTTP ${res.status} od TheSportsDB-a — preskačem.`);
       continue;
     }
-    const key = `${home}|${away}`;
-    if (!byPair.has(key)) byPair.set(key, []);
-    byPair.get(key)!.push(ev);
+    const json = (await res.json()) as { events: TheSportsDbEvent[] | null };
+    const events = json.events ?? [];
+    eventsSeen += events.length;
+
+    for (const ev of events) {
+      const home = resolveClubId(clubs ?? [], ev.strHomeTeam);
+      const away = resolveClubId(clubs ?? [], ev.strAwayTeam);
+      if (!home || !away) {
+        unresolved.add(`${ev.strHomeTeam} — ${ev.strAwayTeam}`);
+        continue;
+      }
+      const key = `${home}|${away}`;
+      if (!byPair.has(key)) byPair.set(key, []);
+      byPair.get(key)!.push(ev);
+    }
   }
+  lines.push(`TheSportsDB je vratio ${eventsSeen} meč(eva) za proverena kola.`);
 
   if (unresolved.size > 0) {
     warnings.push(
@@ -114,9 +150,10 @@ export async function backfillFixtureIds(
 
     let chosen = candidates[0];
     if (candidates.length > 1) {
-      // Isti par se u sezoni pojavljuje jednom po smeru, pa je ovo neočekivano
-      // (duplikat u izvoru ili plej-of susret). Bira se najbliži termin, ali se
-      // slučaj PRIJAVLJUJE umesto da se ćutke pogodi.
+      // Isti par se u jednom kolu pojavljuje najviše jednom po smeru, pa je
+      // ovo neočekivano (duplikat u izvoru ili plej-of susret gde se parovi
+      // ponavljaju). Bira se najbliži termin, ali se slučaj PRIJAVLJUJE
+      // umesto da se ćutke pogodi.
       const target = new Date(fx.kickoff_at).getTime();
       chosen = candidates.reduce((best, ev) => {
         const evTime = new Date(ev.strTimestamp ?? ev.dateEvent).getTime();

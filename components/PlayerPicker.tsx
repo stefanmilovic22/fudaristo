@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  BUDGET_LOCK_REASON,
   POSITIONS,
   POSITION_LABELS,
   formatEUR,
@@ -216,7 +217,15 @@ export function PlayerPicker({
               <span className="shrink-0 text-right">
                 <span className="block font-semibold">{formatEUR(p.price)}</span>
                 {reason && !chosen && (
-                  <span className="block text-[10px] text-slate-400">{reason}</span>
+                  <span
+                    className={`block text-[10px] ${
+                      reason === BUDGET_LOCK_REASON
+                        ? "text-danger-400 font-semibold"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {reason}
+                  </span>
                 )}
               </span>
             </button>

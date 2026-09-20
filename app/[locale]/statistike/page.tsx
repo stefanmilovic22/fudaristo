@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StatsBoard, type StatsData } from "./stats-board";
 import { DataLoadError } from "@/components/DataLoadError";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { playerFullName } from "@/lib/fantasy-rules";
 
 /**
  * Faza 9 — top liste. Sve dolazi iz view-ova napisanih još u schema.sql
@@ -76,7 +77,7 @@ export default async function StatistikePage({
   const data: StatsData = {
     byPosition: (byPosition.data ?? []).map((r: any) => ({
       id: r.id,
-      name: `${r.first_name} ${r.last_name}`,
+      name: playerFullName(r),
       position: r.position,
       clubName: r.club_name,
       value: r.total_points,
@@ -88,7 +89,7 @@ export default async function StatistikePage({
       .filter((r: any) => Number(r.total_goals) > 0)
       .map((r: any) => ({
         id: r.id,
-        name: `${r.first_name} ${r.last_name}`,
+        name: playerFullName(r),
         clubName: r.club_name,
         value: Number(r.total_goals),
       })),
@@ -96,7 +97,7 @@ export default async function StatistikePage({
       .filter((r: any) => Number(r.total_assists) > 0)
       .map((r: any) => ({
         id: r.id,
-        name: `${r.first_name} ${r.last_name}`,
+        name: playerFullName(r),
         clubName: r.club_name,
         value: Number(r.total_assists),
       })),

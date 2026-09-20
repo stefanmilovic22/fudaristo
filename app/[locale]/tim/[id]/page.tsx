@@ -95,7 +95,7 @@ export default async function TimPage({
 
   const entries = (squadRows as any[]).map((r) => ({
     id: r.player_id,
-    lastName: r.players?.last_name ?? "?",
+    lastName: r.players?.last_name || r.players?.first_name || "?",
     position: r.players?.position ?? "MID",
     short: r.players?.clubs?.short_name ?? "?",
     color: r.players?.clubs?.primary_color ?? "#8494AC",

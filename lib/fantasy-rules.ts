@@ -12,6 +12,13 @@
 // igrača, formacije ili max-po-klubu — promeni na OBA mesta.
 // ============================================================================
 
+/**
+ * Razlog blokade koji PlayerPicker ističe crvenom bojom (umesto obične sive) —
+ * jedini od kojih korisnik može ostati "zaglavljen" bez rešenja bez skidanja
+ * već izabranog igrača, pa mora biti upadljiviji od "Preskup" i sličnih.
+ */
+export const BUDGET_LOCK_REASON = "Ne bi ostalo za ostatak tima";
+
 export type Position = "GK" | "DEF" | "MID" | "FWD";
 
 export const POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
@@ -452,5 +459,13 @@ export function formatEUR(millions: number): string {
 }
 
 export function playerFullName(p: { first_name: string; last_name: string }): string {
-  return `${p.first_name} ${p.last_name}`;
+  return p.last_name ? `${p.first_name} ${p.last_name}` : p.first_name;
+}
+
+/**
+ * Prezime za pločicu na dresu. Igrači koji nastupaju pod jednim imenom (npr.
+ * Taison) imaju prazan last_name — bez ovoga bi im pločica ostala prazna.
+ */
+export function playerShirtName(p: { first_name: string; last_name: string }): string {
+  return p.last_name || p.first_name;
 }

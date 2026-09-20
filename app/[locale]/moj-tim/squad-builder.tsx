@@ -8,6 +8,7 @@ import { Bench, Pitch, PitchRow } from "@/components/Pitch";
 import { EmptySlot, Jersey } from "@/components/Jersey";
 import { PlayerPicker } from "@/components/PlayerPicker";
 import {
+  BUDGET_LOCK_REASON,
   MAX_PLAYERS_PER_CLUB,
   POSITIONS,
   FORMATIONS,
@@ -21,6 +22,7 @@ import {
   buildSquadOrder,
   formatEUR,
   playerFullName,
+  playerShirtName,
   validateFullSquad,
   validateStartingXI,
   type Position,
@@ -136,7 +138,7 @@ export function SquadBuilder({
     if (countByClub(p.club_id) >= MAX_PLAYERS_PER_CLUB) return tCommon("maxFromClub");
     if (p.price > remaining + 1e-9) return "Preskup";
     if (spent + p.price + affordability.minCostAfterAdding(p) > budgetAvailable + 1e-9) {
-      return "Ne bi ostalo za ostatak tima";
+      return BUDGET_LOCK_REASON;
     }
     return null;
   }
@@ -592,7 +594,7 @@ function SquadStep({
                 <Jersey
                   key={p.id}
                   color={p.club_color}
-                  name={p.last_name}
+                  name={playerShirtName(p)}
                   detail={formatEUR(p.price)}
                   initials={p.club_short}
                   flag={p.status !== "available" ? p.status : null}
@@ -659,7 +661,7 @@ function LineupStep({
     <Jersey
       key={p.id}
       color={p.club_color}
-      name={p.last_name}
+      name={playerShirtName(p)}
       detail={formatEUR(p.price)}
       initials={p.club_short}
       flag={p.status !== "available" ? p.status : null}

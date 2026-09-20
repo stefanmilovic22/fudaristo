@@ -17,6 +17,7 @@ import {
   STARTING_XI_SIZE,
   formatEUR,
   playerFullName,
+  playerShirtName,
   type SelectablePlayer,
 } from "@/lib/fantasy-rules";
 
@@ -509,7 +510,7 @@ export function MyTeam({
     <Jersey
       key={s.key}
       color={s.current.club_color}
-      name={s.current.last_name}
+      name={playerShirtName(s.current)}
       detail={
         s.replacement
           ? "novi"
@@ -556,7 +557,7 @@ export function MyTeam({
               </span>
               <span className="text-slate-400 text-xs ml-1.5">
                 (kasa {formatEUR(budgetNow)} + {formatEUR(refundForActive)} za{" "}
-                {activeSlot.current.last_name})
+                {playerShirtName(activeSlot.current)})
               </span>
             </span>
           ) : (
@@ -737,9 +738,9 @@ function PendingPanel({
         {pending.map((row) => (
           <li key={row.key} className="bg-navy-700/60 rounded-lg px-3 py-2 text-sm">
             <div className="flex items-center gap-2">
-              <span className="text-slate-400 line-through truncate">{row.out.last_name}</span>
+              <span className="text-slate-400 line-through truncate">{playerShirtName(row.out)}</span>
               <span className="text-slate-500">→</span>
-              <span className="truncate font-semibold">{row.in.last_name}</span>
+              <span className="truncate font-semibold">{playerShirtName(row.in)}</span>
               <span className="ml-auto shrink-0 text-slate-300">
                 {row.outPrice >= row.in.price ? "+" : "−"}
                 {formatEUR(Math.abs(row.outPrice - row.in.price))}

@@ -100,13 +100,16 @@ function seasonEvents() {
 async function main() {
   // === 1) Backfill: probni prolaz ne sme ništa da upiše =====================
   {
-    stubFetch({ eventsseason: seasonEvents() });
+    // Ide po kolu (eventsround.php), ne po sezoni (eventsseason.php je
+    // ograničen na 15 događaja i ne bi video kasnija kola — videti napomenu
+    // u lib/maintenance.ts).
+    stubFetch({ eventsround: seasonEvents() });
     const db: DB = {
       clubs: CLUBS,
       fixtures: [
-        { id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "2026-09-01T18:00:00Z", api_thesportsdb_id: null },
-        { id: "fx-2", home_club_id: "club-irk", away_club_id: "club-oly", kickoff_at: "2026-09-08T18:00:00Z", api_thesportsdb_id: null },
-        { id: "fx-3", home_club_id: "club-oly", away_club_id: "club-pao", kickoff_at: "2027-02-01T18:00:00Z", api_thesportsdb_id: "9999" },
+        { id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "2026-09-01T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 1 } },
+        { id: "fx-2", home_club_id: "club-irk", away_club_id: "club-oly", kickoff_at: "2026-09-08T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 1 } },
+        { id: "fx-3", home_club_id: "club-oly", away_club_id: "club-pao", kickoff_at: "2027-02-01T18:00:00Z", api_thesportsdb_id: "9999", gameweeks: { number: 20 } },
       ],
     };
     const res = await backfillFixtureIds(makeMock(db), { apply: false });
@@ -117,12 +120,12 @@ async function main() {
 
   // === 2) Backfill: --apply upisuje, i to preko ALIASA ======================
   {
-    stubFetch({ eventsseason: seasonEvents() });
+    stubFetch({ eventsround: seasonEvents() });
     const db: DB = {
       clubs: CLUBS,
       fixtures: [
-        { id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "2026-09-01T18:00:00Z", api_thesportsdb_id: null },
-        { id: "fx-2", home_club_id: "club-irk", away_club_id: "club-oly", kickoff_at: "2026-09-08T18:00:00Z", api_thesportsdb_id: null },
+        { id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "2026-09-01T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 1 } },
+        { id: "fx-2", home_club_id: "club-irk", away_club_id: "club-oly", kickoff_at: "2026-09-08T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 2 } },
       ],
     };
     const res = await backfillFixtureIds(makeMock(db), { apply: true });
@@ -135,11 +138,11 @@ async function main() {
   {
     // Isti par klubova u oba smera — mora da uzme onaj sa ispravnim domaćinom,
     // ne "najbliži datum".
-    stubFetch({ eventsseason: seasonEvents() });
+    stubFetch({ eventsround: seasonEvents() });
     const db: DB = {
       clubs: CLUBS,
       fixtures: [
-        { id: "fx-back", home_club_id: "club-oly", away_club_id: "club-pao", kickoff_at: "2027-02-01T18:00:00Z", api_thesportsdb_id: null },
+        { id: "fx-back", home_club_id: "club-oly", away_club_id: "club-pao", kickoff_at: "2027-02-01T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 20 } },
       ],
     };
     await backfillFixtureIds(makeMock(db), { apply: true });
@@ -148,10 +151,29 @@ async function main() {
 
   // === 4) Backfill: nema šta da se radi ====================================
   {
-    stubFetch({ eventsseason: seasonEvents() });
-    const db: DB = { clubs: CLUBS, fixtures: [{ id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "x", api_thesportsdb_id: "1001" }] };
+    stubFetch({ eventsround: seasonEvents() });
+    const db: DB = { clubs: CLUBS, fixtures: [{ id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "x", api_thesportsdb_id: "1001", gameweeks: { number: 1 } }] };
     const res = await backfillFixtureIds(makeMock(db), { apply: true });
     ok("prazan posao se prijavi jasno", res.summary.includes("nema šta"));
+  }
+
+  // === 4b) Backfill: kolo bez ijednog nedostajućeg ID-ja se ne pita API-ju ===
+  // (regresija za bag koji je prijavljen: kolo 5 se nikad nije backfill-ovalo
+  // jer je stari kod tražio SVE mečeve sezone jednim pozivom na
+  // eventsseason.php, koji besplatan tier seče na 15 događaja — otprilike 2
+  // kola od 14 klubova. Kolo 5 se u tom odgovoru nikad ne bi pojavilo.)
+  {
+    stubFetch({ eventsround: seasonEvents() });
+    const db: DB = {
+      clubs: CLUBS,
+      fixtures: [
+        { id: "fx-1", home_club_id: "club-pao", away_club_id: "club-oly", kickoff_at: "2026-09-01T18:00:00Z", api_thesportsdb_id: "1001", gameweeks: { number: 1 } },
+        { id: "fx-2", home_club_id: "club-irk", away_club_id: "club-oly", kickoff_at: "2026-09-08T18:00:00Z", api_thesportsdb_id: null, gameweeks: { number: 5 } },
+      ],
+    };
+    const res = await backfillFixtureIds(makeMock(db), { apply: true });
+    eq("kolo 5 se upari iako je iza kola 1", db.fixtures[1].api_thesportsdb_id, "1003");
+    ok("proverena su samo kola sa nedostajućim ID-jem", res.lines.some((l) => l.includes("Kola koja treba proveriti: 5")));
   }
 
   // === 5) refreshResults: porcije i "ostalo još" ============================
