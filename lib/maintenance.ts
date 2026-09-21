@@ -69,7 +69,7 @@ export async function backfillFixtureIds(
 
   const { data: fixtures, error: fxError } = await supabase
     .from("fixtures")
-    .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id, gameweeks(number)");
+        .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id, gameweeks!gameweek_id(number)");
   if (fxError) throw new Error(fxError.message);
 
   const missing = (fixtures ?? []).filter((f) => !f.api_thesportsdb_id);

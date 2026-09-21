@@ -27,7 +27,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
     .from("fixtures")
     .select(
       "id, gameweek_id, kickoff_at, status, home_score, away_score, worldfootball_url, home_club_id, away_club_id, " +
-        "home:home_club_id(name), away:away_club_id(name), gameweek:gameweek_id(number)"
+        "home:home_club_id(name), away:away_club_id(name), gameweeks!gameweek_id(number)"
     )
     .eq("id", fixtureId)
     .maybeSingle()) as any;
