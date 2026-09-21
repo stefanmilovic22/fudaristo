@@ -1,4 +1,3 @@
-import { Link } from "@/i18n/navigation";
 import { getAdminAccess } from "@/lib/admin-guard";
 import { AdminAccessDenied } from "@/components/AdminAccessDenied";
 import { updateFixtureScoreAction, saveWorldfootballStatsAction } from "../../actions";
@@ -14,71 +13,20 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
   if (!access.ok) return <AdminAccessDenied access={access} />;
   const { supabase } = access;
 
-/**
- * ⚠️ `gameweek:gameweek_id(...)` — NE `gameweeks(...)`.
- *
- * fixtures ima DVA strana ključa ka gameweeks: `gameweek_id` (kolo u kom se
- * meč igra) i `original_gameweek_id` (kolo u kom je TREBALO da se igra, za
- * odložene). PostgREST zbog toga ne ume da razreši kratki oblik i vraća
- * PGRST201 — "more than one relationship was found". Isti razlog zbog kog
- * klubovi već idu kao home:home_club_id(...) i away:away_club_id(...).
- */
-  const { data: fixture, error: fixtureError } = (await supabase
+  const { data: fixture } = (await supabase
     .from("fixtures")
     .select(
       "id, gameweek_id, kickoff_at, status, home_score, away_score, worldfootball_url, home_club_id, away_club_id, " +
+        // fixtures ima DVA FK-a ka gameweeks (gameweek_id i original_gameweek_id) —
+        // "gameweeks!gameweek_id" pinuje embed na pravu kolonu, inače PostgREST
+        // baca "more than one relationship was found".
         "home:home_club_id(name), away:away_club_id(name), gameweeks!gameweek_id(number)"
     )
     .eq("id", fixtureId)
-    .maybeSingle()) as any;
+    .single()) as any;
 
-  if (fixtureError || !fixture) {
-    // Ranije je ovde pisalo samo "Meč nije nađen" — i kad meč postoji, a upit
-    // je pao iz sasvim drugog razloga (zastarela shema u PostgREST-u, pogrešan
-    // ključ, nevažeći UUID u adresi). Poruka je gađala pogrešan uzrok i nije
-    // se imalo šta dalje raditi s njom.
-    console.error("[/admin/mecevi]", { fixtureId, fixtureError });
-
-    const looksLikeUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fixtureId);
-
-    return (
-      <div className="max-w-2xl flex flex-col gap-4">
-        <h2 className="font-display text-2xl">Meč se ne može otvoriti</h2>
-
-        {fixtureError ? (
-          <div className="bg-navy-800 border border-danger-400/40 rounded-lg p-5 text-sm">
-            <p className="text-danger-400 font-semibold mb-2">Upit je pao.</p>
-            <p className="text-slate-300 leading-relaxed">{fixtureError.message}</p>
-            {fixtureError.code && (
-              <p className="text-slate-400 text-xs mt-2">Kod: {fixtureError.code}</p>
-            )}
-            <p className="text-slate-500 text-xs mt-3 leading-relaxed">
-              Ako poruka pominje vezu između tabela (relationship, PGRST200), Supabase-u je
-              zastarela shema posle migracije. Pokreni u SQL Editor-u:{" "}
-              <code className="text-slate-400">notify pgrst, &apos;reload schema&apos;;</code>
-            </p>
-          </div>
-        ) : (
-          <div className="bg-navy-800 border border-navy-600 rounded-lg p-5 text-sm">
-            <p className="text-slate-300 leading-relaxed">
-              Upit je prošao, ali meč sa ovim ID-jem ne postoji u bazi. Najčešće znači da je
-              obrisan, ili da je link star.
-            </p>
-            {!looksLikeUuid && (
-              <p className="text-danger-400 mt-2">
-                Uz to, ovo ne liči na UUID — verovatno je adresa pogrešna.
-              </p>
-            )}
-            <p className="text-slate-500 text-xs mt-3 break-all">ID iz adrese: {fixtureId}</p>
-          </div>
-        )}
-
-        <Link href="/admin" className="text-gold-300 font-semibold text-sm">
-          ← Nazad na admin panel
-        </Link>
-      </div>
-    );
+  if (!fixture) {
+    return <p className="text-danger-400">Meč nije nađen.</p>;
   }
 
   const { data: statRows } = await supabase
@@ -97,7 +45,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
   });
 
   const allReviewed = rows.length > 0 && rows.every((r: any) => r.is_admin_reviewed);
-  const gwNumber = (fixture.gameweek as unknown as { number: number } | null)?.number;
+  const gwNumber = (fixture.gameweeks as unknown as { number: number } | null)?.number;
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -108,16 +56,10 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
         <p className="text-slate-400 text-sm">
           Kolo {gwNumber} · {new Date(fixture.kickoff_at).toLocaleString("sr-RS")}
         </p>
-        {rows.length === 0 && (
-          <p className="text-slate-300 text-sm mt-3 bg-navy-800 border border-navy-600 rounded-lg px-3 py-2">
-            Rezultat meča i statistika igrača su dve različite stvari. Obračun poena čita
-            statistiku, pa se kolo ne može zaključati dok je ne uneseš — sekcija je ispod.
-          </p>
-        )}
       </div>
 
       <section className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
-        <h3 className="font-display text-lg mb-3">Rezultat i status meča</h3>
+        <h3 className="font-display text-lg mb-3">Rezultat i status</h3>
         <form action={updateFixtureScoreAction} className="flex flex-wrap items-end gap-3">
           <input type="hidden" name="fixtureId" value={fixture.id} />
           <label className="flex flex-col gap-1 text-sm">
@@ -174,13 +116,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
       {rows.length > 0 && (
         <section className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
           <div className="flex items-baseline justify-between mb-3">
-            <div>
-              <h3 className="font-display text-lg">Statistika igrača</h3>
-              <p className="text-slate-400 text-xs mt-0.5">
-                Popuni samo one koji su igrali. Ostali ostaju na 0 minuta i dobijaju 0 poena —
-                to je tačno, ne propust. Čista mreža se računa sama (60+ minuta bez primljenog gola).
-              </p>
-            </div>
+            <h3 className="font-display text-lg">Statistika igrača</h3>
             <span className={`text-xs ${allReviewed ? "text-gold-300" : "text-slate-400"}`}>
               {allReviewed ? "potvrđeno" : "čeka potvrdu"}
             </span>

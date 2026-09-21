@@ -609,7 +609,7 @@ export function MyTeam({
         </div>
 
         <Pitch>
-          <div className="flex flex-col gap-3 xs:gap-4 sm:gap-7">
+          <div className="flex flex-col gap-2 xs:gap-3 sm:gap-4">
             {rows.map((row, i) => (
               <PitchRow key={i}>{row.map((s) => renderSlot(s, true))}</PitchRow>
             ))}
@@ -769,18 +769,28 @@ function PendingPanel({
   );
 }
 
+/**
+ * Sažeto u <details> — ovo je pomoć za PRVI put, ne nešto što svaki povratni
+ * korisnik treba da gleda na svakom ekranu. Bez ovoga je desna kolona duža
+ * od samog terena, pa "Moj klub" nikad ne bi mogao da stane u jedan ekran
+ * (videti razgovor: cilj je bio uklopiti stranicu, po uzoru na FPL).
+ */
 function HelpPanel({ swapping }: { swapping: boolean }) {
   const t = useTranslations("team");
-  const locale = useLocale();
   return (
-    <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 text-sm">
-      <h3 className="font-display text-lg mb-2">{t("howToChange")}</h3>
-      {swapping ? (
-        <p className="text-slate-300 mb-3">{t("swapHelpActive")}</p>
-      ) : (
-        <p className="text-slate-300 mb-3">{t("swapHelpIdle")}</p>
-      )}
-      <p className="text-slate-300">{t("transferHelp")}</p>
-    </div>
+    <details className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 text-sm group">
+      <summary className="font-display text-base cursor-pointer select-none list-none flex items-center justify-between">
+        {t("howToChange")}
+        <span className="text-slate-400 text-xs group-open:rotate-180 transition-transform">▾</span>
+      </summary>
+      <div className="mt-2">
+        {swapping ? (
+          <p className="text-slate-300 mb-3">{t("swapHelpActive")}</p>
+        ) : (
+          <p className="text-slate-300 mb-3">{t("swapHelpIdle")}</p>
+        )}
+        <p className="text-slate-300">{t("transferHelp")}</p>
+      </div>
+    </details>
   );
 }

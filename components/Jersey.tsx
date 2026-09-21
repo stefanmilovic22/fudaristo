@@ -50,6 +50,13 @@ export type JerseyProps = {
   active?: boolean;
   /** Prigušen — npr. ne može da uđe u zamenu sa aktivnim igračem. */
   dimmed?: boolean;
+  /**
+   * Manji dres — koristi ga "Moj klub" (11+4 igrača na jednom ekranu, sa C/V
+   * dugmićima ispod svakog na terenu, brzo naraste u visinu). Squad builder i
+   * teren na početnoj strani ostaju na punoj veličini — tamo je manje dresova
+   * odjednom pa čitljivost ide ispred uštede prostora.
+   */
+  compact?: boolean;
   onRemove?: () => void;
   onClick?: () => void;
   onCaptain?: () => void;
@@ -68,6 +75,7 @@ export function Jersey({
   positionLabel,
   active,
   dimmed,
+  compact,
   onRemove,
   onClick,
   onCaptain,
@@ -76,14 +84,29 @@ export function Jersey({
   const t = useTranslations("pitch");
   const ink = readableInk(color);
 
+  const containerWidth = compact
+    ? "w-[38px] xs:w-[44px] sm:w-[48px] md:w-[52px]"
+    : "w-[54px] xs:w-[62px] sm:w-[72px] md:w-[76px]";
+  const buttonWidth = compact
+    ? "w-[30px] xs:w-[34px] sm:w-[38px] md:w-[40px]"
+    : "w-[44px] xs:w-[50px] sm:w-[56px] md:w-[58px]";
+  const badgeSize = compact ? "w-3.5 h-3.5 sm:w-4 sm:h-4" : "w-4 h-4 sm:w-[18px] sm:h-[18px]";
+  const badgeText = compact ? "text-[8px]" : "text-[9px] sm:text-[10px]";
+  const toggleSize = compact ? "w-3.5 h-3.5 sm:w-4 sm:h-4" : "w-[18px] h-[18px] sm:w-5 sm:h-5";
+  const tileText = compact ? "text-[8px]" : "text-[9px] sm:text-[11px]";
+  const tileTextDetail = compact ? "text-[8px]" : "text-[9px] sm:text-[10px]";
+  const tilePad = compact ? "py-[1px]" : "py-[2px] sm:py-[3px]";
+
   return (
     <div
-      className={`relative w-[54px] xs:w-[62px] sm:w-[72px] md:w-[76px] flex flex-col items-center transition-opacity ${
+      className={`relative ${containerWidth} flex flex-col items-center transition-opacity ${
         dimmed ? "opacity-35" : ""
       }`}
     >
       {positionLabel && (
-        <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+        <span
+          className={`mb-1 ${compact ? "text-[8px]" : "text-[9px]"} font-bold uppercase tracking-wider text-slate-400`}
+        >
           {positionLabel}
         </span>
       )}
@@ -93,7 +116,7 @@ export function Jersey({
         onClick={onClick}
         disabled={!onClick}
         aria-label={name ? `${name}${detail ? `, ${detail}` : ""}` : t("player")}
-        className={`relative block w-[44px] xs:w-[50px] sm:w-[56px] md:w-[58px] rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
+        className={`relative block ${buttonWidth} rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
           onClick ? "hover:-translate-y-0.5 cursor-pointer" : "cursor-default"
         } ${active ? "-translate-y-1" : ""}`}
       >
@@ -111,7 +134,7 @@ export function Jersey({
               x="50"
               y="52"
               textAnchor="middle"
-              fontSize="22"
+              fontSize={compact ? "15" : "22"}
               fontWeight="700"
               fill={ink}
               opacity="0.85"
@@ -133,14 +156,14 @@ export function Jersey({
         <span
           title={t("goalkeeper")}
           aria-hidden
-          className="absolute -top-1 -left-1 w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full bg-gold-400 text-navy-950 text-[9px] sm:text-[10px] font-bold grid place-items-center ring-2 ring-navy-950"
+          className={`absolute -top-1 -left-1 ${badgeSize} rounded-full bg-gold-400 text-navy-950 ${badgeText} font-bold grid place-items-center ring-2 ring-navy-950`}
         >
           GK
         </span>
       )}
 
-      {isCaptain && <Armband label="C" tone="gold" />}
-      {!isCaptain && isViceCaptain && <Armband label="V" tone="chalk" />}
+      {isCaptain && <Armband label="C" tone="gold" size={badgeSize} text={badgeText} />}
+      {!isCaptain && isViceCaptain && <Armband label="V" tone="chalk" size={badgeSize} text={badgeText} />}
 
       {flag && (
         <span
@@ -154,26 +177,30 @@ export function Jersey({
           type="button"
           onClick={onRemove}
           aria-label={name ? t("remove", { name }) : t("removeGeneric")}
-          className="absolute -top-1.5 -right-1 w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full bg-navy-950 border border-slate-500 text-slate-300 text-[10px] sm:text-[11px] leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300"
+          className={`absolute -top-1.5 -right-1 ${toggleSize} rounded-full bg-navy-950 border border-slate-500 text-slate-300 ${badgeText} leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300`}
         >
           ×
         </button>
       )}
 
-      <div className="w-full mt-1 rounded-t-[3px] bg-chalk-50 text-navy-950 text-[9px] sm:text-[11px] font-semibold leading-tight px-0.5 sm:px-1 py-[2px] sm:py-[3px] text-center truncate">
+      <div
+        className={`w-full mt-1 rounded-t-[3px] bg-chalk-50 text-navy-950 ${tileText} font-semibold leading-tight px-0.5 sm:px-1 ${tilePad} text-center truncate`}
+      >
         {name ?? "—"}
       </div>
-      <div className="w-full rounded-b-[3px] bg-navy-950/85 text-chalk-50 text-[9px] sm:text-[10px] leading-tight px-0.5 sm:px-1 py-[2px] sm:py-[3px] text-center truncate">
+      <div
+        className={`w-full rounded-b-[3px] bg-navy-950/85 text-chalk-50 ${tileTextDetail} leading-tight px-0.5 sm:px-1 ${tilePad} text-center truncate`}
+      >
         {detail ?? ""}
       </div>
 
       {(onCaptain || onViceCaptain) && (
-        <div className="flex gap-1 mt-1">
+        <div className={`flex gap-1 ${compact ? "mt-0.5" : "mt-1"}`}>
           {onCaptain && (
             <button
               type="button"
               onClick={onCaptain}
-              className={`w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold border transition-colors ${
+              className={`${toggleSize} rounded-full ${badgeText} font-bold border transition-colors ${
                 isCaptain
                   ? "bg-gold-400 text-navy-950 border-gold-400"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-gold-400"
@@ -187,7 +214,7 @@ export function Jersey({
             <button
               type="button"
               onClick={onViceCaptain}
-              className={`w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold border transition-colors ${
+              className={`${toggleSize} rounded-full ${badgeText} font-bold border transition-colors ${
                 isViceCaptain
                   ? "bg-chalk-50 text-navy-950 border-chalk-50"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-chalk-50"
@@ -203,10 +230,20 @@ export function Jersey({
   );
 }
 
-function Armband({ label, tone }: { label: string; tone: "gold" | "chalk" }) {
+function Armband({
+  label,
+  tone,
+  size,
+  text,
+}: {
+  label: string;
+  tone: "gold" | "chalk";
+  size: string;
+  text: string;
+}) {
   return (
     <span
-      className={`absolute -top-1.5 -left-1 w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center border-2 border-navy-950 ${
+      className={`absolute -top-1.5 -left-1 ${size} rounded-full ${text} font-bold flex items-center justify-center border-2 border-navy-950 ${
         tone === "gold" ? "bg-gold-400 text-navy-950" : "bg-chalk-50 text-navy-950"
       }`}
     >

@@ -24,7 +24,21 @@
     "ctaNew": "Create your club",
     "ctaBuild": "Build your squad",
     "ctaOpen": "Open your club",
-    "ctaLeague": "League table"
+    "ctaLeague": "League table",
+    "howItWorksTitle": "How it works",
+    "step1Title": "Build your squad",
+    "step1Body": "Pick 15 players on a 100M budget — a real transfer window.",
+    "step2Title": "Choose a captain",
+    "step2Body": "Your captain scores double. Set your starting XI before the deadline.",
+    "step3Title": "Track the points",
+    "step3Body": "Watch your team score from real Greek Super League matches.",
+    "deadlineLabel": "Squad deadline — Gameweek {number}",
+    "countdown": {
+      "days": "d",
+      "hours": "h",
+      "minutes": "m",
+      "seconds": "s"
+    }
   },
   "auth": {
     "loginTitle": "Log in",
@@ -131,6 +145,8 @@
     "details": "Details",
     "hint": "Hint",
     "staleSchema": "If the message mentions a relationship between tables (relationship, PGRST200), Supabase has a stale schema cache after a migration. Run in the SQL Editor: notify pgrst, 'reload schema';",
+    "friendly": "Try refreshing the page in a moment.",
+    "showTechnical": "Technical details",
     "whatFixtures": "the fixtures",
     "whatLeague": "the league table",
     "whatStats": "the stats"
@@ -216,6 +232,7 @@
     "teamNamePlaceholder": "e.g. Olimpos United",
     "teamColor": "Club colour",
     "pickColor": "Pick colour {color}",
+    "customColor": "Custom colour",
     "favoriteClub": "Favourite club",
     "createClub": "Create club",
     "creatingClub": "Creating club…",

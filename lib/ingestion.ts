@@ -56,6 +56,11 @@ export type IngestionResult = {
 
 /** Kola koja imaju bar jedan scheduled/live meč čiji je kickoff već prošao. */
 async function findDueRounds(supabase: SupabaseClient, errors: string[]): Promise<number[]> {
+  // "gameweeks!gameweek_id(...)" — fixtures ima DVA FK-a ka gameweeks
+  // (gameweek_id i original_gameweek_id), pa bez ovoga PostgREST ne zna koji
+  // od njih da koristi za embed i baca "more than one relationship was
+  // found". Bez provere greške ovde bi `data` ćutke ispao null → prazan niz
+  // kola za proveru → ingestion NIKAD ne bi našao nijedno dospelo kolo.
   const { data: fixturesToCheck, error } = await supabase
     .from("fixtures")
     .select("status, kickoff_at, gameweeks!gameweek_id(number)")
@@ -207,7 +212,7 @@ async function recheckPostponed(
   supabase: SupabaseClient,
   errors: string[]
 ): Promise<{ rechecked: number; touched: number; touchedGameweekIds: Set<string> }> {
-    const { data: postponedFixtures, error: postponedError } = await supabase
+  const { data: postponedFixtures, error: postponedError } = await supabase
     .from("fixtures")
     .select("id, gameweek_id, original_gameweek_id, api_thesportsdb_id, gameweeks!gameweek_id(number)")
     .eq("status", "postponed");

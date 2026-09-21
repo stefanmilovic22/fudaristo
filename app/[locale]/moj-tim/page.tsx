@@ -196,12 +196,22 @@ export default async function MojTimPage({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="font-display text-2xl">Moj klub</h2>
+      {/* Sažet zaglavni red umesto odvojenog naslova + velike TeamBadge
+          kartice — po uzoru na FPL-ov "Pick Team" vrh, koji ime tima i
+          identitet drži u jednoj tankoj traci da ostane mesta za teren. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-sm"
+            style={{ backgroundColor: profile?.team_color ?? "#E8B33D" }}
+          >
+            {(profile?.team_name ?? "??").slice(0, 2).toUpperCase()}
+          </div>
+          <h2 className="font-display text-lg sm:text-xl truncate">{profile?.team_name}</h2>
+        </div>
         {preSeason && <ResetSquadButton gameweekId={targetGw.id} />}
       </div>
-      <TeamBadge teamName={profile?.team_name} teamColor={profile?.team_color} />
-      <div className="mt-6">
+      <div className="mt-3">
         <ChipsPanel
           gameweekId={targetGw.id}
           gameweekNumber={targetGw.number}
@@ -209,7 +219,7 @@ export default async function MojTimPage({
           favoriteClubName={(profile as any)?.clubs?.name ?? null}
         />
       </div>
-      <div className="mt-6">
+      <div className="mt-3">
         <MyTeam
           key={squad
             .map((e) => e.player.id)

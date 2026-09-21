@@ -90,14 +90,13 @@ export function ChipsPanel({
   }
 
   return (
-    <div className="bg-navy-800 border border-navy-600 rounded-xl p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-        <div>
-          <h3 className="font-display text-lg leading-none">{t("title")}</h3>
-          <p className="text-xs text-slate-500 mt-1">{t("rule")}</p>
-        </div>
+    <div className="bg-navy-800 border border-navy-600 rounded-xl p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <h3 className="font-display text-sm leading-none" title={t("rule")}>
+          {t("title")}
+        </h3>
         <span
-          className={`text-xs font-semibold rounded-full px-3 py-1 ${
+          className={`text-[11px] font-semibold rounded-full px-2.5 py-0.5 ${
             activeChip
               ? "bg-gold-400 text-navy-950"
               : "bg-navy-700 text-slate-400"
@@ -112,7 +111,7 @@ export function ChipsPanel({
         </span>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {ORDER.map((type) => {
           const chip = chips.find((c) => c.type === type);
           if (!chip) return null;
@@ -135,10 +134,15 @@ export function ChipsPanel({
 
           const usable = !reason && !chip.activeNow;
 
+          const blurb =
+            t(visual.blurbKey as never) +
+            (type === "favorite_club_x2" && favoriteClubName ? ` (${favoriteClubName})` : "");
+
           return (
             <div
               key={type}
-              className={`relative rounded-xl border overflow-hidden flex flex-col transition-colors ${
+              title={blurb}
+              className={`relative rounded-lg border overflow-hidden flex flex-col transition-colors ${
                 chip.activeNow
                   ? "border-gold-400 bg-navy-700"
                   : usable
@@ -150,9 +154,9 @@ export function ChipsPanel({
                   oka — stanje čipa se čita bez čitanja teksta. */}
               {chip.activeNow && <span className="absolute inset-y-0 left-0 w-1 bg-gold-400" />}
 
-              <div className={`flex items-start gap-3 p-4 ${reason ? "opacity-45" : ""}`}>
+              <div className={`flex items-center gap-2 p-2 ${reason ? "opacity-45" : ""}`}>
                 <span
-                  className={`shrink-0 w-11 h-11 rounded-lg grid place-items-center font-display font-bold text-lg ${
+                  className={`shrink-0 w-7 h-7 rounded-md grid place-items-center font-display font-bold text-sm ${
                     chip.activeNow
                       ? "bg-gold-400 text-navy-950"
                       : "bg-navy-900 text-slate-300"
@@ -163,50 +167,44 @@ export function ChipsPanel({
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-display text-sm truncate">{chipName}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-xs truncate">{chipName}</span>
                     <span
-                      className={`text-xs font-bold tabular-nums ${
+                      className={`text-[10px] font-bold tabular-nums ${
                         chip.activeNow ? "text-gold-300" : "text-slate-400"
                       }`}
                     >
                       {visual.effect}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-1">
-                    {t(visual.blurbKey as never)}
-                    {type === "favorite_club_x2" && favoriteClubName && (
-                      <span className="text-slate-300"> ({favoriteClubName})</span>
-                    )}
-                  </p>
                 </div>
               </div>
 
-              <div className="mt-auto border-t border-navy-700 px-4 py-2.5 flex items-center justify-between gap-2 min-h-[44px]">
+              <div className="mt-auto border-t border-navy-700 px-2 py-1.5 flex items-center justify-between gap-2 min-h-[30px]">
                 {chip.activeNow ? (
                   <>
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-gold-300">
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-gold-300">
                       {t("active")}
                     </span>
                     <button
                       type="button"
                       onClick={cancel}
                       disabled={working !== null}
-                      className="text-xs font-semibold text-slate-400 hover:text-danger-400 transition-colors disabled:opacity-50"
+                      className="text-[11px] font-semibold text-slate-400 hover:text-danger-400 transition-colors disabled:opacity-50"
                     >
                       {working === "cancel" ? t("cancelling") : t("cancel")}
                     </button>
                   </>
                 ) : reason ? (
-                  <span className="text-[11px] text-slate-500">{reason}</span>
+                  <span className="text-[10px] text-slate-500 truncate">{reason}</span>
                 ) : (
                   <>
-                    <span className="text-[11px] text-slate-500">{t("free")}</span>
+                    <span className="text-[10px] text-slate-500">{t("free")}</span>
                     <button
                       type="button"
                       onClick={() => activate(type)}
                       disabled={working !== null}
-                      className="text-xs font-bold bg-gold-400 text-navy-950 rounded-md px-3 py-1.5 hover:bg-gold-300 transition-colors disabled:opacity-50"
+                      className="text-[11px] font-bold bg-gold-400 text-navy-950 rounded-md px-2 py-1 hover:bg-gold-300 transition-colors disabled:opacity-50"
                     >
                       {working === type ? t("activating") : t("activate")}
                     </button>

@@ -252,7 +252,13 @@ async function Shell({
         <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
           <span className="font-display">{t("squadFrom", { number: gameweekNumber })}</span>
           {gameweekPoints !== null && gameweekPoints !== undefined && (
-            <span className="bg-navy-800 border border-navy-600 rounded-full px-3 py-1">
+            <span
+              className={`rounded-full px-3 py-1 ${
+                gameweekPoints > 0
+                  ? "bg-pitch-500/10 border border-pitch-400/40 text-pitch-400 font-semibold"
+                  : "bg-navy-800 border border-navy-600"
+              }`}
+            >
               {t("points", { points: gameweekPoints })}
             </span>
           )}

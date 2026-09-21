@@ -24,7 +24,21 @@
     "ctaNew": "Napravi svoj klub",
     "ctaBuild": "Sastavi svoj tim",
     "ctaOpen": "Otvori svoj klub",
-    "ctaLeague": "Tabela lige"
+    "ctaLeague": "Tabela lige",
+    "howItWorksTitle": "Kako radi",
+    "step1Title": "Sastavi tim",
+    "step1Body": "Izaberi 15 igrača u budžetu od 100M — kao pravi transfer prozor.",
+    "step2Title": "Izaberi kapitena",
+    "step2Body": "Kapiten nosi duple poene. Postavi startnih 11 pre roka za kolo.",
+    "step3Title": "Prati poene",
+    "step3Body": "Gledaj kako tvoj tim skuplja poene iz stvarnih mečeva grčke Super lige.",
+    "deadlineLabel": "Rok za predaju sastava — Kolo {number}",
+    "countdown": {
+      "days": "d",
+      "hours": "h",
+      "minutes": "min",
+      "seconds": "s"
+    }
   },
   "auth": {
     "loginTitle": "Prijava",
@@ -131,6 +145,8 @@
     "details": "Detalji",
     "hint": "Savet",
     "staleSchema": "Ako poruka pominje vezu između tabela (relationship, PGRST200), Supabase-u je zastarela shema posle migracije. Pokreni u SQL Editor-u: notify pgrst, 'reload schema';",
+    "friendly": "Probaj da osvežiš stranicu za koji trenutak.",
+    "showTechnical": "Tehnički detalji",
     "whatFixtures": "rasporeda",
     "whatLeague": "rang liste",
     "whatStats": "statistika"
@@ -216,6 +232,7 @@
     "teamNamePlaceholder": "npr. Olimpos United",
     "teamColor": "Boja kluba",
     "pickColor": "Izaberi boju {color}",
+    "customColor": "Sopstvena boja",
     "favoriteClub": "Omiljeni klub",
     "createClub": "Napravi klub",
     "creatingClub": "Kreiram klub…",

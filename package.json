@@ -9,7 +9,6 @@
     "lint": "next lint",
     "verify-scoring": "tsx verify-faza6.ts",
     "verify-prevodi": "tsx verify-prevodi.tsx",
-    "verify-parser": "tsx verify-parser-tekst.ts",
     "verify-maintenance": "tsx verify-maintenance.ts",
     "seed": "tsx scripts/seed-from-api-football.ts",
     "import-roster": "tsx scripts/import-roster-csv.ts",
@@ -19,6 +18,7 @@
     "import-fixtures-csv": "tsx scripts/import-fixtures-csv.ts",
     "update-results": "tsx scripts/update-results-thesportsdb.ts",
     "backfill-fixture-ids": "tsx scripts/backfill-fixture-ids.ts",
+    "add-transfer-players": "tsx scripts/add-transfer-players.ts",
     "check-sources": "tsx scripts/check-sources.ts"
   },
   "dependencies": {

@@ -123,7 +123,13 @@ export function StandingsTable({
                       </Link>
                     </div>
                   </td>
-                  <td className="py-2.5 px-2 text-right text-slate-300 tabular-nums">
+                  <td
+                    className={`py-2.5 px-2 text-right tabular-nums ${
+                      row.gameweekPoints && row.gameweekPoints > 0
+                        ? "text-pitch-400 font-semibold"
+                        : "text-slate-300"
+                    }`}
+                  >
                     {row.gameweekPoints ?? "—"}
                   </td>
                   <td className="py-2.5 pl-2 pr-3 text-right font-display font-bold tabular-nums">

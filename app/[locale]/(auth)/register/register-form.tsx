@@ -10,7 +10,18 @@ import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 type Club = { id: string; name: string };
 
-const PRESET_COLORS = ["#E8B33D", "#3FA46A", "#E2574C", "#4A90D9", "#9B59B6"];
+const PRESET_COLORS = [
+  "#E8B33D",
+  "#3FA46A",
+  "#E2574C",
+  "#4A90D9",
+  "#9B59B6",
+  "#26A69A",
+  "#E8873D",
+  "#E0629B",
+  "#A3C94A",
+  "#7A8CA3",
+];
 
 export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const t = useTranslations("register");
@@ -24,6 +35,7 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamColor, setTeamColor] = useState(PRESET_COLORS[0]);
+  const isCustomColor = !PRESET_COLORS.includes(teamColor);
   const [favoriteClubId, setFavoriteClubId] = useState(clubs[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -146,7 +158,7 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
 
       <div className="flex flex-col gap-1.5 text-sm">
         {t("teamColor")}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {PRESET_COLORS.map((c) => (
             <button
               type="button"
@@ -161,6 +173,31 @@ export function RegisterForm({ clubs }: { clubs: Club[] }) {
               aria-label={t("pickColor", { color: c })}
             />
           ))}
+
+          {/* Neograničena paleta: nativni color-input je nevidljiv preko
+              cele pločice, samo se vidi trenutno izabrana boja (ili "+" dok
+              još nije korišćen) — isti obrazac kao npr. GitHub label boje. */}
+          <label
+            className="relative w-9 h-9 rounded-full border-2 grid place-items-center cursor-pointer overflow-hidden transition-colors"
+            style={{
+              backgroundColor: isCustomColor ? teamColor : "#1C2E4A",
+              borderColor: isCustomColor ? "#F4F6F8" : "#4A566B",
+            }}
+            title={t("customColor")}
+          >
+            {!isCustomColor && (
+              <span className="text-slate-300 text-base leading-none" aria-hidden>
+                +
+              </span>
+            )}
+            <input
+              type="color"
+              value={teamColor}
+              onChange={(e) => setTeamColor(e.target.value)}
+              aria-label={t("customColor")}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </label>
         </div>
       </div>
 

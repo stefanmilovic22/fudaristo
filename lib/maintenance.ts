@@ -69,7 +69,10 @@ export async function backfillFixtureIds(
 
   const { data: fixtures, error: fxError } = await supabase
     .from("fixtures")
-        .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id, gameweeks!gameweek_id(number)");
+    // "gameweeks!gameweek_id(...)" — fixtures ima DVA FK-a ka gameweeks
+    // (gameweek_id i original_gameweek_id); bez pina na kolonu PostgREST ne
+    // zna koji da embeduje i baca "more than one relationship was found".
+    .select("id, home_club_id, away_club_id, kickoff_at, api_thesportsdb_id, gameweeks!gameweek_id(number)");
   if (fxError) throw new Error(fxError.message);
 
   const missing = (fixtures ?? []).filter((f) => !f.api_thesportsdb_id);

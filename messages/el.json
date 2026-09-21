@@ -24,7 +24,21 @@
     "ctaNew": "Δημιούργησε την ομάδα σου",
     "ctaBuild": "Φτιάξε την ενδεκάδα σου",
     "ctaOpen": "Άνοιξε την ομάδα σου",
-    "ctaLeague": "Βαθμολογία"
+    "ctaLeague": "Βαθμολογία",
+    "howItWorksTitle": "Πώς λειτουργεί",
+    "step1Title": "Φτιάξε την ομάδα σου",
+    "step1Body": "Διάλεξε 15 παίκτες με budget 100Μ — σαν πραγματικό transfer window.",
+    "step2Title": "Όρισε αρχηγό",
+    "step2Body": "Ο αρχηγός σου παίρνει διπλούς πόντους. Όρισε την ενδεκάδα σου πριν τη λήξη.",
+    "step3Title": "Παρακολούθησε τους πόντους",
+    "step3Body": "Δες την ομάδα σου να παίρνει πόντους από πραγματικούς αγώνες της Super League.",
+    "deadlineLabel": "Λήξη κατάθεσης ενδεκάδας — {number}η αγωνιστική",
+    "countdown": {
+      "days": "d",
+      "hours": "h",
+      "minutes": "m",
+      "seconds": "s"
+    }
   },
   "auth": {
     "loginTitle": "Σύνδεση",
@@ -131,6 +145,8 @@
     "details": "Λεπτομέρειες",
     "hint": "Υπόδειξη",
     "staleSchema": "Αν το μήνυμα αναφέρει σχέση πινάκων (relationship, PGRST200), το Supabase έχει παλιά cache σχήματος μετά από migration. Τρέξε στον SQL Editor: notify pgrst, 'reload schema';",
+    "friendly": "Δοκίμασε να ανανεώσεις τη σελίδα σε λίγο.",
+    "showTechnical": "Τεχνικές λεπτομέρειες",
     "whatFixtures": "προγράμματος",
     "whatLeague": "κατάταξης",
     "whatStats": "στατιστικών"
@@ -216,6 +232,7 @@
     "teamNamePlaceholder": "π.χ. Olimpos United",
     "teamColor": "Χρώμα ομάδας",
     "pickColor": "Διάλεξε χρώμα {color}",
+    "customColor": "Δικό σου χρώμα",
     "favoriteClub": "Αγαπημένη ομάδα",
     "createClub": "Δημιουργία ομάδας",
     "creatingClub": "Δημιουργία…",
