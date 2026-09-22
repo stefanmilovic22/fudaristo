@@ -12,12 +12,13 @@ import {
   type SelectablePlayer,
 } from "@/lib/fantasy-rules";
 
-type SortKey = "price_desc" | "price_asc" | "points_desc" | "name_asc";
+type SortKey = "price_desc" | "price_asc" | "points_desc" | "rating_desc" | "name_asc";
 
 const SORT_KEYS: Record<SortKey, string> = {
   price_desc: "sortPriceDesc",
   price_asc: "sortPriceAsc",
   points_desc: "sortPoints",
+  rating_desc: "sortRating",
   name_asc: "sortName",
 };
 
@@ -78,6 +79,13 @@ export function PlayerPicker({
           return a.price - b.price || a.last_name.localeCompare(b.last_name, "sr");
         case "points_desc":
           return b.total_points - a.total_points || b.price - a.price;
+        case "rating_desc":
+          // Bez ocene ide na dno, ne na vrh (null bi inače pobedio 0-a u
+          // poređenju ako se ne obradi posebno).
+          if (a.avg_rating === null && b.avg_rating === null) return b.price - a.price;
+          if (a.avg_rating === null) return 1;
+          if (b.avg_rating === null) return -1;
+          return b.avg_rating - a.avg_rating || b.price - a.price;
         case "name_asc":
           return a.last_name.localeCompare(b.last_name, "sr");
         default:
