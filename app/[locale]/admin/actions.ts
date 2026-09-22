@@ -867,3 +867,43 @@ export async function applyWorldfootballStatsAction(fixtureId: string, rows: Pre
   revalidatePath("/admin");
   return { written: rows.length };
 }
+
+// ----------------------------------------------------------------------------
+// PRIVREMENO — samo test izvodljivosti pre nego što se gradi ceo SofaScore tok
+// (ocene igrača). Pitanje: da li Vercel-ov serverski fetch dobija 403 od
+// SofaScore-a (poznato po strožijoj zaštiti od bot/data-centar IP adresa nego
+// ESPN), ili prolazi. Ne piše ništa u bazu — samo javlja HTTP status i mali
+// isečak odgovora. Ukloniti (ili zameniti pravim tokom) kad se pitanje reši.
+// ----------------------------------------------------------------------------
+export type SofascoreFetchTestResult = {
+  ok: boolean;
+  status: number | null;
+  snippet: string;
+  errorMessage: string | null;
+};
+
+export async function testSofascoreFetchAction(eventId: string): Promise<SofascoreFetchTestResult> {
+  await requireAdmin();
+
+  const url = `https://www.sofascore.com/api/v1/event/${eventId}/lineups`;
+  try {
+    const res = await fetch(url, {
+      headers: { ...BROWSER_HEADERS, Referer: "https://www.sofascore.com/" },
+      signal: AbortSignal.timeout(15000),
+    });
+    const text = await res.text();
+    return {
+      ok: res.ok,
+      status: res.status,
+      snippet: text.slice(0, 400),
+      errorMessage: null,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      status: null,
+      snippet: "",
+      errorMessage: e instanceof Error ? e.message : String(e),
+    };
+  }
+}
