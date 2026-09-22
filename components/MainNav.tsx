@@ -41,6 +41,12 @@ const ICONS = {
       <path d="M5 20V10M12 20V4M19 20v-6" strokeLinecap="round" />
     </svg>
   ),
+  rules: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" strokeLinejoin="round" />
+      <path d="M9 12h6M9 16h6" strokeLinecap="round" />
+    </svg>
+  ),
   settings: (p: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <circle cx="12" cy="12" r="3" />
@@ -64,6 +70,7 @@ const LINKS: { key: NavKey; href: string }[] = [
   { key: "fixtures", href: "/raspored" },
   { key: "league", href: "/liga" },
   { key: "stats", href: "/statistike" },
+  { key: "rules", href: "/pravila" },
   { key: "settings", href: "/podesavanja" },
 ];
 
@@ -120,7 +127,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
       </button>
 
       {/* Traka sa tabovima — od 1024px */}
-      <nav className="order-2 hidden lg:flex gap-1 bg-navy-800 p-1 rounded-lg">
+      <nav className="order-2 hidden lg:flex shrink-0 gap-1 bg-navy-800 p-1 rounded-lg">
         {items.map(({ key, href }) => {
           const active = isActive(href);
           const Icon = ICONS[key];

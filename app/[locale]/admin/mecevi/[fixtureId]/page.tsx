@@ -144,7 +144,18 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
                 </thead>
                 <tbody>
                   {rows.map((r: any) => (
-                    <StatRow key={r.player_id} row={r} />
+                    // Key namerno uključuje SVE brojčane kolone, ne samo player_id.
+                    // Input polja ispod su uncontrolled (defaultValue) — React im
+                    // ponovo primeni defaultValue SAMO pri mount-u novog elementa.
+                    // Sa key={player_id} isti DOM input preživi router.refresh() posle
+                    // "Primeni" iz automatskog popunjavanja, pa vrednosti upisane u bazu
+                    // ostanu nevidljive dok se stranica ručno ne reloaduje. Kad se bilo
+                    // koja vrednost promeni, key se menja → React remontira red → nove
+                    // vrednosti se stvarno vide.
+                    <StatRow
+                      key={`${r.player_id}:${r.minutes_played}:${r.goals}:${r.assists}:${r.goals_conceded}:${r.saves}:${r.penalties_saved}:${r.penalties_missed}:${r.yellow_cards}:${r.red_cards}:${r.own_goals}:${r.bonus_points}`}
+                      row={r}
+                    />
                   ))}
                 </tbody>
               </table>

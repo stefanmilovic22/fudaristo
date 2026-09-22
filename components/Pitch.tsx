@@ -159,16 +159,16 @@ export function Bench({
 
       <div className="bg-navy-800 px-2 py-3 sm:px-3 sm:py-4">
         <div className="flex justify-center items-start gap-1 xs:gap-1.5 sm:gap-4 flex-wrap">
-          {children}
           {goalkeeper && (
             <>
+              {goalkeeper}
               <div
                 aria-hidden
                 className="self-stretch w-px bg-navy-600 mx-1 sm:mx-2 hidden sm:block"
               />
-              {goalkeeper}
             </>
           )}
+          {children}
         </div>
         <p className="text-[11px] text-slate-500 text-center mt-3">{t("benchNote")}</p>
       </div>

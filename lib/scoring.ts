@@ -50,14 +50,17 @@ import { selectAllPages } from "./db-paging";
 // Tabela poena — GDD sekcija 10, identična aktuelnom FPL sistemu
 // ----------------------------------------------------------------------------
 
-const GOAL_POINTS: Record<Position, number> = { GK: 6, DEF: 6, MID: 5, FWD: 4 };
-const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
-const ASSIST_POINTS = 3;
-const PENALTY_MISSED_POINTS = -2;
-const YELLOW_CARD_POINTS = -1;
-const RED_CARD_POINTS = -3;
-const OWN_GOAL_POINTS = -2;
-const PENALTY_SAVED_POINTS = 5;
+// Izvezeno (ne samo lokalno) da bi /pravila mogla da prikaže STVARNE brojeve
+// umesto da ih prekucava — jedan izvor istine, nema rizika da se stranica sa
+// pravilima razmine sa stvarnim obračunom.
+export const GOAL_POINTS: Record<Position, number> = { GK: 6, DEF: 6, MID: 5, FWD: 4 };
+export const CLEAN_SHEET_POINTS: Record<Position, number> = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
+export const ASSIST_POINTS = 3;
+export const PENALTY_MISSED_POINTS = -2;
+export const YELLOW_CARD_POINTS = -1;
+export const RED_CARD_POINTS = -3;
+export const OWN_GOAL_POINTS = -2;
+export const PENALTY_SAVED_POINTS = 5;
 
 export type RawStatRow = {
   position: Position;
@@ -75,6 +78,86 @@ export type RawStatRow = {
   bonus_points: number;
 };
 
+export type ScoringLineItem = { label: string; value: number };
+
+/**
+ * Isti obračun kao calculateRowFantasyPoints, ali kao spisak stavki umesto
+ * jednog broja — za "za šta je igrač dobio poene" prikaz u javnom pregledu
+ * tima (tim/[id]). calculateRowFantasyPoints je SADA zbir ovih vrednosti, da
+ * prikaz i stvaran obračun nikad ne mogu da se razminu (jedna formula, ne
+ * dve verzije iste logike).
+ *
+ * Stavke sa vrednošću 0 se preskaču (npr. 0 golova ne dobija red "Golovi:
+ * 0") — prazno polje ovde znači "nije se desilo", ne "nula poena za nešto
+ * što se desilo".
+ */
+export function describeRowFantasyPoints(stats: RawStatRow): ScoringLineItem[] {
+  const items: ScoringLineItem[] = [];
+
+  if (stats.minutes_played >= 60) items.push({ label: "Nastup (60+ min)", value: 2 });
+  else if (stats.minutes_played >= 1) items.push({ label: "Nastup (1–59 min)", value: 1 });
+
+  if (stats.goals > 0) {
+    items.push({
+      label: stats.goals > 1 ? `Golovi (${stats.goals})` : "Gol",
+      value: stats.goals * GOAL_POINTS[stats.position],
+    });
+  }
+
+  if (stats.assists > 0) {
+    items.push({
+      label: stats.assists > 1 ? `Asistencije (${stats.assists})` : "Asistencija",
+      value: stats.assists * ASSIST_POINTS,
+    });
+  }
+
+  if (stats.clean_sheet && CLEAN_SHEET_POINTS[stats.position] !== 0) {
+    items.push({ label: "Čista mreža", value: CLEAN_SHEET_POINTS[stats.position] });
+  }
+
+  if (stats.position === "GK") {
+    const savePoints = Math.floor(stats.saves / 3);
+    if (savePoints > 0) items.push({ label: `Odbrane (${stats.saves})`, value: savePoints });
+    if (stats.penalties_saved > 0) {
+      items.push({
+        label: stats.penalties_saved > 1 ? `Odbranjeni penali (${stats.penalties_saved})` : "Odbranjen penal",
+        value: stats.penalties_saved * PENALTY_SAVED_POINTS,
+      });
+    }
+  }
+
+  if (stats.position === "GK" || stats.position === "DEF") {
+    const concededPenalty = Math.floor(stats.goals_conceded / 2) * -1;
+    if (concededPenalty !== 0) {
+      items.push({ label: `Primljeni golovi (${stats.goals_conceded})`, value: concededPenalty });
+    }
+  }
+
+  if (stats.penalties_missed > 0) {
+    items.push({
+      label: stats.penalties_missed > 1 ? `Promašeni penali (${stats.penalties_missed})` : "Promašen penal",
+      value: stats.penalties_missed * PENALTY_MISSED_POINTS,
+    });
+  }
+  if (stats.yellow_cards > 0) {
+    items.push({ label: "Žuti karton", value: stats.yellow_cards * YELLOW_CARD_POINTS });
+  }
+  if (stats.red_cards > 0) {
+    items.push({ label: "Crveni karton", value: stats.red_cards * RED_CARD_POINTS });
+  }
+  if (stats.own_goals > 0) {
+    items.push({
+      label: stats.own_goals > 1 ? `Autogolovi (${stats.own_goals})` : "Autogol",
+      value: stats.own_goals * OWN_GOAL_POINTS,
+    });
+  }
+  if (stats.bonus_points !== 0) items.push({ label: "Bonus", value: stats.bonus_points });
+
+  if (items.length === 0) items.push({ label: "Bez odigranih minuta", value: 0 });
+
+  return items;
+}
+
 /**
  * Poeni za JEDAN red sirove statistike (jedan igrač, jedan meč). Kod duplog
  * kola (meč premešten pa klub odigra 2 meča u istom gameweek-u, GDD sekcija
@@ -82,32 +165,7 @@ export type RawStatRow = {
  * sabiranje na nivou gameweek-a radi pozivalac (isto kao FPL double gameweek).
  */
 export function calculateRowFantasyPoints(stats: RawStatRow): number {
-  let points = 0;
-
-  // Minuti — ISKLJUČIVO, ne kumulativno (60+ min je 2, ne 1+2=3).
-  if (stats.minutes_played >= 60) points += 2;
-  else if (stats.minutes_played >= 1) points += 1;
-
-  points += stats.goals * GOAL_POINTS[stats.position];
-  points += stats.assists * ASSIST_POINTS;
-  if (stats.clean_sheet) points += CLEAN_SHEET_POINTS[stats.position];
-
-  if (stats.position === "GK") {
-    points += Math.floor(stats.saves / 3);
-    points += stats.penalties_saved * PENALTY_SAVED_POINTS;
-  }
-
-  if (stats.position === "GK" || stats.position === "DEF") {
-    points += Math.floor(stats.goals_conceded / 2) * -1;
-  }
-
-  points += stats.penalties_missed * PENALTY_MISSED_POINTS;
-  points += stats.yellow_cards * YELLOW_CARD_POINTS;
-  points += stats.red_cards * RED_CARD_POINTS;
-  points += stats.own_goals * OWN_GOAL_POINTS;
-  points += stats.bonus_points;
-
-  return points;
+  return describeRowFantasyPoints(stats).reduce((sum, item) => sum + item.value, 0);
 }
 
 // ----------------------------------------------------------------------------
@@ -280,18 +338,11 @@ export async function runScoringForGameweek(
     .eq("id", gameweekId)
     .single();
   if (!gw) throw new Error("Kolo ne postoji.");
-  // NAMERNO nema provere gw.status ovde.
-  //
-  // Ranije je kolo u statusu "upcoming" ili "in_progress" bilo odbijeno. To je
-  // izgledalo kao razumna zaštita, ali je status polje koje menja SAMO
-  // ingestion — ako admin unese rezultate ručno (SQL, ispravka odloženog
-  // meča), mečevi su odigrani a status je i dalje "upcoming", pa se kolo nije
-  // moglo obračunati iako je sve spremno.
-  //
-  // Prava provera je stanje mečeva, i ona ionako sledi niže: svi moraju biti
-  // finished ili cancelled, svaki odigran mora imati statistiku, i sva
-  // statistika mora biti potvrđena. Te tri provere pokrivaju sve što je status
-  // trebalo da spreči, i daju konkretniju poruku o tome šta tačno fali.
+  if (gw.status === "upcoming" || gw.status === "in_progress") {
+    throw new Error(
+      `Kolo ${gw.number} još nije spremno za obračun (status: ${gw.status}) — sačekaj da svi mečevi budu odigrani/otkazani.`
+    );
+  }
 
   // Isti dnevnik kao Faza 5 (ingestion_runs) — "kind" razlikuje unos, ostatak
   // kolona se prirodno preklapa (rounds_checked = [broj kola], fixtures_touched
@@ -364,9 +415,7 @@ export async function runScoringForGameweek(
       );
     }
 
-    // Iz BILO KOG stanja pre finalized — ne samo iz data_pulled — da ručno
-    // unet rezultat ne ostavi kolo zauvek u "upcoming".
-    if (gw.status !== "admin_reviewed" && gw.status !== "finalized") {
+    if (gw.status === "data_pulled") {
       await supabase.from("gameweeks").update({ status: "admin_reviewed" }).eq("id", gameweekId);
     }
 

@@ -12,6 +12,7 @@ import {
 } from "./actions";
 import { MaintenancePanel } from "./maintenance-panel";
 import { PrepareStatsButton } from "./prepare-stats-button";
+import { FindEspnLinksButton } from "./find-espn-links-button";
 
 /**
  * Poslovi održavanja zovu TheSportsDB sa pauzama zbog rate limita, pa im
@@ -191,6 +192,11 @@ export default async function AdminPage() {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Uvek dostupno za svako nezaključano kolo koje se ovde
+                      pojavi — znači i za sledeće kolo, čim mu prvi meč postane
+                      uživo ili odigran (videti attentionGws filter iznad). */}
+                  <FindEspnLinksButton gameweekId={gw.id} gameweekNumber={gw.number} />
 
                   {/* Dugme se nudi za svako nezaključano kolo. Da li je stvarno
                       spremno odlučuje runScoringForGameweek, po stanju mečeva —

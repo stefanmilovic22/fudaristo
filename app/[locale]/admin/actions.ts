@@ -15,6 +15,8 @@ import {
   extractMatchStatsFromText,
   type ExtractedMatch,
 } from "@/lib/worldfootball-parser";
+import { parseEspnSummary, extractEspnEventId } from "@/lib/espn-parser";
+import { findEspnLinksForFixtures, type EspnLinksResult } from "@/lib/espn-fixtures";
 import { runScoringForGameweek } from "@/lib/scoring";
 import {
   backfillFixtureIds,
@@ -125,7 +127,7 @@ export async function pullWorldfootballAction(
     s
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+      .replace(/[̀-ͯ]/g, "");
 
   const pageNamesNormalized = parsed.players.map((p) => normalize(p.nameOnPage));
   const matched: string[] = [];
@@ -610,7 +612,7 @@ async function buildPreview(
     .in("club_id", [fixture.home_club_id, fixture.away_club_id]);
 
   const normalize = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
   const keyOf = (p: { worldfootballId: number | null; nameOnPage: string }) =>
     p.worldfootballId !== null ? `id:${p.worldfootballId}` : `name:${p.nameOnPage.toLowerCase()}`;
@@ -732,12 +734,80 @@ export async function previewPastedAction(
   return buildPreview(fixtureId, extracted);
 }
 
+// ----------------------------------------------------------------------------
+// Alternativa worldfootball-u — ESPN-ov nezvaničan JSON API
+// ----------------------------------------------------------------------------
+
+const ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/gre.1/summary";
+
+/**
+ * Isti PreviewResult oblik kao worldfootball tok (deli buildPreview i
+ * applyWorldfootballStatsAction) — samo drugi izvor podataka. Videti
+ * lib/espn-parser.ts za detalje i zašto je ovo DODATNA opcija, ne zamena
+ * (nedokumentovan endpoint, ESPN ga može ugasiti bez najave).
+ */
+export async function previewEspnAction(fixtureId: string, input: string): Promise<PreviewResult> {
+  await requireAdmin();
+
+  const eventId = extractEspnEventId(input);
+  if (!eventId) {
+    throw new Error(
+      "Nisam prepoznao ESPN event ID — nalepi ceo ESPN link meča (sa gameId) ili sam broj event ID-ja."
+    );
+  }
+
+  const res = await fetch(`${ESPN_SUMMARY_URL}?event=${eventId}`, {
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) throw new Error(`ESPN stranica nije dostupna (HTTP ${res.status}).`);
+
+  const json = await res.json();
+  const extracted = parseEspnSummary(json);
+  return buildPreview(fixtureId, extracted);
+}
+
+export type { EspnLinksResult };
+
+/**
+ * "Nađi ESPN linkove" dugme na kartici kola — isto što i
+ * `npm run find-espn-links`, samo iz panela. Ne piše ništa u bazu, samo vrati
+ * spisak (link ili "nije nađen") da admin ručno nalepi svaki u previewEspnAction.
+ */
+export async function findEspnLinksAction(gameweekId: string): Promise<EspnLinksResult> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: fixtures, error } = await supabase
+    .from("fixtures")
+    .select("id, kickoff_at, home:home_club_id(name), away:away_club_id(name)")
+    .eq("gameweek_id", gameweekId)
+    .order("kickoff_at");
+  if (error) throw new Error(error.message);
+
+  const mapped = (fixtures ?? []).map((f: any) => ({
+    id: f.id,
+    kickoff_at: f.kickoff_at,
+    homeClubName: f.home?.name ?? "?",
+    awayClubName: f.away?.name ?? "?",
+  }));
+
+  return findEspnLinksForFixtures(mapped);
+}
+
 /**
  * Upisuje pregledane vrednosti — i dalje kao NEPOTVRĐENE.
  *
  * Potvrda ostaje zaseban, svestan klik na formi ispod. Automatsko punjenje
  * skraćuje kucanje, ne zamenjuje pregled: obračun i dalje traži da je čovek
  * pogledao svaki meč.
+ *
+ * ⚠️ ISPRAVKA: ranije je ovo radilo `.update()` — ako `player_gameweek_stats`
+ * red za tog igrača i taj fixture NIJE prethodno postojao (npr. kolo nikad
+ * nije "pripremljeno" preko "Pripremi statistiku" ni "Povuci sa
+ * worldfootball-a" za ovaj meč), UPDATE pogodi 0 redova, NE javi grešku, i
+ * ništa se ne upiše — u tabeli ispod ostane sve na 0 kao da dugme "Primeni"
+ * nije ni pritisnuto. Zato je sada `.upsert()`, sa `club_id` domečitanim po
+ * igraču (mora se popuniti i kod insert-a, NOT NULL kolona u šemi).
  */
 export async function applyWorldfootballStatsAction(fixtureId: string, rows: PreviewRow[]) {
   await requireAdmin();
@@ -750,16 +820,28 @@ export async function applyWorldfootballStatsAction(fixtureId: string, rows: Pre
     .maybeSingle();
   if (!fixture) throw new Error("Meč nije nađen.");
 
+  const { data: playerClubs } = await supabase
+    .from("players")
+    .select("id, club_id")
+    .in("id", rows.map((r) => r.playerId));
+  const clubIdByPlayer = new Map((playerClubs ?? []).map((p: any) => [p.id, p.club_id]));
+
   const CHUNK = 20;
   const errors: string[] = [];
 
   for (let i = 0; i < rows.length; i += CHUNK) {
     const results = await Promise.all(
       rows.slice(i, i + CHUNK).map(async (r) => {
+        const club_id = clubIdByPlayer.get(r.playerId);
+        if (!club_id) return `${r.playerName}: klub nije nađen`;
+
         const clean_sheet = r.goals_conceded === 0 && r.minutes_played >= 60;
-        const { error } = await supabase
-          .from("player_gameweek_stats")
-          .update({
+        const { error } = await supabase.from("player_gameweek_stats").upsert(
+          {
+            player_id: r.playerId,
+            club_id,
+            gameweek_id: fixture.gameweek_id,
+            fixture_id: fixtureId,
             minutes_played: r.minutes_played,
             goals: r.goals,
             assists: r.assists,
@@ -770,9 +852,9 @@ export async function applyWorldfootballStatsAction(fixtureId: string, rows: Pre
             clean_sheet,
             // NAMERNO false: popunjeno je, ali nije pregledano.
             is_admin_reviewed: false,
-          })
-          .eq("player_id", r.playerId)
-          .eq("fixture_id", fixtureId);
+          },
+          { onConflict: "player_id,fixture_id" }
+        );
         return error ? `${r.playerName}: ${error.message}` : null;
       })
     );

@@ -8,6 +8,7 @@
     "fixtures": "Raspored",
     "league": "Liga",
     "stats": "Statistike",
+    "rules": "Pravila",
     "settings": "Podešavanja",
     "admin": "Admin",
     "login": "Prijava",
@@ -101,6 +102,10 @@
     "tabScorers": "Strelci",
     "tabAssists": "Asistenti",
     "tabClubs": "Klubovi",
+    "tabTeam": "Tim kola",
+    "teamOfWeekSubtitle": "Najbolji sastav {number}. kola, po fantasy poenima — ne sastav nijednog korisnika.",
+    "teamOfWeekFormation": "Formacija {formation}",
+    "noTeamOfWeek": "Tim kola se pojavljuje čim se zaključa prvo kolo.",
     "noData": "Još nema obračunatih poena. Top liste se pune čim admin obračuna prvo kolo.",
     "topScorers": "Najbolji strelci",
     "topAssists": "Najviše asistencija",
@@ -109,7 +114,7 @@
     "noAssists": "Još nijedna asistencija nije uneta u statistiku.",
     "noClubPoints": "Klupske sume se pojavljuju čim igrači počnu da skupljaju poene.",
     "noPositionPoints": "Poeni se pojavljuju čim admin obračuna prvo kolo.",
-    "unitPoints": "pts",
+    "unitPoints": "bod.",
     "unitGoals": "gol.",
     "unitAssists": "asist."
   },
@@ -269,6 +274,14 @@
   "reset": {
     "confirmClear": "Ukloniti svih 15 igrača?"
   },
+  "playerInfo": {
+    "points": "Bodovi",
+    "nextMatches": "Naredna 3 meča",
+    "close": "Zatvori",
+    "total": "Ukupno",
+    "captainX2": "Kapiten ×2",
+    "tripleX3": "Triple ×3"
+  },
   "team": {
     "gameweek": "Kolo",
     "swapBudget": "Budžet za zamenu",
@@ -323,5 +336,95 @@
     "lineupTitle": "Postava",
     "swapHelpIdleFull": "Klikni na igrača, pa na drugog sa suprotne strane, da ih zameniš mestima. Formacija mora ostati u granicama: 1 golman, 3–5 odbrana, 2–5 vezni, 1–3 napad.",
     "captainHintFull": "Kapitena i vice-kapitena biraš dugmićima C i V ispod dresa. Kapiten donosi dvostruke poene, a vice ga menja ako ne odigra nijedan minut."
+  },
+  "rules": {
+    "title": "Pravila igre",
+    "intro": "Sve što određuje tvoj tim i tvoje bodove u Fudaristu — sastav, postava, transferi, čipovi i tačan sistem bodovanja za svako kolo Super lige Grčke.",
+    "toc": {
+      "squad": "Sastav tima",
+      "lineup": "Postava",
+      "captain": "Kapiten",
+      "transfers": "Transferi",
+      "autosubs": "Auto-zamene",
+      "chips": "Čipovi",
+      "scoring": "Bodovanje"
+    },
+    "squad": {
+      "title": "Sastav tima",
+      "sub": "Tim od {size} igrača, sa budžetom od {budget}M i ograničenjem po klubu — isto za svakog korisnika na startu.",
+      "factPlayers": "igrača u timu",
+      "factBudget": "početni budžet",
+      "factMaxClub": "max iz istog kluba",
+      "rule1": "Sastav mora imati tačno <b>{gk} golmana, {def} odbrambenih, {mid} veznih i {fwd} napadača</b>.",
+      "rule2": "Ukupna cena svih {size} igrača ne sme preći raspoloživi budžet.",
+      "rule3": "Najviše <b>{max} igrača iz istog realnog kluba</b> smeju biti u tvom timu istovremeno.",
+      "rule4": "Pre prvog roka (dok gradiš svoj prvi tim) transferi su <b>neograničeni i bez penala</b> — nakon toga važe redovna pravila transfera."
+    },
+    "lineup": {
+      "title": "Postava (prvih 11)",
+      "sub": "Od {size} igrača, svako kolo bira se {starting} koji igraju i {bench} na klupi. Formacija mora poštovati ove granice po poziciji:",
+      "gkLabel": "uvek tačno 1",
+      "defLabel": "odbrana",
+      "midLabel": "vezni red",
+      "fwdLabel": "napad",
+      "rule1": "Van postave (na klupi) ostaju tačno <b>{bench} igrača</b>, uključujući jednog rezervnog golmana.",
+      "rule2": "Redosled klupe (ko prvi ulazi ako neko od startera ne odigra ni minut) bira se pri čuvanju postave.",
+      "rule3": "Formacija se može menjati do roka svakog kola — posle roka postava se zaključava za to kolo."
+    },
+    "captain": {
+      "title": "Kapiten i vice-kapiten",
+      "sub": "Iz svoje postave biraš kapitena i vice-kapitena pre svakog roka.",
+      "rule1": "Kapiten nosi <b>duple (×2)</b> poene osvojene tog kola.",
+      "rule2": "Ako kapiten odigra <b>0 minuta</b>, množilac automatski preuzima vice-kapiten (ako je on odigrao).",
+      "rule3": "Ako ni kapiten ni vice-kapiten nisu odigrali nijedan minut, niko ne nosi množilac to kolo.",
+      "rule4": "Uz aktiviran čip <b>Triple Captain</b>, kapiten umesto ×2 nosi <b>×3</b> — videti Čipove."
+    },
+    "transfers": {
+      "title": "Transferi",
+      "sub": "Svaki besplatan transfer koji ne iskoristiš prenosi se u naredno kolo.",
+      "factFreeValue": "1 / kolo",
+      "factFreeLabel": "besplatan transfer",
+      "factMaxLabel": "maks. nagomilanih",
+      "factCostLabel": "poena po dodatnom transferu",
+      "rule1": "Svako kolo dobijaš <b>1 novi besplatan transfer</b>; neiskorišćeni se gomilaju do najviše <b>{max}</b>.",
+      "rule2": "Svaki transfer preko besplatnih te kolo košta <b>{cost} poena</b>.",
+      "rule3": "Pre tvog prvog roka u ligi, transferi su neograničeni i besplatni."
+    },
+    "autosubs": {
+      "title": "Auto-zamene",
+      "sub": "Ako neko iz tvoje postave uopšte ne uđe u igru, klupa ga automatski zamenjuje pri obračunu bodova — ne moraš ništa ručno da menjaš.",
+      "rule1": "Starter koji odigra <b>0 minuta</b> biva zamenjen igračem sa klupe, po redosledu klupe.",
+      "rule2": "Golmana može zameniti <b>samo</b> rezervni golman sa klupe.",
+      "rule3": "Zamena igrača u polju važi samo ako posle nje postava i dalje poštuje granice formacije.",
+      "rule4": "Ako nijedna zamena sa klupe nije validna, tim to kolo igra sa manje od 11 igrača koji donose poene."
+    },
+    "chips": {
+      "title": "Čipovi",
+      "sub": "Svaki čip se u sezoni koristi <b>samo jednom</b>, a u jednom kolu sme biti aktivan <b>najviše jedan</b> čip.",
+      "footer": "Čip aktiviraš pre roka kola u kom želiš da važi — ne može se otkazati posle roka."
+    },
+    "scoring": {
+      "title": "Bodovanje",
+      "sub": "Poeni po igraču se sabiraju iz sledećih kategorija za svaki odigrani meč. Neke kategorije zavise od pozicije.",
+      "colEvent": "Događaj",
+      "colPoints": "Poeni",
+      "colPosition": "Pozicija",
+      "colNote": "Napomena",
+      "posAll": "svi",
+      "posNone": "—",
+      "minutesShort": { "event": "Nastup, 1–59 min", "note": "Svaki ulazak u igru" },
+      "minutesLong": { "event": "Nastup, 60+ min", "note": "Umesto boda za 1–59 min, ne pored njega" },
+      "goal": { "event": "Gol", "note": "{gk} golman/odbrana, {mid} vezni, {fwd} napadač" },
+      "assist": { "event": "Asistencija", "note": "" },
+      "cleanSheet": { "event": "Čista mreža", "note": "{gk} golman/odbrana, {mid} vezni, napadač ne dobija" },
+      "saves": { "event": "Odbrane (na svake 3)", "note": "Samo golman" },
+      "penSaved": { "event": "Odbranjen penal", "note": "Samo golman" },
+      "conceded": { "event": "Primljeni golovi (na svaka 2)", "note": "Golman i odbrana" },
+      "penMissed": { "event": "Promašen penal", "note": "" },
+      "yellow": { "event": "Žuti karton", "note": "" },
+      "red": { "event": "Crveni karton", "note": "" },
+      "ownGoal": { "event": "Autogol", "note": "" },
+      "bonus": { "event": "Bonus", "note": "Najbolji u meču, dodeljuje liga" }
+    }
   }
 }

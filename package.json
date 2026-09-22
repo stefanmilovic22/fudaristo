@@ -19,7 +19,8 @@
     "update-results": "tsx scripts/update-results-thesportsdb.ts",
     "backfill-fixture-ids": "tsx scripts/backfill-fixture-ids.ts",
     "add-transfer-players": "tsx scripts/add-transfer-players.ts",
-    "check-sources": "tsx scripts/check-sources.ts"
+    "check-sources": "tsx scripts/check-sources.ts",
+    "find-espn-links": "tsx scripts/find-espn-links.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

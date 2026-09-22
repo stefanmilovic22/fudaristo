@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Bench, Pitch, PitchRow } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
 import { PlayerPicker } from "@/components/PlayerPicker";
+import { PlayerInfoPopover, type UpcomingFixture } from "@/components/PlayerInfoPopover";
 import {
   FORMATIONS,
   MAX_PLAYERS_PER_CLUB,
@@ -53,6 +54,11 @@ export function MyTeam({
   freeTransfers,
   preSeason,
   opponentByClub,
+  // Default na prazan objekat: ako pozivalac (stranica) zaboravi da prosledi
+  // ovaj prop (npr. stara verzija page.tsx pored nove my-team.tsx), komponenta
+  // i dalje radi — samo bez naredna-3-meča u prozorčiću — umesto da puca na
+  // `upcomingByClub[clubId]` nad undefined objektom.
+  upcomingByClub = {},
 }: {
   gameweekId: string;
   gameweekNumber: number;
@@ -65,6 +71,8 @@ export function MyTeam({
   preSeason: boolean;
   /** club_id → "OFI (A)" za ovo kolo. Prazno dok kalendar nije poznat. */
   opponentByClub: Record<string, string>;
+  /** club_id → naredna do 3 zakazana meča, za prozorčić sa info o igraču. */
+  upcomingByClub: Record<string, UpcomingFixture[]>;
 }) {
   const t = useTranslations("team");
   const locale = useLocale();
@@ -507,38 +515,48 @@ export function MyTeam({
     .join("-");
 
   const renderSlot = (s: (typeof slots)[number], onPitch: boolean) => (
-    <Jersey
+    <JerseySlot
       key={s.key}
-      color={s.current.club_color}
-      name={playerShirtName(s.current)}
-      detail={
-        s.replacement
-          ? "novi"
-          : opponentByClub[s.current.club_id] ?? formatEUR(s.entry.purchasePrice)
-      }
-      initials={s.current.club_short}
-      flag={s.current.status !== "available" ? s.current.status : null}
-      isGoalkeeper={s.current.position === "GK"}
-      positionLabel={
-        onPitch
-          ? undefined
-          : s.current.position === "GK"
-            ? POSITION_SHORT.GK
-            : `${benchOutfield.findIndex((b) => b.key === s.key) + 1} · ${POSITION_SHORT[s.current.position]}`
-      }
-      isCaptain={s.state.captain}
-      isViceCaptain={s.state.vice}
-      active={swapSlot === s.key || transferSlot === s.key || Boolean(s.replacement)}
-      dimmed={
-        transferSlot
-          ? transferSlot !== s.key
-          : swapSlot !== null && swapSlot !== s.key && !wouldBeValidSwap(swapSlot, s.key)
-      }
-      onClick={() => handleJerseyClick(s.key)}
-      onRemove={s.replacement ? () => cancelReplacement(s.key) : () => startTransfer(s.key)}
-      onCaptain={onPitch ? () => setCaptain(s.key) : undefined}
-      onViceCaptain={onPitch ? () => setVice(s.key) : undefined}
-    />
+      showPopover={swapSlot === s.key}
+      player={s.current}
+      fixtures={upcomingByClub[s.current.club_id] ?? []}
+      onClosePopover={() => setSwapSlot(null)}
+    >
+      <Jersey
+        color={s.current.club_color}
+        name={playerShirtName(s.current)}
+        detail={
+          // Isto kao za sve ostale igrače, i za novododatog (zamenu) — protivnik
+          // za ovo kolo, ne tekst "novi". Ranije se "novi" prikazivalo dok
+          // transfer čeka potvrdu, pa se ispod novog igrača nije videlo protiv
+          // koga igra.
+          opponentByClub[s.current.club_id] ??
+          formatEUR(s.replacement ? s.replacement.price : s.entry.purchasePrice)
+        }
+        initials={s.current.club_short}
+        flag={s.current.status !== "available" ? s.current.status : null}
+        isGoalkeeper={s.current.position === "GK"}
+        positionLabel={
+          onPitch
+            ? undefined
+            : s.current.position === "GK"
+              ? POSITION_SHORT.GK
+              : `${benchOutfield.findIndex((b) => b.key === s.key) + 1} · ${POSITION_SHORT[s.current.position]}`
+        }
+        isCaptain={s.state.captain}
+        isViceCaptain={s.state.vice}
+        active={swapSlot === s.key || transferSlot === s.key || Boolean(s.replacement)}
+        dimmed={
+          transferSlot
+            ? transferSlot !== s.key
+            : swapSlot !== null && swapSlot !== s.key && !wouldBeValidSwap(swapSlot, s.key)
+        }
+        onClick={() => handleJerseyClick(s.key)}
+        onRemove={s.replacement ? () => cancelReplacement(s.key) : () => startTransfer(s.key)}
+        onCaptain={onPitch ? () => setCaptain(s.key) : undefined}
+        onViceCaptain={onPitch ? () => setVice(s.key) : undefined}
+      />
+    </JerseySlot>
   );
 
   return (
@@ -714,6 +732,41 @@ export function MyTeam({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Nosilac reference za dres — treba je PlayerInfoPopover-u da izračuna gde da
+ * se pozicionira (portal u document.body, videti komentar u tom fajlu za
+ * zašto obično `absolute` unutar dresa ne radi ovde: Pitch i Bench seku
+ * sadržaj na ivicama pa bi golman i klupa odsecali prozorčić).
+ */
+function JerseySlot({
+  children,
+  showPopover,
+  player,
+  fixtures,
+  onClosePopover,
+}: {
+  children: React.ReactNode;
+  showPopover: boolean;
+  player: SelectablePlayer;
+  fixtures: UpcomingFixture[];
+  onClosePopover: () => void;
+}) {
+  const anchorRef = useRef<HTMLDivElement>(null);
+  return (
+    <div ref={anchorRef} className="relative">
+      {children}
+      {showPopover && (
+        <PlayerInfoPopover
+          anchorRef={anchorRef}
+          player={player}
+          fixtures={fixtures}
+          onClose={onClosePopover}
+        />
+      )}
     </div>
   );
 }

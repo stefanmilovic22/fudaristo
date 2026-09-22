@@ -360,6 +360,15 @@ export function extractMatchStats(html: string): ExtractedMatch {
  *
  * Kartone NE izvlačimo iz tog minuta — bez ikonice se ne zna ni boja. Ostaju
  * na nuli i upisuju se ručno.
+ *
+ * ⚠️ ISPRAVKA (nađeno na stvarnom izveštaju Asteras Tripolis — AEK Athens):
+ * zaglavlje postave drugog tima na stranici NE MORA da nosi formaciju u
+ * zagradama ("AEK Athens" umesto "AEK Athens (4-3-1-2)") — worldfootball to
+ * ume da izostavi. LINEUP_HEADER regex je tada promašivao ceo taj heading,
+ * pa je parseSquadBlock nastavljao da čita igrače DRUGOG tima kao rezerve
+ * PRVOG (Panathinaikos-Panetolikos incident: cela postava gostiju pripisana
+ * domaćinu). Ispravka: granica bloka je SADA i "gola" linija koja se tačno
+ * poklapa sa homeTeamName ili awayTeamName, ne samo "Ime (formacija)".
  */
 
 const SCORE_ONLY = /^(\d{1,2})\s*:\s*(\d{1,2})$/;
@@ -371,14 +380,34 @@ const OWN_GOAL_TEXT = /\bown\s*goal\b/i;
 
 type RawPlayer = { shirt: number; name: string; minutes: number[] };
 
-function parseSquadBlock(lines: string[], from: number): { players: RawPlayer[]; next: number } {
+/**
+ * Da li ova linija označava POČETAK novog bloka (nova postava/rezerve, ili
+ * prelazak na drugi tim) — bilo kroz "Ime (formacija)" bilo kroz golo ime
+ * jednog od dva tima iz meča (videti ISPRAVKA gore).
+ */
+function isBlockBoundary(line: string, homeTeamName: string, awayTeamName: string): boolean {
+  return (
+    LINEUP_HEADER.test(line) ||
+    RESERVES_HEADER.test(line) ||
+    line === homeTeamName ||
+    line === awayTeamName
+  );
+}
+
+function parseSquadBlock(
+  lines: string[],
+  from: number,
+  homeTeamName: string,
+  awayTeamName: string
+): { players: RawPlayer[]; next: number } {
   const players: RawPlayer[] = [];
   let i = from;
 
   while (i < lines.length) {
     const line = lines[i];
-    // Kraj bloka: novo zaglavlje postave ili naslov klupe.
-    if (LINEUP_HEADER.test(line) || RESERVES_HEADER.test(line)) break;
+    // Kraj bloka: novo zaglavlje postave (sa ili bez formacije), naslov
+    // klupe, ili gola linija sa imenom drugog tima.
+    if (isBlockBoundary(line, homeTeamName, awayTeamName)) break;
 
     if (SHIRT_ONLY.test(line) && i + 1 < lines.length) {
       const name = lines[i + 1];
@@ -438,7 +467,7 @@ export function extractMatchStatsFromText(text: string): ExtractedMatch {
   const goals: GoalEvent[] = [];
 
   let i = cursor;
-  while (i < lines.length && !LINEUP_HEADER.test(lines[i])) {
+  while (i < lines.length && !LINEUP_HEADER.test(lines[i]) && lines[i] !== homeTeamName && lines[i] !== awayTeamName) {
     const score = lines[i].match(SCORE_ONLY);
     if (!score) {
       i++;
@@ -456,9 +485,22 @@ export function extractMatchStatsFromText(text: string): ExtractedMatch {
     let assist: string | null = null;
     let ownGoal = false;
 
-    while (j < lines.length && !SCORE_ONLY.test(lines[j]) && !LINEUP_HEADER.test(lines[j])) {
+    // Stani čim naiđe sledeći gol ILI zaglavlje postave (sa/bez formacije) —
+    // inače se, kad iza pravog asistenta odmah sledi gola linija sa imenom
+    // tima (npr. pred kraj utakmice, tik pre postava), taj naziv tima
+    // POGREŠNO upiše kao "asistent" i prepiše pravog (nađeno na stvarnom
+    // izveštaju: "F. Macheda" prepisan sa "Asteras Tripolis").
+    while (
+      j < lines.length &&
+      !SCORE_ONLY.test(lines[j]) &&
+      !LINEUP_HEADER.test(lines[j]) &&
+      lines[j] !== homeTeamName &&
+      lines[j] !== awayTeamName
+    ) {
       if (OWN_GOAL_TEXT.test(lines[j])) ownGoal = true;
-      else if (/^[A-ZÀ-Ž]/.test(lines[j])) assist = lines[j];
+      // Samo PRVI kandidat se uzima kao asistent — dalje linije (npr. naziv
+      // tima koji sledi) se ignorišu umesto da ga prepišu.
+      else if (assist === null && /^[A-ZÀ-Ž]/.test(lines[j])) assist = lines[j];
       j++;
     }
 
@@ -473,19 +515,28 @@ export function extractMatchStatsFromText(text: string): ExtractedMatch {
 
   while (i < lines.length) {
     const header = lines[i].match(LINEUP_HEADER);
-    if (!header) {
+    const bareTeam = !header && (lines[i] === homeTeamName || lines[i] === awayTeamName) ? lines[i] : null;
+    if (!header && !bareTeam) {
       i++;
       continue;
     }
-    const team = header[1];
-    const startersBlock = parseSquadBlock(lines, i + 1);
+    const team = header ? header[1] : (bareTeam as string);
+    const startersBlock = parseSquadBlock(lines, i + 1, homeTeamName, awayTeamName);
     let reserves: RawPlayer[] = [];
     let next = startersBlock.next;
 
-    // Posle postave dolazi "<Tim>" pa "Reserve players".
-    while (next < lines.length && !LINEUP_HEADER.test(lines[next])) {
+    // Posle postave dolazi "<Tim>" pa "Reserve players" — ALI ako drugi tim
+    // uopšte nema rezerve navedene pre svog imena, odmah nailazimo na golo
+    // ime drugog tima; tada NE ulazimo u parseSquadBlock (nema šta da se
+    // pročita kao rezerve ovog tima).
+    while (
+      next < lines.length &&
+      !LINEUP_HEADER.test(lines[next]) &&
+      lines[next] !== homeTeamName &&
+      lines[next] !== awayTeamName
+    ) {
       if (RESERVES_HEADER.test(lines[next])) {
-        const block = parseSquadBlock(lines, next + 1);
+        const block = parseSquadBlock(lines, next + 1, homeTeamName, awayTeamName);
         reserves = block.players;
         next = block.next;
         break;
@@ -532,7 +583,7 @@ export function extractMatchStatsFromText(text: string): ExtractedMatch {
 
   // --- Golovi i asistencije na igrače --------------------------------------
   const normalize = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/^[a-z]\.\s*/, "").trim();
+    s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/^[a-z]\.\s*/, "").trim();
 
   const findByName = (name: string) => {
     const target = normalize(name);

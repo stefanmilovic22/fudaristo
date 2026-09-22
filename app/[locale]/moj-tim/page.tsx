@@ -140,6 +140,32 @@ export default async function MojTimPage({
     push(f.away_club_id, `${homeShort} (A)`);
   }
 
+  /**
+   * Naredna 3 meča po klubu — za prozorčić sa informacijama o igraču (klik na
+   * dres u postavi). Isti "(H)"/"(A)" oblik kao opponentByClub iznad, samo za
+   * SVE zakazane mečeve unapred, ne samo za ovo kolo. Kapirano na 3 po klubu
+   * ovde, u JS-u — filtriranje u samom upitu bi tražilo poseban upit po klubu.
+   */
+  const { data: upcomingFixtures } = await supabase
+    .from("fixtures")
+    .select("home_club_id, away_club_id, kickoff_at, home:home_club_id(short_name), away:away_club_id(short_name)")
+    .eq("status", "scheduled")
+    .order("kickoff_at", { ascending: true });
+
+  const upcomingByClub = new Map<string, { label: string; kickoffAt: string }[]>();
+  for (const f of (upcomingFixtures ?? []) as any[]) {
+    const homeShort = f.home?.short_name ?? "?";
+    const awayShort = f.away?.short_name ?? "?";
+    const pushUpcoming = (clubId: string, label: string) => {
+      const list = upcomingByClub.get(clubId) ?? [];
+      if (list.length < 3) {
+        list.push({ label, kickoffAt: f.kickoff_at });
+        upcomingByClub.set(clubId, list);
+      }
+    };
+    pushUpcoming(f.home_club_id, `${awayShort} (H)`);
+    pushUpcoming(f.away_club_id, `${homeShort} (A)`);
+  }
 
   // --- Čipovi za ovo kolo ---------------------------------------------------
   // chips_usage je privatan (RLS: samo vlasnik), pa ovaj upit vraća isključivo
@@ -234,6 +260,7 @@ export default async function MojTimPage({
           freeTransfers={Number(profile?.free_transfers ?? 0)}
           preSeason={preSeason}
           opponentByClub={Object.fromEntries(opponentByClub)}
+          upcomingByClub={Object.fromEntries(upcomingByClub)}
         />
       </div>
     </div>

@@ -8,6 +8,7 @@
     "fixtures": "Fixtures",
     "league": "League",
     "stats": "Stats",
+    "rules": "Rules",
     "settings": "Settings",
     "admin": "Admin",
     "login": "Log in",
@@ -101,6 +102,10 @@
     "tabScorers": "Scorers",
     "tabAssists": "Assists",
     "tabClubs": "Clubs",
+    "tabTeam": "Team of the week",
+    "teamOfWeekSubtitle": "Best XI of gameweek {number}, by fantasy points — not any single manager's squad.",
+    "teamOfWeekFormation": "Formation {formation}",
+    "noTeamOfWeek": "The team of the week appears once the first gameweek is scored.",
     "noData": "No points have been calculated yet. The charts fill up once the first gameweek is scored.",
     "topScorers": "Top scorers",
     "topAssists": "Most assists",
@@ -269,6 +274,14 @@
   "reset": {
     "confirmClear": "Remove all 15 players?"
   },
+  "playerInfo": {
+    "points": "Points",
+    "nextMatches": "Next 3 matches",
+    "close": "Close",
+    "total": "Total",
+    "captainX2": "Captain ×2",
+    "tripleX3": "Triple ×3"
+  },
   "team": {
     "gameweek": "GW",
     "swapBudget": "Budget for swap",
@@ -323,5 +336,95 @@
     "lineupTitle": "Lineup",
     "swapHelpIdleFull": "Click a player, then another on the opposite side, to swap them. The formation must stay within: 1 goalkeeper, 3–5 defenders, 2–5 midfielders, 1–3 forwards.",
     "captainHintFull": "Pick captain and vice-captain with the C and V buttons under the shirt. The captain scores double, and the vice takes over if he doesn't play a single minute."
+  },
+  "rules": {
+    "title": "Game rules",
+    "intro": "Everything that decides your team and your points in Fudaristo — squad, lineup, transfers, chips, and the exact scoring system for every Super League Greece gameweek.",
+    "toc": {
+      "squad": "Squad",
+      "lineup": "Lineup",
+      "captain": "Captain",
+      "transfers": "Transfers",
+      "autosubs": "Auto-subs",
+      "chips": "Chips",
+      "scoring": "Scoring"
+    },
+    "squad": {
+      "title": "Squad",
+      "sub": "A {size}-player squad, a {budget}M budget, and a per-club limit — the same for every manager at the start.",
+      "factPlayers": "players in your squad",
+      "factBudget": "starting budget",
+      "factMaxClub": "max from one club",
+      "rule1": "Your squad must have exactly <b>{gk} goalkeepers, {def} defenders, {mid} midfielders and {fwd} forwards</b>.",
+      "rule2": "The combined price of all {size} players can't exceed your available budget.",
+      "rule3": "At most <b>{max} players from the same real club</b> can be in your squad at once.",
+      "rule4": "Before your first deadline (building your first squad), transfers are <b>unlimited and free</b> — normal transfer rules apply from then on."
+    },
+    "lineup": {
+      "title": "Lineup (starting XI)",
+      "sub": "Out of {size} players, each gameweek you pick {starting} to start and {bench} for the bench. The formation must stay within these bounds:",
+      "gkLabel": "always exactly 1",
+      "defLabel": "defenders",
+      "midLabel": "midfielders",
+      "fwdLabel": "forwards",
+      "rule1": "Exactly <b>{bench} players</b> stay on the bench, including one reserve goalkeeper.",
+      "rule2": "Bench order (who comes on first if a starter plays no minutes) is set when you save your lineup.",
+      "rule3": "The formation can be changed up to each gameweek's deadline — after that, the lineup locks for that gameweek."
+    },
+    "captain": {
+      "title": "Captain and vice-captain",
+      "sub": "You pick a captain and vice-captain from your lineup before every deadline.",
+      "rule1": "The captain scores <b>double (×2)</b> points for that gameweek.",
+      "rule2": "If the captain plays <b>0 minutes</b>, the multiplier automatically passes to the vice-captain (if they played).",
+      "rule3": "If neither the captain nor the vice-captain played a single minute, no one carries the multiplier that gameweek.",
+      "rule4": "With the <b>Triple Captain</b> chip active, the captain scores <b>×3</b> instead of ×2 — see Chips."
+    },
+    "transfers": {
+      "title": "Transfers",
+      "sub": "Any free transfer you don't use carries over to the next gameweek.",
+      "factFreeValue": "1 / gameweek",
+      "factFreeLabel": "free transfer",
+      "factMaxLabel": "max saved up",
+      "factCostLabel": "points per extra transfer",
+      "rule1": "You get <b>1 new free transfer</b> every gameweek; unused ones stack up to <b>{max}</b>.",
+      "rule2": "Every transfer beyond your free ones costs <b>{cost} points</b> that gameweek.",
+      "rule3": "Before your first deadline in the league, transfers are unlimited and free."
+    },
+    "autosubs": {
+      "title": "Auto-substitutions",
+      "sub": "If someone in your lineup doesn't play at all, the bench automatically replaces them when points are calculated — you don't have to change anything by hand.",
+      "rule1": "A starter who plays <b>0 minutes</b> is replaced by a bench player, following bench order.",
+      "rule2": "The goalkeeper can <b>only</b> be replaced by the reserve goalkeeper on your bench.",
+      "rule3": "An outfield substitution only applies if the lineup still respects the formation bounds afterward.",
+      "rule4": "If no bench substitution is valid, your team plays that gameweek with fewer than 11 players contributing points."
+    },
+    "chips": {
+      "title": "Chips",
+      "sub": "Each chip can be used <b>only once</b> per season, and at most <b>one</b> chip can be active in a given gameweek.",
+      "footer": "You activate a chip before the deadline of the gameweek you want it to apply to — it can't be cancelled after the deadline."
+    },
+    "scoring": {
+      "title": "Scoring",
+      "sub": "A player's points are the sum of these categories for every match they play. Some categories depend on position.",
+      "colEvent": "Event",
+      "colPoints": "Points",
+      "colPosition": "Position",
+      "colNote": "Note",
+      "posAll": "all",
+      "posNone": "—",
+      "minutesShort": { "event": "Played, 1–59 min", "note": "Any appearance" },
+      "minutesLong": { "event": "Played, 60+ min", "note": "Instead of the 1–59 min point, not on top of it" },
+      "goal": { "event": "Goal", "note": "{gk} GK/DEF, {mid} MID, {fwd} FWD" },
+      "assist": { "event": "Assist", "note": "" },
+      "cleanSheet": { "event": "Clean sheet", "note": "{gk} GK/DEF, {mid} MID, forwards score none" },
+      "saves": { "event": "Saves (every 3)", "note": "Goalkeepers only" },
+      "penSaved": { "event": "Penalty saved", "note": "Goalkeepers only" },
+      "conceded": { "event": "Goals conceded (every 2)", "note": "Goalkeepers and defenders" },
+      "penMissed": { "event": "Penalty missed", "note": "" },
+      "yellow": { "event": "Yellow card", "note": "" },
+      "red": { "event": "Red card", "note": "" },
+      "ownGoal": { "event": "Own goal", "note": "" },
+      "bonus": { "event": "Bonus", "note": "Best on the pitch, awarded by the league" }
+    }
   }
 }

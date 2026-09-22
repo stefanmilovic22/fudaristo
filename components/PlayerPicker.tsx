@@ -45,6 +45,7 @@ export function PlayerPicker({
   const t = useTranslations("picker");
   const tPos = useTranslations("positions");
   const tCommon = useTranslations("common");
+  const tStats = useTranslations("stats");
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position | "ALL">("ALL");
   const [clubId, setClubId] = useState<string>("ALL");
@@ -211,10 +212,20 @@ export function PlayerPicker({
                 </span>
                 <span className="block text-[11px] text-slate-400 truncate">
                   {p.club_name} · {p.position}
-                  {p.total_points > 0 && ` · ${p.total_points} poena`}
                 </span>
               </span>
               <span className="shrink-0 text-right">
+                {/* Uvećano i izdvojeno iz sitne sive linije iznad — pre je broj
+                    poena bio 11px, zakopan između kluba i pozicije, teško
+                    čitljiv baš kad se lista sortira po poenima. */}
+                {p.total_points > 0 && (
+                  <span className="block text-sm font-bold text-gold-300 tabular-nums">
+                    {p.total_points}{" "}
+                    <span className="text-[9px] font-medium text-slate-400">
+                      {tStats("unitPoints")}
+                    </span>
+                  </span>
+                )}
                 <span className="block font-semibold">{formatEUR(p.price)}</span>
                 {reason && !chosen && (
                   <span

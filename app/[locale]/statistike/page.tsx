@@ -2,7 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { StatsBoard, type StatsData } from "./stats-board";
 import { DataLoadError } from "@/components/DataLoadError";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { playerFullName } from "@/lib/fantasy-rules";
+import { playerFullName, playerShirtName, type Position } from "@/lib/fantasy-rules";
+import { selectTeamOfTheWeek } from "@/lib/team-of-the-week";
+import type { TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 
 /**
  * Faza 9 — top liste. Sve dolazi iz view-ova napisanih još u schema.sql
@@ -13,6 +15,12 @@ import { playerFullName } from "@/lib/fantasy-rules";
  * pa `RANK()` u v_top_fantasy_by_position svakom igraču daje rang 1 — filter
  * "rank <= 5" bi vratio svih ~360 igrača kao "top 5". Zato svaka lista traži i
  * da je vrednost > 0. Nema poena → nema liste, uz poruku umesto lažne tabele.
+ *
+ * "Tim kola" (novi tab) NIJE iz view-a — bira se u Node-u (lib/team-of-the-week.ts)
+ * nad SVIM player_gameweek_stats redovima poslednjeg ZAKLJUČANOG kola, po
+ * istom principu kao autoPickSquad. Namerno bez view-a: formula (minimum po
+ * poziciji pa najbolji ostatak) je previše logike za čist SQL, a dataset je
+ * mali (jedno kolo, ne cela sezona).
  */
 export async function generateMetadata({
   params,
@@ -50,7 +58,7 @@ export default async function StatistikePage({
       .order("total_club_fantasy_points", { ascending: false }),
     supabase
       .from("gameweeks")
-      .select("number")
+      .select("id, number")
       .eq("status", "finalized")
       .order("number", { ascending: false })
       .limit(1)
@@ -72,6 +80,64 @@ export default async function StatistikePage({
         />
       </Shell>
     );
+  }
+
+  // --- Tim kola --------------------------------------------------------------
+  let teamOfWeek: TeamOfWeekData | null = null;
+  if (finalized.data) {
+    const { data: gwStatRows } = await supabase
+      .from("player_gameweek_stats")
+      .select(
+        "player_id, fantasy_points, players(first_name, last_name, position, clubs(name, short_name, primary_color))"
+      )
+      .eq("gameweek_id", finalized.data.id);
+
+    // Duplo kolo (klub odigra dva meča) — sabira se, isto kao svuda drugde
+    // (scoring engine, javni pregled tima).
+    const pointsByPlayer = new Map<string, number>();
+    const metaByPlayer = new Map<
+      string,
+      { name: string; fullName: string; clubName: string; clubShort: string; clubColor: string; position: Position }
+    >();
+    for (const r of (gwStatRows ?? []) as any[]) {
+      pointsByPlayer.set(r.player_id, (pointsByPlayer.get(r.player_id) ?? 0) + (r.fantasy_points ?? 0));
+      if (!metaByPlayer.has(r.player_id) && r.players) {
+        metaByPlayer.set(r.player_id, {
+          name: playerShirtName(r.players),
+          fullName: playerFullName(r.players),
+          clubName: r.players.clubs?.name ?? "?",
+          clubShort: r.players.clubs?.short_name ?? "?",
+          clubColor: r.players.clubs?.primary_color ?? "#8494AC",
+          position: r.players.position as Position,
+        });
+      }
+    }
+
+    const candidates = [...pointsByPlayer.entries()].map(([playerId, points]) => ({
+      playerId,
+      position: metaByPlayer.get(playerId)!.position,
+      points,
+    }));
+
+    if (candidates.length >= 11) {
+      const selectedIds = selectTeamOfTheWeek(candidates);
+      teamOfWeek = {
+        gameweekNumber: finalized.data.number,
+        players: [...selectedIds].map((id) => {
+          const meta = metaByPlayer.get(id)!;
+          return {
+            id,
+            name: meta.name,
+            fullName: meta.fullName,
+            clubName: meta.clubName,
+            clubShort: meta.clubShort,
+            clubColor: meta.clubColor,
+            position: meta.position,
+            points: pointsByPlayer.get(id) ?? 0,
+          };
+        }),
+      };
+    }
   }
 
   const data: StatsData = {
@@ -109,12 +175,13 @@ export default async function StatistikePage({
         clubName: null,
         value: Number(r.total_club_fantasy_points),
       })),
+    teamOfWeek,
   };
 
   const hasAnything =
     data.byPosition.length + data.scorers.length + data.assists.length + data.clubs.length > 0;
 
-  if (!hasAnything) {
+  if (!hasAnything && !data.teamOfWeek) {
     return (
       <Shell>
         <EmptyStats />

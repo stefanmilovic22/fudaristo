@@ -7,6 +7,7 @@ import {
   pullWorldfootballAction,
   previewWorldfootballAction,
   previewPastedAction,
+  previewEspnAction,
   applyWorldfootballStatsAction,
   type PullResult,
   type PreviewResult,
@@ -36,6 +37,8 @@ export function WorldfootballPuller({
   const [stale, setStale] = useState(false);
   const [pasted, setPasted] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  const [espnInput, setEspnInput] = useState("");
+  const [showEspn, setShowEspn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handlePreview() {
@@ -59,6 +62,20 @@ export function WorldfootballPuller({
     setPreview(null);
     try {
       setPreview(await previewPastedAction(fixtureId, pasted));
+    } catch (err) {
+      setError(isStaleDeploymentError(err) ? STALE_DEPLOYMENT_MESSAGE : (err as Error).message);
+      setStale(isStaleDeploymentError(err));
+    } finally {
+      setPulling(false);
+    }
+  }
+
+  async function handleEspnPreview() {
+    setPulling(true);
+    setError(null);
+    setPreview(null);
+    try {
+      setPreview(await previewEspnAction(fixtureId, espnInput));
     } catch (err) {
       setError(isStaleDeploymentError(err) ? STALE_DEPLOYMENT_MESSAGE : (err as Error).message);
       setStale(isStaleDeploymentError(err));
@@ -202,6 +219,50 @@ export function WorldfootballPuller({
             >
               {pulling ? "Čitam…" : "Pročitaj nalepljeno"}
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Alternativa worldfootball-u: ESPN-ov nezvaničan JSON API. Za razliku
+          od worldfootball-a, ovde ne parsiramo tekst — ESPN vraća strukturirane
+          podatke po igraču (golovi, asistencije, kartoni...) i tačan minut za
+          svaku izmenu/gol, pa nema rizika od pogrešnog razdvajanja postava.
+          NEDOKUMENTOVAN endpoint — može prestati da radi bez najave, zato je
+          ovo dodatna opcija, ne zamena za worldfootball tok iznad. */}
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setShowEspn((v) => !v)}
+          className="text-slate-300 text-sm font-semibold hover:text-chalk-50"
+        >
+          {showEspn ? "− " : "+ "}
+          Popuni sa ESPN-a (alternativa, ako worldfootball ne radi)
+        </button>
+
+        {showEspn && (
+          <div className="mt-2">
+            <p className="text-slate-400 text-xs mb-2 leading-relaxed">
+              Nađi meč na{" "}
+              <code className="text-slate-300">espn.com/soccer/match/_/gameId/...</code> (liga:
+              Grčka Super League) i nalepi ovde ceo link ili samo broj (gameId / event ID).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <input
+                type="text"
+                value={espnInput}
+                onChange={(e) => setEspnInput(e.target.value)}
+                placeholder="https://www.espn.com/soccer/match/_/gameId/... ili sam broj"
+                className="flex-1 min-w-[240px] bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-chalk-50 text-xs font-mono focus:border-gold-400 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleEspnPreview}
+                disabled={pulling || applying || espnInput.trim().length === 0}
+                className="bg-gold-400 text-navy-950 font-bold text-sm px-4 py-2 rounded-lg hover:bg-gold-300 transition-colors disabled:opacity-40"
+              >
+                {pulling ? "Čitam…" : "Pročitaj sa ESPN-a"}
+              </button>
+            </div>
           </div>
         )}
       </div>
