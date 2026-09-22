@@ -107,13 +107,20 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      {/* Dugme za meni — samo ispod 1024px */}
+      {/* Dugme za meni — samo ispod 1280px.
+          Prag je namerno xl (1280), ne lg (1024): sa 6-7 tabova (uključujući
+          Pravila i, za admina, Admin) i grčkim prevodom (duži od srpskog i
+          engleskog — "Διαχείριση", "Η ομάδα μου"...), traka + logo + profil
+          NE STAJU u 1024-1279px opseg — poslednji tabovi i profil bedž su
+          bili gurnuti van vidljivog dela ekrana (potvrđeno merenjem, ne samo
+          "sitno seče" kao ranija ispravka). Ispod xl korisnik uvek dobija
+          bočni meni, koji ne zavisi od širine sadržaja pa ne može da procuri. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("openMenu")}
         aria-expanded={open}
-        className="order-3 lg:hidden shrink-0 w-10 h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
+        className="order-3 xl:hidden shrink-0 w-10 h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
       >
         <svg
           viewBox="0 0 24 24"
@@ -126,8 +133,15 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
         </svg>
       </button>
 
-      {/* Traka sa tabovima — od 1024px */}
-      <nav className="order-2 hidden lg:flex shrink-0 gap-1 bg-navy-800 p-1 rounded-lg">
+      {/* Traka sa tabovima — od 1280px, videti obrazloženje iznad.
+          NAMERNO min-w-0 (ne shrink-0) + overflow-x-auto: broj tabova raste
+          (Pravila je tek dodato, admin dobija još jedan), a grčki prevod je
+          duži od ostala dva jezika — kombinacija bez ovoga probija čak i
+          1280-1366px prozore i gura logo/profil van ekrana (izmereno). Ako
+          jednog dana ni ovde ne stane sve, traka se sama skroluje vodoravno
+          umesto da nešto drugo pukne — jedini ishod koji ne zavisi od toga
+          koliko će tabova/jezika biti sutra. */}
+      <nav className="order-2 hidden xl:flex min-w-0 overflow-x-auto gap-1 bg-navy-800 p-1 rounded-lg">
         {items.map(({ key, href }) => {
           const active = isActive(href);
           const Icon = ICONS[key];
@@ -157,7 +171,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Bočni meni */}
       {open && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className="xl:hidden fixed inset-0 z-50 flex">
           <button
             type="button"
             aria-label={t("closeMenu")}

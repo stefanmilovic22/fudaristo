@@ -101,11 +101,23 @@ export default async function LocaleLayout({
 
               <MainNav isAdmin={Boolean(profile?.is_admin)} />
 
-              <div className="order-2 lg:order-3 flex items-center gap-2 sm:gap-3 min-w-0">
+              {/* order-2 do xl (ispod menija, kad je meni order-3) — mora da
+                  prati isti prag kao MainNav.tsx (videti komentar tamo za
+                  zašto xl, ne lg). */}
+              {/* shrink-0: bez ovoga isti problem kao nav ranije — flexbox bi
+                  sažimao OVU kutiju ispod stvarne širine profil-bedža (koji
+                  ima max-w-[220px] ali to ne pomaže ako mu roditelj dobije
+                  manje mesta nego što bedž traži), pa bi tekst tima curio
+                  preko granice bedža. */}
+              <div className="order-2 xl:order-3 flex items-center gap-2 sm:gap-3 min-w-0 xl:shrink-0">
                 <LocaleSwitcher />
 
+                {/* max-w se vraća na xl (kad se traka sa tabovima pojavi i
+                    počne da se takmiči za prostor) — bez ovoga bi izuzetno
+                    dug naziv tima mogao opet da gurne tabove van ekrana, isti
+                    problem kao onaj koji je xl prag gore rešio. */}
                 {profile ? (
-                  <div className="flex items-center gap-2 sm:gap-3 bg-navy-800 rounded-full pl-1.5 pr-3 sm:pr-4 py-1.5 border border-navy-600 min-w-0 max-w-[190px] sm:max-w-none">
+                  <div className="flex items-center gap-2 sm:gap-3 bg-navy-800 rounded-full pl-1.5 pr-3 sm:pr-4 py-1.5 border border-navy-600 min-w-0 max-w-[190px] sm:max-w-none xl:max-w-[220px]">
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-xs"
                       style={{ backgroundColor: profile.team_color }}
