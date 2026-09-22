@@ -103,6 +103,7 @@
     "tabAssists": "Assists",
     "tabClubs": "Clubs",
     "tabTeam": "Team of the week",
+    "tabRatings": "Ratings",
     "teamOfWeekSubtitle": "Best XI of gameweek {number}, by fantasy points — not any single manager's squad.",
     "teamOfWeekFormation": "Formation {formation}",
     "noTeamOfWeek": "The team of the week appears once the first gameweek is scored.",
@@ -110,10 +111,12 @@
     "topScorers": "Top scorers",
     "topAssists": "Most assists",
     "clubsByPoints": "Clubs by fantasy points",
+    "topRatings": "Top rated",
     "noGoals": "No goals have been recorded yet.",
     "noAssists": "No assists have been recorded yet.",
     "noClubPoints": "Club totals appear once players start scoring points.",
     "noPositionPoints": "Points appear once the first gameweek is scored.",
+    "noRatings": "No SofaScore ratings with enough appearances yet.",
     "unitPoints": "pts",
     "unitGoals": "gls",
     "unitAssists": "ast"
@@ -280,7 +283,8 @@
     "close": "Close",
     "total": "Total",
     "captainX2": "Captain ×2",
-    "tripleX3": "Triple ×3"
+    "tripleX3": "Triple ×3",
+    "rating": "Rating"
   },
   "team": {
     "gameweek": "GW",

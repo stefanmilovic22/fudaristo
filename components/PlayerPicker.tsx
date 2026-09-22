@@ -46,6 +46,7 @@ export function PlayerPicker({
   const tPos = useTranslations("positions");
   const tCommon = useTranslations("common");
   const tStats = useTranslations("stats");
+  const tInfo = useTranslations("playerInfo");
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position | "ALL">("ALL");
   const [clubId, setClubId] = useState<string>("ALL");
@@ -212,6 +213,9 @@ export function PlayerPicker({
                 </span>
                 <span className="block text-[11px] text-slate-400 truncate">
                   {p.club_name} · {p.position}
+                  {p.avg_rating !== null && (
+                    <span className="text-gold-300"> · {tInfo("rating")} {p.avg_rating.toFixed(1)}</span>
+                  )}
                 </span>
               </span>
               <span className="shrink-0 text-right">

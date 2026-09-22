@@ -77,6 +77,12 @@ export default async function MojTimPage({
     .order("position")
     .order("price", { ascending: false });
 
+  // Prosečna ocena — pogled, ne ručna agregacija (videti migraciju 010).
+  const { data: avgRatings } = await supabase.from("v_player_avg_rating").select("player_id, avg_rating");
+  const avgRatingByPlayer = new Map<string, number>(
+    (avgRatings ?? []).map((r: any) => [r.player_id, Number(r.avg_rating)])
+  );
+
   const selectablePlayers: SelectablePlayer[] = (players ?? []).map((p: any) => ({
     id: p.id,
     first_name: p.first_name,
@@ -89,6 +95,7 @@ export default async function MojTimPage({
     club_short: p.clubs?.short_name ?? "?",
     club_color: p.clubs?.primary_color ?? "#8494AC",
     total_points: p.total_points ?? 0,
+    avg_rating: avgRatingByPlayer.get(p.id) ?? null,
   }));
 
   if (!hasSquad) {
@@ -212,6 +219,7 @@ export default async function MojTimPage({
       club_short: r.players.clubs?.short_name ?? "?",
       club_color: r.players.clubs?.primary_color ?? "#8494AC",
       total_points: r.players.total_points ?? 0,
+      avg_rating: avgRatingByPlayer.get(r.players.id) ?? null,
     },
     purchasePrice: Number(r.purchase_price),
     isStarting: r.is_starting,

@@ -11,6 +11,8 @@ export type BreakdownGroup = {
   matchLabel?: string;
   items: ScoringLineItem[];
   subtotal: number;
+  /** SofaScore ocena ZA OVAJ meč — null kad je nema (nije uneta, ili igrač nije igrao). */
+  rating?: number | null;
 };
 
 export type PlayerPointsBreakdownPopoverProps = {
@@ -113,8 +115,19 @@ export function PlayerPointsBreakdownPopover({
       <div className="flex flex-col">
         {groups.map((g, gi) => (
           <div key={gi} className={gi > 0 ? "mt-2 pt-2 border-t border-white/10" : ""}>
-            {g.matchLabel && (
-              <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">{g.matchLabel}</p>
+            {(g.matchLabel || g.rating != null) && (
+              <div className="flex items-center justify-between mb-1">
+                {g.matchLabel ? (
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">{g.matchLabel}</p>
+                ) : (
+                  <span />
+                )}
+                {g.rating != null && (
+                  <span className="text-[10px] font-semibold text-gold-300 tabular-nums">
+                    {t("rating")} {g.rating.toFixed(1)}
+                  </span>
+                )}
+              </div>
             )}
             {g.items.map((item, ii) => (
               <div

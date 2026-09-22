@@ -81,6 +81,8 @@ export type SelectablePlayer = {
   club_short: string;
   club_color: string;
   total_points: number;
+  /** Prosečna SofaScore ocena (v_player_avg_rating) — null dok nema nijednu ocenu. */
+  avg_rating: number | null;
 };
 
 /**

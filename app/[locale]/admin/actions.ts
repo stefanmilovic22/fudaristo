@@ -24,6 +24,8 @@ import {
   importFixtures,
   type TaskResult,
 } from "@/lib/maintenance";
+import { parseSofascoreLineups, parseSofascoreLineupsObject } from "@/lib/sofascore-parser";
+import type { Position } from "@/lib/fantasy-rules";
 
 /**
  * Sve akcije ovde prvo prolaze requireAdmin() (redirect ako nije admin), pa
@@ -869,41 +871,343 @@ export async function applyWorldfootballStatsAction(fixtureId: string, rows: Pre
 }
 
 // ----------------------------------------------------------------------------
-// PRIVREMENO — samo test izvodljivosti pre nego što se gradi ceo SofaScore tok
-// (ocene igrača). Pitanje: da li Vercel-ov serverski fetch dobija 403 od
-// SofaScore-a (poznato po strožijoj zaštiti od bot/data-centar IP adresa nego
-// ESPN), ili prolazi. Ne piše ništa u bazu — samo javlja HTTP status i mali
-// isečak odgovora. Ukloniti (ili zameniti pravim tokom) kad se pitanje reši.
+// SofaScore ocene — "paste JSON" tok (server ne zove SofaScore, videti
+// komentar u lib/sofascore-parser.ts za zašto). Dva koraka: preview (parsira +
+// predlaže uparivanje, ne piše ništa) pa confirm (upisuje SAMO sofascore_rating,
+// ne dira ostale kolone/ne pravi nove redove za igrače koji nisu odigrali).
 // ----------------------------------------------------------------------------
-export type SofascoreFetchTestResult = {
-  ok: boolean;
-  status: number | null;
-  snippet: string;
-  errorMessage: string | null;
+
+export type SofascoreRatingPreviewRow = {
+  sofaName: string;
+  sofaPosition: Position;
+  rating: number;
+  /** Predloženo po imenu — admin može da promeni pre potvrde. */
+  matchedPlayerId: string | null;
 };
 
-export async function testSofascoreFetchAction(eventId: string): Promise<SofascoreFetchTestResult> {
-  await requireAdmin();
+export type SofascoreRatingPreview = {
+  confirmed: boolean;
+  warnings: string[];
+  rows: SofascoreRatingPreviewRow[];
+  /** Ceo sastav oba kluba iz ovog meča — za padajući meni ako predlog fali/greši. */
+  squadPlayers: { id: string; name: string; position: Position }[];
+};
 
-  const url = `https://www.sofascore.com/api/v1/event/${eventId}/lineups`;
-  try {
-    const res = await fetch(url, {
-      headers: { ...BROWSER_HEADERS, Referer: "https://www.sofascore.com/" },
-      signal: AbortSignal.timeout(15000),
+function normalizeName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+export async function previewSofascoreRatingsAction(
+  fixtureId: string,
+  jsonText: string
+): Promise<SofascoreRatingPreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: fixture } = await supabase
+    .from("fixtures")
+    .select("id, home_club_id, away_club_id")
+    .eq("id", fixtureId)
+    .single();
+  if (!fixture) throw new Error("Meč nije nađen.");
+
+  const { data: squadPlayers } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, position")
+    .in("club_id", [fixture.home_club_id, fixture.away_club_id]);
+
+  const squad = (squadPlayers ?? []).map((p: any) => ({
+    id: p.id as string,
+    name: `${p.first_name} ${p.last_name}`.trim(),
+    position: p.position as Position,
+  }));
+
+  const parsed = parseSofascoreLineups(jsonText);
+
+  // Samo igrači koji su stvarno odigrali (rating !== null) — nema smisla
+  // prikazivati neiskorišćene rezerve u pregledu za upis ocene.
+  const rows: SofascoreRatingPreviewRow[] = parsed.players
+    .filter((p) => p.rating !== null)
+    .map((p) => {
+      const n = normalizeName(p.name);
+      const match = squad.find((s: { id: string; name: string; position: Position }) => {
+        const ln = normalizeName(s.name.split(" ").slice(-1)[0]);
+        return ln.length > 0 && (n.includes(ln) || ln.includes(n));
+      });
+      return {
+        sofaName: p.name,
+        sofaPosition: p.position,
+        rating: p.rating as number,
+        matchedPlayerId: match?.id ?? null,
+      };
     });
-    const text = await res.text();
-    return {
-      ok: res.ok,
-      status: res.status,
-      snippet: text.slice(0, 400),
-      errorMessage: null,
-    };
-  } catch (e) {
-    return {
-      ok: false,
-      status: null,
-      snippet: "",
-      errorMessage: e instanceof Error ? e.message : String(e),
-    };
+
+  return { confirmed: parsed.confirmed, warnings: parsed.warnings, rows, squadPlayers: squad };
+}
+
+export async function confirmSofascoreRatingsAction(
+  fixtureId: string,
+  entries: { playerId: string; rating: number }[]
+): Promise<{ written: number }> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const { data: fixture } = await supabase
+    .from("fixtures")
+    .select("id, gameweek_id")
+    .eq("id", fixtureId)
+    .single();
+  if (!fixture) throw new Error("Meč nije nađen.");
+
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, club_id")
+    .in(
+      "id",
+      entries.map((e) => e.playerId)
+    );
+  const clubByPlayer = new Map((players ?? []).map((p: any) => [p.id as string, p.club_id as string]));
+
+  const errors: string[] = [];
+  await Promise.all(
+    entries.map(async (e) => {
+      const clubId = clubByPlayer.get(e.playerId);
+      if (!clubId) {
+        errors.push(`${e.playerId}: igrač nije nađen.`);
+        return;
+      }
+      const { error } = await supabase.from("player_gameweek_stats").upsert(
+        {
+          player_id: e.playerId,
+          club_id: clubId,
+          gameweek_id: fixture.gameweek_id,
+          fixture_id: fixtureId,
+          sofascore_rating: e.rating,
+        },
+        { onConflict: "player_id,fixture_id" }
+      );
+      if (error) errors.push(`${e.playerId}: ${error.message}`);
+    })
+  );
+
+  if (errors.length > 0) throw new Error(`Neke ocene nisu upisane: ${errors.join("; ")}`);
+
+  revalidatePath(`/admin/mecevi/${fixtureId}`);
+  return { written: entries.length };
+}
+
+// ----------------------------------------------------------------------------
+// SofaScore ocene — BULK unos (backfill više kola odjednom). Fajl dolazi iz
+// browser-konzola skripte (data je admin-u posebno, nije deo koda ovde) koja,
+// iz NJEGOVOG browsera, prođe kroz .../events/round/{n} pa .../lineups za
+// svaki odigran meč, i spakuje sve u {matches: [{sofaEventId, homeTeam,
+// awayTeam, round, lineups}]}.
+//
+// Isti dvokoračni princip kao pojedinačni meč: preview (upari mečeve I
+// igrače, ne piše ništa) pa confirm.
+// ----------------------------------------------------------------------------
+
+export type SofascoreBulkMatch = {
+  sofaEventId: number | string;
+  sofaHomeTeam: string;
+  sofaAwayTeam: string;
+  round: number | null;
+  matchedFixtureId: string | null;
+  /** "Levadiakos — Olympiacos (kolo 5)" — za prikaz kad NIJE nađen naš meč. */
+  label: string;
+  rows: SofascoreRatingPreviewRow[];
+  squadPlayers: { id: string; name: string; position: Position }[];
+  warnings: string[];
+};
+
+export type SofascoreBulkPreview = {
+  matches: SofascoreBulkMatch[];
+};
+
+function normalizeTeamName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// Isto pravilo kao lib/espn-fixtures.ts namesMatch — SofaScore često ima
+// zvaničniji pun naziv od naše baze (npr. "APO Levadiakos" vs "Levadiakos",
+// "GFS Panetolikos" vs "Panetolikos") — obostrana provera "sadrži" hvata sve
+// te slučajeve. Klubovi koji su potpuno promenili ime (npr. "Asteras Aktor"
+// nekad "Asteras Tripolis") NEĆE se naći ovako — ostaju u "nije nađen meč"
+// upozorenju za ručno uparivanje, umesto pogrešnog nagađanja.
+function teamNamesMatch(a: string, b: string): boolean {
+  const na = normalizeTeamName(a);
+  const nb = normalizeTeamName(b);
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+export async function previewSofascoreBulkAction(bulkJsonText: string): Promise<SofascoreBulkPreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  let bulk: any;
+  try {
+    bulk = JSON.parse(bulkJsonText);
+  } catch {
+    throw new Error("Ovo nije validan JSON — proveri da li je ceo fajl učitan.");
   }
+  const bulkMatches: any[] = Array.isArray(bulk?.matches) ? bulk.matches : [];
+  if (bulkMatches.length === 0) throw new Error("Fajl ne sadrži nijedan meč ('matches' je prazno).");
+
+  const { data: fixtures } = await supabase
+    .from("fixtures")
+    .select("id, home_club_id, away_club_id, home:home_club_id(name), away:away_club_id(name), gameweeks!gameweek_id(number)");
+
+  const { data: allPlayers } = await supabase.from("players").select("id, first_name, last_name, position, club_id");
+  const playersByClub = new Map<string, { id: string; name: string; position: Position }[]>();
+  for (const p of (allPlayers ?? []) as any[]) {
+    const list = playersByClub.get(p.club_id) ?? [];
+    list.push({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim(), position: p.position as Position });
+    playersByClub.set(p.club_id, list);
+  }
+
+  const matches: SofascoreBulkMatch[] = bulkMatches.map((m) => {
+    const homeTeam = String(m.homeTeam ?? "?");
+    const awayTeam = String(m.awayTeam ?? "?");
+    const round = typeof m.round === "number" ? m.round : null;
+    const label = `${homeTeam} — ${awayTeam}${round !== null ? ` (kolo ${round})` : ""}`;
+    const warnings: string[] = [];
+
+    // Liga se igra na dva kruga (svaki par klubova igra i kod i gost tokom
+    // sezone), pa "obrnut redosled dozvoljen" bez ograničenja na kolo uvek
+    // nalazi OBA kruga kao kandidate. Prvo pokušaj TAČNO kolo (i tu je
+    // obrnut redosled bezbedan — pokriva slučaj da izvori ne slažu ko je
+    // domaćin za ISTI meč, ne meša dva različita meča). Ako to ne uspe (npr.
+    // brojevi kola između SofaScore-a i nas nisu poravnati), padni na tačan
+    // redosled bez obzira na kolo — to i dalje razdvaja dva kruga, jer je
+    // domaćin/gost obrnut između njih.
+    let candidates = (fixtures ?? []).filter(
+      (f: any) =>
+        (f.gameweeks as any)?.number === round &&
+        ((teamNamesMatch(f.home?.name ?? "", homeTeam) && teamNamesMatch(f.away?.name ?? "", awayTeam)) ||
+          (teamNamesMatch(f.home?.name ?? "", awayTeam) && teamNamesMatch(f.away?.name ?? "", homeTeam)))
+    );
+    if (candidates.length !== 1) {
+      candidates = (fixtures ?? []).filter(
+        (f: any) => teamNamesMatch(f.home?.name ?? "", homeTeam) && teamNamesMatch(f.away?.name ?? "", awayTeam)
+      );
+    }
+
+    if (candidates.length === 0) {
+      warnings.push("Nije nađen odgovarajući meč u našoj bazi — proveri ručno preko pojedinačnog unosa.");
+      return {
+        sofaEventId: m.sofaEventId,
+        sofaHomeTeam: homeTeam,
+        sofaAwayTeam: awayTeam,
+        round,
+        matchedFixtureId: null,
+        label,
+        rows: [],
+        squadPlayers: [],
+        warnings,
+      };
+    }
+    if (candidates.length > 1) {
+      warnings.push(`Nađeno ${candidates.length} mogućih mečeva u bazi — preskačem, uparuj ručno.`);
+      return {
+        sofaEventId: m.sofaEventId,
+        sofaHomeTeam: homeTeam,
+        sofaAwayTeam: awayTeam,
+        round,
+        matchedFixtureId: null,
+        label,
+        rows: [],
+        squadPlayers: [],
+        warnings,
+      };
+    }
+
+    const fixture = candidates[0] as any;
+    const squadPlayers = [
+      ...(playersByClub.get(fixture.home_club_id) ?? []),
+      ...(playersByClub.get(fixture.away_club_id) ?? []),
+    ];
+
+    const parsed = parseSofascoreLineupsObject(m.lineups);
+    warnings.push(...parsed.warnings);
+
+    const rows: SofascoreRatingPreviewRow[] = parsed.players
+      .filter((p) => p.rating !== null)
+      .map((p) => {
+        const n = normalizeName(p.name);
+        const match = squadPlayers.find((s) => {
+          const ln = normalizeName(s.name.split(" ").slice(-1)[0]);
+          return ln.length > 0 && (n.includes(ln) || ln.includes(n));
+        });
+        return {
+          sofaName: p.name,
+          sofaPosition: p.position,
+          rating: p.rating as number,
+          matchedPlayerId: match?.id ?? null,
+        };
+      });
+
+    return {
+      sofaEventId: m.sofaEventId,
+      sofaHomeTeam: homeTeam,
+      sofaAwayTeam: awayTeam,
+      round,
+      matchedFixtureId: fixture.id,
+      label: `${fixture.home?.name ?? homeTeam} — ${fixture.away?.name ?? awayTeam} (kolo ${(fixture.gameweeks as any)?.number ?? "?"})`,
+      rows,
+      squadPlayers,
+      warnings,
+    };
+  });
+
+  return { matches };
+}
+
+export async function confirmSofascoreBulkAction(
+  entries: { fixtureId: string; playerId: string; rating: number }[]
+): Promise<{ written: number }> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const fixtureIds = [...new Set(entries.map((e) => e.fixtureId))];
+  const { data: fixtures } = await supabase.from("fixtures").select("id, gameweek_id").in("id", fixtureIds);
+  const gwByFixture = new Map((fixtures ?? []).map((f: any) => [f.id as string, f.gameweek_id as string]));
+
+  const playerIds = [...new Set(entries.map((e) => e.playerId))];
+  const { data: players } = await supabase.from("players").select("id, club_id").in("id", playerIds);
+  const clubByPlayer = new Map((players ?? []).map((p: any) => [p.id as string, p.club_id as string]));
+
+  const errors: string[] = [];
+  await Promise.all(
+    entries.map(async (e) => {
+      const gameweekId = gwByFixture.get(e.fixtureId);
+      const clubId = clubByPlayer.get(e.playerId);
+      if (!gameweekId || !clubId) {
+        errors.push(`${e.playerId}@${e.fixtureId}: meč ili igrač nije nađen.`);
+        return;
+      }
+      const { error } = await supabase.from("player_gameweek_stats").upsert(
+        {
+          player_id: e.playerId,
+          club_id: clubId,
+          gameweek_id: gameweekId,
+          fixture_id: e.fixtureId,
+          sofascore_rating: e.rating,
+        },
+        { onConflict: "player_id,fixture_id" }
+      );
+      if (error) errors.push(`${e.playerId}@${e.fixtureId}: ${error.message}`);
+    })
+  );
+
+  if (errors.length > 0) throw new Error(`Neke ocene nisu upisane: ${errors.join("; ")}`);
+
+  revalidatePath("/admin");
+  return { written: entries.length };
 }

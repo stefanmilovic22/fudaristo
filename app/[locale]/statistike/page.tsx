@@ -140,6 +140,37 @@ export default async function StatistikePage({
     }
   }
 
+  // --- Ocene (SofaScore) ------------------------------------------------------
+  // v_player_avg_rating (migracija 010) — najviše jedan red po igraču, bez
+  // rizika od Supabase-ove tihe granice od 1000 redova. Minimum 3 ocenjena
+  // nastupa da jedan izuzetno dobar/loš meč ne izbaci nekog na vrh liste.
+  const { data: ratingRows } = await supabase
+    .from("v_player_avg_rating")
+    .select("player_id, avg_rating, rated_appearances")
+    .gte("rated_appearances", 3)
+    .order("avg_rating", { ascending: false })
+    .limit(20);
+
+  const ratingPlayerIds = (ratingRows ?? []).map((r: any) => r.player_id);
+  const { data: ratingPlayers } =
+    ratingPlayerIds.length > 0
+      ? await supabase.from("players").select("id, first_name, last_name, clubs(name)").in("id", ratingPlayerIds)
+      : { data: [] };
+  const ratingPlayerById = new Map((ratingPlayers ?? []).map((p: any) => [p.id, p]));
+
+  const ratings = (ratingRows ?? [])
+    .map((r: any) => {
+      const p = ratingPlayerById.get(r.player_id);
+      if (!p) return null;
+      return {
+        id: r.player_id,
+        name: playerFullName(p),
+        clubName: p.clubs?.name ?? null,
+        value: Number(r.avg_rating),
+      };
+    })
+    .filter((x: any): x is NonNullable<typeof x> => x !== null);
+
   const data: StatsData = {
     byPosition: (byPosition.data ?? []).map((r: any) => ({
       id: r.id,
@@ -175,11 +206,13 @@ export default async function StatistikePage({
         clubName: null,
         value: Number(r.total_club_fantasy_points),
       })),
+    ratings,
     teamOfWeek,
   };
 
   const hasAnything =
-    data.byPosition.length + data.scorers.length + data.assists.length + data.clubs.length > 0;
+    data.byPosition.length + data.scorers.length + data.assists.length + data.clubs.length + data.ratings.length >
+    0;
 
   if (!hasAnything && !data.teamOfWeek) {
     return (

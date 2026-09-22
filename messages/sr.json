@@ -103,6 +103,7 @@
     "tabAssists": "Asistenti",
     "tabClubs": "Klubovi",
     "tabTeam": "Tim kola",
+    "tabRatings": "Ocene",
     "teamOfWeekSubtitle": "Najbolji sastav {number}. kola, po fantasy poenima — ne sastav nijednog korisnika.",
     "teamOfWeekFormation": "Formacija {formation}",
     "noTeamOfWeek": "Tim kola se pojavljuje čim se zaključa prvo kolo.",
@@ -110,10 +111,12 @@
     "topScorers": "Najbolji strelci",
     "topAssists": "Najviše asistencija",
     "clubsByPoints": "Klubovi po fantasy poenima",
+    "topRatings": "Najbolje ocenjeni",
     "noGoals": "Još nijedan gol nije unet u statistiku.",
     "noAssists": "Još nijedna asistencija nije uneta u statistiku.",
     "noClubPoints": "Klupske sume se pojavljuju čim igrači počnu da skupljaju poene.",
     "noPositionPoints": "Poeni se pojavljuju čim admin obračuna prvo kolo.",
+    "noRatings": "Još nema unetih SofaScore ocena sa dovoljno nastupa.",
     "unitPoints": "bod.",
     "unitGoals": "gol.",
     "unitAssists": "asist."
@@ -280,7 +283,8 @@
     "close": "Zatvori",
     "total": "Ukupno",
     "captainX2": "Kapiten ×2",
-    "tripleX3": "Triple ×3"
+    "tripleX3": "Triple ×3",
+    "rating": "Ocena"
   },
   "team": {
     "gameweek": "Kolo",

@@ -89,7 +89,8 @@ export default async function TimPage({
       .from("player_gameweek_stats")
       .select(
         "player_id, fixture_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
-          "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points"
+          "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points, " +
+          "sofascore_rating"
       )
       .eq("gameweek_id", lastFinalized.id)
       .in("player_id", playerIds);
@@ -124,6 +125,7 @@ export default async function TimPage({
           bonus_points: r.bonus_points,
         }),
         subtotal: r.fantasy_points ?? 0,
+        rating: r.sofascore_rating !== null && r.sofascore_rating !== undefined ? Number(r.sofascore_rating) : null,
       }));
       breakdownByPlayer.set(playerId, groups);
     }

@@ -13,7 +13,7 @@ import {
 import { MaintenancePanel } from "./maintenance-panel";
 import { PrepareStatsButton } from "./prepare-stats-button";
 import { FindEspnLinksButton } from "./find-espn-links-button";
-import { TestSofascoreButton } from "./test-sofascore-button";
+import { SofascoreBulkPuller } from "./sofascore-bulk-puller";
 
 /**
  * Poslovi održavanja zovu TheSportsDB sa pauzama zbog rate limita, pa im
@@ -253,7 +253,7 @@ export default async function AdminPage() {
         }}
       />
 
-      <TestSofascoreButton />
+      <SofascoreBulkPuller />
 
       <section className="bg-navy-800 border border-navy-600 rounded-lg p-5">
         <h3 className="font-display text-lg mb-2">Prozor za Joker #1 (zimska pauza)</h3>

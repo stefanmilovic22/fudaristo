@@ -25,6 +25,7 @@ export type PlayerInfoPopoverProps = {
     club_color: string;
     position: Position;
     total_points: number;
+    avg_rating: number | null;
   };
   fixtures: UpcomingFixture[];
   onClose: () => void;
@@ -109,11 +110,21 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: Play
         <span className="text-slate-400 text-xs truncate">{player.club_name}</span>
       </div>
 
-      <div className="flex items-baseline justify-between mt-3 mb-2.5 px-2.5 py-2 bg-navy-900 rounded-lg">
-        <span className="text-[10px] uppercase tracking-wide text-slate-400">{t("points")}</span>
-        <span className="font-display font-bold text-2xl text-gold-300 tabular-nums">
-          {player.total_points}
-        </span>
+      <div className="grid grid-cols-2 gap-1.5 mt-3 mb-2.5">
+        <div className="px-2.5 py-2 bg-navy-900 rounded-lg">
+          <span className="block text-[10px] uppercase tracking-wide text-slate-400">{t("points")}</span>
+          <span className="font-display font-bold text-2xl text-gold-300 tabular-nums">
+            {player.total_points}
+          </span>
+        </div>
+        {player.avg_rating !== null && (
+          <div className="px-2.5 py-2 bg-navy-900 rounded-lg">
+            <span className="block text-[10px] uppercase tracking-wide text-slate-400">{t("rating")}</span>
+            <span className="font-display font-bold text-2xl text-gold-300 tabular-nums">
+              {player.avg_rating.toFixed(1)}
+            </span>
+          </div>
+        )}
       </div>
 
       <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">{t("nextMatches")}</p>

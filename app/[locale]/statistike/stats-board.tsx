@@ -21,13 +21,14 @@ export type StatsData = {
   scorers: StatEntry[];
   assists: StatEntry[];
   clubs: StatEntry[];
+  ratings: StatEntry[];
   /** null dok nijedno kolo nije zaključano — videti Empty ispod. */
   teamOfWeek: TeamOfWeekData | null;
 };
 
 const POSITION_ORDER = ["GK", "DEF", "MID", "FWD"] as const;
 
-type TabKey = "fantasy" | "scorers" | "assists" | "clubs" | "team";
+type TabKey = "fantasy" | "scorers" | "assists" | "clubs" | "ratings" | "team";
 
 /** Ikonice tabova — ugrađeni SVG, isti pristup kao u glavnoj navigaciji. */
 const TAB_ICON: Record<TabKey, (p: { className?: string }) => React.ReactElement> = {
@@ -57,6 +58,14 @@ const TAB_ICON: Record<TabKey, (p: { className?: string }) => React.ReactElement
       <path d="M12 3l7 3v6c0 4.4-2.9 8-7 9-4.1-1-7-4.6-7-9V6l7-3Z" strokeLinejoin="round" />
     </svg>
   ),
+  ratings: (p) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path
+        d="m12 4 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7L12 4Z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
   team: (p) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <rect x="3" y="4" width="18" height="16" rx="2" strokeLinejoin="round" />
@@ -67,12 +76,13 @@ const TAB_ICON: Record<TabKey, (p: { className?: string }) => React.ReactElement
 
 const TAB_KEYS: {
   key: TabKey;
-  label: "tabFantasy" | "tabScorers" | "tabAssists" | "tabClubs" | "tabTeam";
+  label: "tabFantasy" | "tabScorers" | "tabAssists" | "tabClubs" | "tabRatings" | "tabTeam";
 }[] = [
   { key: "fantasy", label: "tabFantasy" },
   { key: "scorers", label: "tabScorers" },
   { key: "assists", label: "tabAssists" },
   { key: "clubs", label: "tabClubs" },
+  { key: "ratings", label: "tabRatings" },
   { key: "team", label: "tabTeam" },
 ];
 
@@ -128,6 +138,9 @@ export function StatsBoard({ data }: { data: StatsData }) {
           entries={data.clubs}
           empty={t("noClubPoints")}
         />
+      )}
+      {tab === "ratings" && (
+        <SingleList title={t("topRatings")} unit="" entries={data.ratings} empty={t("noRatings")} />
       )}
       {tab === "team" &&
         (data.teamOfWeek ? <TeamOfWeekBoard data={data.teamOfWeek} /> : <Empty text={t("noTeamOfWeek")} />)}

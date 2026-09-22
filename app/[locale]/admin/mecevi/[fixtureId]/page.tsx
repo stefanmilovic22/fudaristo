@@ -2,6 +2,7 @@ import { getAdminAccess } from "@/lib/admin-guard";
 import { AdminAccessDenied } from "@/components/AdminAccessDenied";
 import { updateFixtureScoreAction, saveWorldfootballStatsAction } from "../../actions";
 import { WorldfootballPuller } from "./worldfootball-puller";
+import { SofascoreRatingPuller } from "./sofascore-rating-puller";
 
 export const metadata = { title: "Meč — Admin — Fudaristo" };
 
@@ -34,7 +35,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
     .select(
       "id, player_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
         "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, " +
-        "is_admin_reviewed, raw_api_data, players(first_name, last_name, position, club_id)"
+        "sofascore_rating, is_admin_reviewed, raw_api_data, players(first_name, last_name, position, club_id)"
     )
     .eq("fixture_id", fixtureId)
     .order("player_id");
@@ -113,6 +114,8 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
         hasStats={rows.length > 0}
       />
 
+      <SofascoreRatingPuller fixtureId={fixture.id} />
+
       {rows.length > 0 && (
         <section className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
           <div className="flex items-baseline justify-between mb-3">
@@ -139,6 +142,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
                     <th className="pb-2 px-1">Crveni</th>
                     <th className="pb-2 px-1">Autogol</th>
                     <th className="pb-2 px-1">Bonus</th>
+                    <th className="pb-2 px-1">Ocena</th>
                     <th className="pb-2 pl-1">Na strani?</th>
                   </tr>
                 </thead>
@@ -153,7 +157,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
                     // koja vrednost promeni, key se menja → React remontira red → nove
                     // vrednosti se stvarno vide.
                     <StatRow
-                      key={`${r.player_id}:${r.minutes_played}:${r.goals}:${r.assists}:${r.goals_conceded}:${r.saves}:${r.penalties_saved}:${r.penalties_missed}:${r.yellow_cards}:${r.red_cards}:${r.own_goals}:${r.bonus_points}`}
+                      key={`${r.player_id}:${r.minutes_played}:${r.goals}:${r.assists}:${r.goals_conceded}:${r.saves}:${r.penalties_saved}:${r.penalties_missed}:${r.yellow_cards}:${r.red_cards}:${r.own_goals}:${r.bonus_points}:${r.sofascore_rating}`}
                       row={r}
                     />
                   ))}
@@ -207,6 +211,9 @@ function StatRow({ row }: { row: any }) {
       <td className="py-1.5 px-1">{numberInput("red_cards", row.red_cards)}</td>
       <td className="py-1.5 px-1">{numberInput("own_goals", row.own_goals)}</td>
       <td className="py-1.5 px-1">{numberInput("bonus_points", row.bonus_points ?? 0)}</td>
+      <td className="py-1.5 px-1 text-center text-gold-300 font-semibold">
+        {row.sofascore_rating ?? <span className="text-slate-600 font-normal">–</span>}
+      </td>
       <td className="py-1.5 pl-1 text-center">
         {appearsOnPage === true ? (
           <span className="text-gold-300" title="Ime se pominje na worldfootball strani">
