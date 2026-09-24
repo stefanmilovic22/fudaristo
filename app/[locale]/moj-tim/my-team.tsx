@@ -627,19 +627,27 @@ export function MyTeam({
           </span>
         </div>
 
-        <Pitch>
-          <div className="flex flex-col gap-2 xs:gap-3 sm:gap-4">
-            {rows.map((row, i) => (
-              <PitchRow key={i}>{row.map((s) => renderSlot(s, true))}</PitchRow>
-            ))}
-          </div>
-        </Pitch>
-        <Bench
-          note={tPitch("formation", { label: formation })}
-          goalkeeper={benchGk ? renderSlot(benchGk, false) : undefined}
-        >
-          {benchOutfield.map((s) => renderSlot(s, false))}
-        </Bench>
+        {/* Klik na prazan deo terena/klupe poništava izbor za zamenu — bez
+            ovoga jednom izabran dres (zlatan okvir) nije imao način da se
+            "otkači" osim ponovnim klikom na TAJ ISTI dres. Dresovi/×/C-V
+            dugmići zaustavljaju probijanje klika (stopPropagation u
+            Jersey.tsx), pa ovaj onClick reaguje samo na stvaran klik u
+            prazno. */}
+        <div onClick={() => setSwapSlot(null)}>
+          <Pitch>
+            <div className="flex flex-col gap-2 xs:gap-3 sm:gap-4">
+              {rows.map((row, i) => (
+                <PitchRow key={i}>{row.map((s) => renderSlot(s, true))}</PitchRow>
+              ))}
+            </div>
+          </Pitch>
+          <Bench
+            note={tPitch("formation", { label: formation })}
+            goalkeeper={benchGk ? renderSlot(benchGk, false) : undefined}
+          >
+            {benchOutfield.map((s) => renderSlot(s, false))}
+          </Bench>
+        </div>
 
         {flash && <p className="text-gold-300 text-sm mt-3">{flash}</p>}
       </div>

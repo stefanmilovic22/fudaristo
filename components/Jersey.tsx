@@ -217,15 +217,27 @@ export function Jersey({
         </span>
       )}
 
-      <div className="relative w-full rounded-[9px] bg-white/[0.07] border border-white/10 pt-[5px] shadow-[0_3px_8px_rgba(0,0,0,0.25)]">
+      <div
+        className={`relative w-full rounded-[9px] bg-white/[0.07] border pt-[5px] transition-transform ${
+          active
+            ? "border-gold-400 shadow-[0_3px_10px_rgba(232,179,61,0.35)]"
+            : "border-white/10 shadow-[0_3px_8px_rgba(0,0,0,0.25)]"
+        } ${onClick ? "hover:-translate-y-0.5" : ""} ${active ? "-translate-y-1" : ""}`}
+      >
         <button
           type="button"
-          onClick={onClick}
+          onClick={(e) => {
+            // Klik na dres ne sme da "procuri" do klika na prazan teren/klupu
+            // ispod (videti my-team.tsx) — taj klik čisti izbor za zamenu, pa
+            // bi bez ovoga svaki klik na dres odmah sam sebe poništio.
+            e.stopPropagation();
+            onClick?.();
+          }}
           disabled={!onClick}
           aria-label={name ? `${name}${detail ? `, ${detail}` : ""}` : t("player")}
-          className={`relative flex justify-center w-full rounded-md transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
-            onClick ? "hover:-translate-y-0.5 cursor-pointer" : "cursor-default"
-          } ${active ? "-translate-y-1" : ""}`}
+          className={`relative flex justify-center w-full rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-300 ${
+            onClick ? "cursor-pointer" : "cursor-default"
+          }`}
         >
           {photoUrl ? (
             // Fotografija se NE seče u SHIRT_PATH siluetu (probano — deo dresa
@@ -257,7 +269,6 @@ export function Jersey({
               )}
             </svg>
           )}
-          {active && <span className="absolute inset-x-0 -bottom-1 h-0.5 rounded-full bg-gold-400" />}
         </button>
 
         {isGoalkeeper && (
@@ -283,7 +294,10 @@ export function Jersey({
         {onRemove && (
           <button
             type="button"
-            onClick={onRemove}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
             aria-label={name ? t("remove", { name }) : t("removeGeneric")}
             className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded-full bg-navy-950 border border-slate-500 text-slate-300 text-[10px] leading-none flex items-center justify-center hover:bg-danger-400 hover:text-chalk-50 hover:border-danger-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-300"
           >
@@ -291,7 +305,7 @@ export function Jersey({
           </button>
         )}
 
-        <div className="w-full mt-1 bg-chalk-50 text-navy-950 text-[9px] font-semibold leading-tight px-1 py-[2px] text-center truncate">
+        <div className="w-full bg-chalk-50 text-navy-950 text-[9px] font-semibold leading-tight px-1 py-[2px] text-center truncate">
           {name ?? "—"}
         </div>
         <div className="w-full rounded-b-[8px] bg-navy-950/[0.88] text-chalk-50 text-[8.5px] leading-tight px-1 py-[2px] text-center truncate">
@@ -304,7 +318,10 @@ export function Jersey({
           {onCaptain && (
             <button
               type="button"
-              onClick={onCaptain}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCaptain();
+              }}
               className={`w-[18px] h-[18px] rounded-full text-[9px] font-bold border transition-colors ${
                 isCaptain
                   ? "bg-gold-400 text-navy-950 border-gold-400"
@@ -318,7 +335,10 @@ export function Jersey({
           {onViceCaptain && (
             <button
               type="button"
-              onClick={onViceCaptain}
+              onClick={(e) => {
+                e.stopPropagation();
+                onViceCaptain();
+              }}
               className={`w-[18px] h-[18px] rounded-full text-[9px] font-bold border transition-colors ${
                 isViceCaptain
                   ? "bg-chalk-50 text-navy-950 border-chalk-50"
