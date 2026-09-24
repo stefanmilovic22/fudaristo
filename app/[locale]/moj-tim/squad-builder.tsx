@@ -594,6 +594,7 @@ function SquadStep({
                 <Jersey
                   key={p.id}
                   color={p.club_color}
+                  photoUrl={p.club_jersey_photo_url}
                   name={playerShirtName(p)}
                   detail={formatEUR(p.price)}
                   initials={p.club_short}
@@ -661,6 +662,7 @@ function LineupStep({
     <Jersey
       key={p.id}
       color={p.club_color}
+      photoUrl={p.club_jersey_photo_url}
       name={playerShirtName(p)}
       detail={formatEUR(p.price)}
       initials={p.club_short}

@@ -80,6 +80,8 @@ export type SelectablePlayer = {
    */
   club_short: string;
   club_color: string;
+  /** Prava fotografija kluba (clubs.jersey_photo_url) — null dok klub nema fotografiju. */
+  club_jersey_photo_url: string | null;
   total_points: number;
   /** Prosečna SofaScore ocena (v_player_avg_rating) — null dok nema nijednu ocenu. */
   avg_rating: number | null;

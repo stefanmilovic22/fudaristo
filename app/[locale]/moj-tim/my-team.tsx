@@ -524,6 +524,7 @@ export function MyTeam({
     >
       <Jersey
         color={s.current.club_color}
+        photoUrl={s.current.club_jersey_photo_url}
         name={playerShirtName(s.current)}
         detail={
           // Isto kao za sve ostale igrače, i za novododatog (zamenu) — protivnik

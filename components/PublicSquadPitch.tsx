@@ -15,6 +15,8 @@ export type PublicEntry = {
   clubName: string;
   short: string;
   color: string;
+  /** Prava fotografija dresa kluba (clubs.jersey_photo_url) — null bez fotografije. */
+  jerseyPhotoUrl: string | null;
   isCaptain: boolean;
   isViceCaptain: boolean;
   autoSubbedIn: boolean;
@@ -121,6 +123,7 @@ function EntrySlot({
     <div ref={anchorRef} className="relative">
       <Jersey
         color={entry.color}
+        photoUrl={entry.jerseyPhotoUrl}
         name={entry.lastName || entry.firstName}
         detail={`${displayPoints}`}
         initials={entry.short}

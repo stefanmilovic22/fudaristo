@@ -62,7 +62,7 @@ export default async function MojTimPage({
   const { data: squadRows } = await supabase
     .from("squads")
     .select(
-      "player_id, is_starting, squad_order, is_captain, is_vice_captain, purchase_price, players(id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color))"
+      "player_id, is_starting, squad_order, is_captain, is_vice_captain, purchase_price, players(id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url))"
     )
     .eq("user_id", user.id)
     .eq("gameweek_id", targetGw.id);
@@ -72,7 +72,7 @@ export default async function MojTimPage({
   // Lista svih igrača treba i builderu i transferima na "Moj tim" ekranu.
   const { data: players } = await supabase
     .from("players")
-    .select("id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color)")
+    .select("id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url)")
     .eq("is_active", true)
     .order("position")
     .order("price", { ascending: false });
@@ -94,6 +94,7 @@ export default async function MojTimPage({
     club_name: p.clubs?.name ?? "?",
     club_short: p.clubs?.short_name ?? "?",
     club_color: p.clubs?.primary_color ?? "#8494AC",
+    club_jersey_photo_url: p.clubs?.jersey_photo_url ?? null,
     total_points: p.total_points ?? 0,
     avg_rating: avgRatingByPlayer.get(p.id) ?? null,
   }));
@@ -218,6 +219,7 @@ export default async function MojTimPage({
       club_name: r.players.clubs?.name ?? "?",
       club_short: r.players.clubs?.short_name ?? "?",
       club_color: r.players.clubs?.primary_color ?? "#8494AC",
+      club_jersey_photo_url: r.players.clubs?.jersey_photo_url ?? null,
       total_points: r.players.total_points ?? 0,
       avg_rating: avgRatingByPlayer.get(r.players.id) ?? null,
     },

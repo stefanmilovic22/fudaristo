@@ -67,7 +67,7 @@ export default async function TimPage({
     .from("squads")
     .select(
       "player_id, is_starting, squad_order, is_captain, is_vice_captain, auto_subbed_in, " +
-        "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color))"
+        "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color, jersey_photo_url))"
     )
     .eq("user_id", id)
     .eq("gameweek_id", lastFinalized.id);
@@ -186,6 +186,7 @@ export default async function TimPage({
     clubName: r.players?.clubs?.name ?? "?",
     short: r.players?.clubs?.short_name ?? "?",
     color: r.players?.clubs?.primary_color ?? "#8494AC",
+    jerseyPhotoUrl: r.players?.clubs?.jersey_photo_url ?? null,
     isStarting: r.is_starting,
     squadOrder: r.squad_order,
     isCaptain: r.is_captain,
