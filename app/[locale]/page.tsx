@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { getTargetGameweek } from "@/lib/gameweek";
 import { Pitch, PitchRow } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
@@ -17,38 +18,33 @@ import { DeadlineCountdown } from "@/components/DeadlineCountdown";
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("home");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [t, supabase, user] = await Promise.all([
+    getTranslations("home"),
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   // Rok sledećeg otvorenog kola — javan podatak, treba i neprijavljenom
-  // posetiocu za odbrojavanje na hero sekciji.
-  const targetGw = await getTargetGameweek(supabase);
+  // posetiocu za odbrojavanje na hero sekciji. Profil ide istovremeno.
+  const [targetGw, profileRes] = await Promise.all([
+    getTargetGameweek(supabase),
+    user
+      ? supabase.from("users").select("team_name").eq("id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
   let hasSquad = false;
-  let teamName: string | null = null;
+  const teamName: string | null = profileRes.data?.team_name ?? null;
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("users")
-      .select("team_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    teamName = profile?.team_name ?? null;
-
-    // Sastav se traži za kolo koje se trenutno uređuje — isto kolo koje
-    // otvara /moj-tim, da poruka ovde i stranica tamo ne govore različito.
-    if (targetGw) {
-      const { count } = await supabase
-        .from("squads")
-        .select("player_id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("gameweek_id", targetGw.id);
-      hasSquad = (count ?? 0) > 0;
-    }
+  // Sastav se traži za kolo koje se trenutno uređuje — isto kolo koje
+  // otvara /moj-tim, da poruka ovde i stranica tamo ne govore različito.
+  if (user && targetGw) {
+    const { count } = await supabase
+      .from("squads")
+      .select("player_id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("gameweek_id", targetGw.id);
+    hasSquad = (count ?? 0) > 0;
   }
 
   const cta = !user
@@ -58,7 +54,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       : { href: "/moj-tim", label: t("ctaBuild") };
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8 py-1 sm:py-2 lg:justify-center lg:min-h-[calc(100vh-140px)]">
+    <div className="flex flex-col gap-6 sm:gap-8 py-1 sm:py-2 lg:justify-center lg:min-h-[calc(100dvh-170px)]">
       <section className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-12">
         <div className="flex flex-col items-start gap-3 sm:gap-4 lg:gap-5 flex-1 min-w-0">
           <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold max-w-lg leading-tight">

@@ -1,4 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createPublicClient } from "@/lib/supabase/public";
 import { FixturesBoard, type GameweekFixtures } from "./fixtures-board";
 import { DataLoadError } from "@/components/DataLoadError";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -13,25 +14,57 @@ export async function generateMetadata({
   return { title: `${t("title")} — Fudaristo` };
 }
 
+/**
+ * Raspored je javan i isti za sve — jedan par upita u 60s (i odmah posle admin
+ * unosa, tag "public-data"). Greške se ne keširaju: vraćaju se kao vrednost
+ * samo u ovom pozivu, pa se ponovni upit šalje pri sledećoj poseti.
+ */
+const loadScheduleCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const [gw, fx] = await Promise.all([
+      supabase
+        .from("gameweeks")
+        .select("id, number, deadline_at, starts_at, status")
+        .order("number", { ascending: true }),
+      supabase
+        .from("fixtures")
+        .select(
+          "id, gameweek_id, kickoff_at, status, home_score, away_score, " +
+            "home:home_club_id(name, short_name, primary_color), " +
+            "away:away_club_id(name, short_name, primary_color)"
+        )
+        .order("kickoff_at", { ascending: true }),
+    ]);
+    if (gw.error || fx.error) {
+      throw Object.assign(new Error("schedule"), { gwError: gw.error, fxError: fx.error });
+    }
+    return { gameweeks: gw.data, fixtures: fx.data as any[] | null };
+  },
+  ["schedule-v1"],
+  { revalidate: 60, tags: ["public-data"] }
+);
+
+async function loadSchedule() {
+  try {
+    const r = await loadScheduleCached();
+    return { ...r, gwError: null, fxError: null };
+  } catch (e) {
+    const err = e as { gwError?: any; fxError?: any };
+    return {
+      gameweeks: null,
+      fixtures: null,
+      gwError: err.gwError ?? { message: (e as Error).message },
+      fxError: err.fxError ?? null,
+    };
+  }
+}
+
 export default async function RasporedPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const supabase = await createClient();
-
-  const { data: gameweeks, error: gwError } = await supabase
-    .from("gameweeks")
-    .select("id, number, deadline_at, starts_at, status")
-    .order("number", { ascending: true });
-
-  const { data: fixtures, error: fxError } = await supabase
-    .from("fixtures")
-    .select(
-      "id, gameweek_id, kickoff_at, status, home_score, away_score, " +
-        "home:home_club_id(name, short_name, primary_color), " +
-        "away:away_club_id(name, short_name, primary_color)"
-    )
-    .order("kickoff_at", { ascending: true });
+  const { gameweeks, fixtures, gwError, fxError } = await loadSchedule();
 
   if (gwError || fxError) {
     // U Vercel log ide ceo objekat; na stranicu ide poruka. Bez ovoga se nije

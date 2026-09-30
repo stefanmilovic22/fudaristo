@@ -5,9 +5,10 @@ import { routing } from "./i18n/routing";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-// Zaštićene rute — zahtevaju login. Javne (liga, statistike, raspored,
-// tim/[id]) namerno NISU ovde: GDD sekcija 9 kaže da su vidljive svima.
-const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin"];
+// Zaštićene rute — zahtevaju login. Liga i tim/[id] su zaključani po zahtevu
+// vlasnika (izmena u odnosu na GDD sekciju 9); statistike i raspored su i
+// dalje javni.
+const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin", "/liga", "/tim"];
 
 /**
  * Skida prefiks jezika sa putanje pre provere zaštite.
@@ -79,13 +80,23 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  let user = null;
-  try {
-    const result = await supabase.auth.getUser();
-    user = result.data.user;
-  } catch (e) {
-    console.error("[middleware] auth.getUser() je pukao:", e instanceof Error ? e.message : e);
-    // user ostaje null → zaštićene rute idu na login, javne prolaze
+  // Posetilac bez sesije nema Supabase kolačić — nema šta da se proverava ni
+  // osvežava, pa se mrežni poziv preskače (većina javnih zahteva).
+  const hasSessionCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+
+  let user: unknown = null;
+  if (hasSessionCookie) {
+    try {
+      // getClaims proverava JWT lokalno (bez poziva ka Auth serveru) kad su
+      // ključevi asimetrični, a osvežava sesiju kad token ističe.
+      const result = await supabase.auth.getClaims();
+      user = result.data?.claims ?? null;
+    } catch (e) {
+      console.error("[middleware] auth.getClaims() je pukao:", e instanceof Error ? e.message : e);
+      // user ostaje null → zaštićene rute idu na login, javne prolaze
+    }
   }
 
   if (isProtectedPath(request.nextUrl.pathname) && !user) {

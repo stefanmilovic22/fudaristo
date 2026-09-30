@@ -78,7 +78,11 @@ export type RawStatRow = {
   bonus_points: number;
 };
 
-export type ScoringLineItem = { label: string; value: number };
+/**
+ * `label` je srpski tekst (za skripte/logove); `key` + `count` su za prikaz
+ * korisniku — komponenta ih prevodi kroz namespace "scoring".
+ */
+export type ScoringLineItem = { label: string; value: number; key: string; count?: number };
 
 /**
  * Isti obračun kao calculateRowFantasyPoints, ali kao spisak stavki umesto
@@ -94,12 +98,14 @@ export type ScoringLineItem = { label: string; value: number };
 export function describeRowFantasyPoints(stats: RawStatRow): ScoringLineItem[] {
   const items: ScoringLineItem[] = [];
 
-  if (stats.minutes_played >= 60) items.push({ label: "Nastup (60+ min)", value: 2 });
-  else if (stats.minutes_played >= 1) items.push({ label: "Nastup (1–59 min)", value: 1 });
+  if (stats.minutes_played >= 60) items.push({ label: "Nastup (60+ min)", key: "appearance60", value: 2 });
+  else if (stats.minutes_played >= 1) items.push({ label: "Nastup (1–59 min)", key: "appearance1", value: 1 });
 
   if (stats.goals > 0) {
     items.push({
       label: stats.goals > 1 ? `Golovi (${stats.goals})` : "Gol",
+      key: stats.goals > 1 ? "goals" : "goal",
+      count: stats.goals,
       value: stats.goals * GOAL_POINTS[stats.position],
     });
   }
@@ -107,20 +113,24 @@ export function describeRowFantasyPoints(stats: RawStatRow): ScoringLineItem[] {
   if (stats.assists > 0) {
     items.push({
       label: stats.assists > 1 ? `Asistencije (${stats.assists})` : "Asistencija",
+      key: stats.assists > 1 ? "assists" : "assist",
+      count: stats.assists,
       value: stats.assists * ASSIST_POINTS,
     });
   }
 
   if (stats.clean_sheet && CLEAN_SHEET_POINTS[stats.position] !== 0) {
-    items.push({ label: "Čista mreža", value: CLEAN_SHEET_POINTS[stats.position] });
+    items.push({ label: "Čista mreža", key: "cleanSheet", value: CLEAN_SHEET_POINTS[stats.position] });
   }
 
   if (stats.position === "GK") {
     const savePoints = Math.floor(stats.saves / 3);
-    if (savePoints > 0) items.push({ label: `Odbrane (${stats.saves})`, value: savePoints });
+    if (savePoints > 0) items.push({ label: `Odbrane (${stats.saves})`, key: "saves", count: stats.saves, value: savePoints });
     if (stats.penalties_saved > 0) {
       items.push({
         label: stats.penalties_saved > 1 ? `Odbranjeni penali (${stats.penalties_saved})` : "Odbranjen penal",
+        key: stats.penalties_saved > 1 ? "penSavedN" : "penSaved",
+        count: stats.penalties_saved,
         value: stats.penalties_saved * PENALTY_SAVED_POINTS,
       });
     }
@@ -129,31 +139,40 @@ export function describeRowFantasyPoints(stats: RawStatRow): ScoringLineItem[] {
   if (stats.position === "GK" || stats.position === "DEF") {
     const concededPenalty = Math.floor(stats.goals_conceded / 2) * -1;
     if (concededPenalty !== 0) {
-      items.push({ label: `Primljeni golovi (${stats.goals_conceded})`, value: concededPenalty });
+      items.push({
+        label: `Primljeni golovi (${stats.goals_conceded})`,
+        key: "conceded",
+        count: stats.goals_conceded,
+        value: concededPenalty,
+      });
     }
   }
 
   if (stats.penalties_missed > 0) {
     items.push({
       label: stats.penalties_missed > 1 ? `Promašeni penali (${stats.penalties_missed})` : "Promašen penal",
+      key: stats.penalties_missed > 1 ? "penMissedN" : "penMissed",
+      count: stats.penalties_missed,
       value: stats.penalties_missed * PENALTY_MISSED_POINTS,
     });
   }
   if (stats.yellow_cards > 0) {
-    items.push({ label: "Žuti karton", value: stats.yellow_cards * YELLOW_CARD_POINTS });
+    items.push({ label: "Žuti karton", key: "yellow", value: stats.yellow_cards * YELLOW_CARD_POINTS });
   }
   if (stats.red_cards > 0) {
-    items.push({ label: "Crveni karton", value: stats.red_cards * RED_CARD_POINTS });
+    items.push({ label: "Crveni karton", key: "red", value: stats.red_cards * RED_CARD_POINTS });
   }
   if (stats.own_goals > 0) {
     items.push({
       label: stats.own_goals > 1 ? `Autogolovi (${stats.own_goals})` : "Autogol",
+      key: stats.own_goals > 1 ? "ownGoals" : "ownGoal",
+      count: stats.own_goals,
       value: stats.own_goals * OWN_GOAL_POINTS,
     });
   }
-  if (stats.bonus_points !== 0) items.push({ label: "Bonus", value: stats.bonus_points });
+  if (stats.bonus_points !== 0) items.push({ label: "Bonus", key: "bonus", value: stats.bonus_points });
 
-  if (items.length === 0) items.push({ label: "Bez odigranih minuta", value: 0 });
+  if (items.length === 0) items.push({ label: "Bez odigranih minuta", key: "noMinutes", value: 0 });
 
   return items;
 }

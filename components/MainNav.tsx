@@ -120,7 +120,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
         onClick={() => setOpen(true)}
         aria-label={t("openMenu")}
         aria-expanded={open}
-        className="order-3 xl:hidden shrink-0 w-10 h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
+        className="order-3 xl:hidden shrink-0 w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
       >
         <svg
           viewBox="0 0 24 24"
@@ -141,7 +141,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
           jednog dana ni ovde ne stane sve, traka se sama skroluje vodoravno
           umesto da nešto drugo pukne — jedini ishod koji ne zavisi od toga
           koliko će tabova/jezika biti sutra. */}
-      <nav className="order-2 hidden xl:flex min-w-0 overflow-x-auto gap-1 bg-navy-800 p-1 rounded-lg">
+      <nav className="order-2 hidden xl:flex min-w-0 gap-0.5 bg-navy-800 p-1 rounded-lg">
         {items.map(({ key, href }) => {
           const active = isActive(href);
           const Icon = ICONS[key];
@@ -150,7 +150,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`shrink-0 flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2 rounded-md transition-colors ${
+              className={`flex items-center gap-1.5 text-sm font-semibold px-2.5 py-2 rounded-md whitespace-nowrap transition-colors ${
                 active
                   ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
                   : key === "admin"

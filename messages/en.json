@@ -14,6 +14,7 @@
     "login": "Log in",
     "register": "Sign up",
     "logout": "Log out",
+    "mySettings": "My settings",
     "openMenu": "Open menu",
     "closeMenu": "Close menu"
   },
@@ -137,6 +138,10 @@
     "gameweekPlayed": "GW {number} · played"
   },
   "positions": {
+    "labelGK": "Goalkeeper",
+    "labelDEF": "Defence",
+    "labelMID": "Midfield",
+    "labelFWD": "Attack",
     "GK": "Goalkeepers",
     "DEF": "Defenders",
     "MID": "Midfielders",
@@ -160,6 +165,8 @@
     "whatStats": "the stats"
   },
   "common": {
+    "cancel": "Cancel",
+    "budgetLock": "Wouldn't leave enough for the rest of the squad",
     "alreadyInSquad": "Already in squad",
     "maxFromClub": "Already 3 from club",
     "saving": "Saving…",
@@ -192,6 +199,8 @@
     "joker2Blurb": "Unlimited transfers, no penalty. Opens before the play-offs."
   },
   "pitch": {
+    "captain": "Captain",
+    "viceCaptain": "Vice-captain",
     "bench": "Bench",
     "benchNote": "Bench order decides who comes on first if a player doesn't play a single minute.",
     "player": "Player",
@@ -204,6 +213,7 @@
     "formationLabel": "Formation"
   },
   "picker": {
+    "priceUpTo": "Price up to",
     "choose": "Choose: {position}",
     "allPlayers": "All players",
     "showAll": "show all",
@@ -221,6 +231,11 @@
     "allClubs": "All clubs"
   },
   "settings": {
+    "teamName": "Team name",
+    "teamColor": "Team colour",
+    "teamColorNote": "This is how your team's badge looks.",
+    "favoriteClub": "Favourite club",
+    "noFavorite": "No favourite club",
     "title": "My settings",
     "subtitle": "Your team name and colour are shown to other managers in the league table.",
     "nameEmpty": "Team name cannot be empty.",
@@ -275,7 +290,52 @@
     "afterRefresh": "Then refresh the page — the \"Admin\" link will appear in the navigation.",
     "backToMyClub": "Back to my club"
   },
+  "colorPicker": {
+    "hue": "Hue",
+    "saturation": "Saturation",
+    "lightness": "Lightness",
+    "hex": "Hex code"
+  },
+  "validation": {
+    "squadSize": "The squad must have exactly {size} players (currently: {count}).",
+    "positionCount": "{position}: {required} required, {count} selected.",
+    "budgetExceeded": "Budget exceeded: {spent}M of {budget}M.",
+    "maxPerClub": "At most {max} players from the same club — {club}: {count}.",
+    "startingSize": "{size} starters must be selected (currently: {count}).",
+    "startingBounds": "{position} in starting 11: {count} (allowed {min}–{max}).",
+    "pickCaptain": "Pick a captain.",
+    "pickVice": "Pick a vice-captain.",
+    "sameCaptain": "Captain and vice-captain cannot be the same player.",
+    "captainNotStarting": "The captain must be in the starting 11.",
+    "viceNotStarting": "The vice-captain must be in the starting 11."
+  },
+  "scoring": {
+    "appearance60": "Appearance (60+ min)",
+    "appearance1": "Appearance (1–59 min)",
+    "goal": "Goal",
+    "goals": "Goals ({count})",
+    "assist": "Assist",
+    "assists": "Assists ({count})",
+    "cleanSheet": "Clean sheet",
+    "saves": "Saves ({count})",
+    "penSaved": "Penalty saved",
+    "penSavedN": "Penalties saved ({count})",
+    "conceded": "Goals conceded ({count})",
+    "penMissed": "Penalty missed",
+    "penMissedN": "Penalties missed ({count})",
+    "yellow": "Yellow card",
+    "red": "Red card",
+    "ownGoal": "Own goal",
+    "ownGoals": "Own goals ({count})",
+    "bonus": "Bonus",
+    "noMinutes": "Did not play",
+    "match": "Match {number}"
+  },
   "reset": {
+    "clear": "Clear squad",
+    "clearing": "Clearing…",
+    "confirmYes": "Yes, clear",
+    "cancel": "Cancel",
     "confirmClear": "Remove all 15 players?"
   },
   "playerInfo": {
@@ -288,6 +348,12 @@
     "rating": "Rating"
   },
   "team": {
+    "otherPosition": "Different position",
+    "missingAmount": "Short by {amount}",
+    "formationSet": "Formation {formation}.",
+    "pickCaptainXI": "Pick a captain from the starting 11.",
+    "pickViceXI": "Pick a vice-captain from the starting 11.",
+    "startingBounds": "{position} in starting 11: {count} (allowed {min}–{max}).",
     "gameweek": "GW",
     "swapBudget": "Budget for swap",
     "wallet": "In the bank",
@@ -323,6 +389,12 @@
     "deadlineAndBudget": "Deadline: {deadline} · Budget: {budget}M"
   },
   "builder": {
+    "tooExpensive": "Too expensive",
+    "positionFull": "{position} full",
+    "tabSquad": "Squad {count}/{total}",
+    "tabLineup": "Lineup & captain",
+    "autoFill": "Auto-fill",
+    "clearSquad": "Clear squad",
     "cleared": "Squad cleared. Nothing is written to the database until you press \"Save squad\".",
     "autoFailed": "The automatic pick could not find a valid squad with the current players and budget — build it by hand.",
     "notSaved": "Squad was not saved — try again.",

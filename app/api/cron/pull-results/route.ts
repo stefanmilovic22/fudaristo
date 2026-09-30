@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { runResultsIngestion } from "@/lib/ingestion";
 
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
   const result = await runResultsIngestion(supabase, null);
+  // Novi rezultati → odmah osveži keš javnih podataka (statistike, liga, raspored).
+  revalidateTag("public-data", { expire: 0 });
 
   return NextResponse.json(result);
 }

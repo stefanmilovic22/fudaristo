@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Pitch, Bench } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
 import { PlayerPointsBreakdownPopover, type BreakdownGroup } from "@/components/PlayerPointsBreakdownPopover";
-import { POSITION_SHORT, type Position } from "@/lib/fantasy-rules";
+import { type Position } from "@/lib/fantasy-rules";
 
 export type PublicEntry = {
   id: string;
@@ -47,6 +47,7 @@ export function PublicSquadPitch({
   bench: PublicEntry[];
   autoSubLabel: string;
 }) {
+  const tPos = useTranslations("positions");
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
@@ -77,7 +78,7 @@ export function PublicSquadPitch({
               open={openId === benchGk.id}
               onToggle={() => setOpenId((cur) => (cur === benchGk.id ? null : benchGk.id))}
               autoSubLabel={autoSubLabel}
-              positionLabel={POSITION_SHORT.GK}
+              positionLabel={tPos("shortGK")}
             />
           ) : undefined
         }
@@ -89,7 +90,7 @@ export function PublicSquadPitch({
             open={openId === e.id}
             onToggle={() => setOpenId((cur) => (cur === e.id ? null : e.id))}
             autoSubLabel={autoSubLabel}
-            positionLabel={`${i + 1} · ${POSITION_SHORT[e.position]}`}
+            positionLabel={`${i + 1} · ${tPos(`short${e.position}`)}`}
           />
         ))}
       </Bench>

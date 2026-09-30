@@ -88,6 +88,13 @@ export type SelectablePlayer = {
 };
 
 /**
+ * Greška pravila — kod + parametri, ne gotov tekst: komponenta je prevodi
+ * kroz namespace "validation" (`position` je GK/DEF/MID/FWD, prevodi se
+ * kroz "positions"). Tako poruke prate jezik korisnika.
+ */
+export type RuleIssue = { key: string; params?: Record<string, string | number> };
+
+/**
  * Validacija punog sastava od 15 igrača (sastav, budžet, max po klubu).
  * `budget` je raspoloživ novac — za prvi tim je to 100M, ali posle prenosa
  * sastava iz kola u kolo korisnik kreće od svog users.budget_remaining.
@@ -95,24 +102,27 @@ export type SelectablePlayer = {
 export function validateFullSquad(
   selected: SelectablePlayer[],
   budget: number = BUDGET_TOTAL
-): string[] {
-  const errors: string[] = [];
+): RuleIssue[] {
+  const errors: RuleIssue[] = [];
 
   if (selected.length !== SQUAD_SIZE) {
-    errors.push(`Tim mora imati tačno ${SQUAD_SIZE} igrača (trenutno: ${selected.length}).`);
+    errors.push({ key: "squadSize", params: { size: SQUAD_SIZE, count: selected.length } });
   }
 
   for (const pos of POSITIONS) {
     const count = selected.filter((p) => p.position === pos).length;
     const required = SQUAD_COMPOSITION[pos];
     if (count !== required) {
-      errors.push(`${POSITION_LABELS[pos]}: potrebno ${required}, izabrano ${count}.`);
+      errors.push({ key: "positionCount", params: { position: pos, required, count } });
     }
   }
 
   const totalSpent = selected.reduce((sum, p) => sum + Number(p.price), 0);
   if (totalSpent > budget + 1e-9) {
-    errors.push(`Budžet premašen: ${totalSpent.toFixed(1)}M od ${budget.toFixed(1)}M.`);
+    errors.push({
+      key: "budgetExceeded",
+      params: { spent: totalSpent.toFixed(1), budget: budget.toFixed(1) },
+    });
   }
 
   const perClub = new Map<string, number>();
@@ -122,7 +132,10 @@ export function validateFullSquad(
   for (const [clubId, count] of perClub) {
     if (count > MAX_PLAYERS_PER_CLUB) {
       const clubName = selected.find((p) => p.club_id === clubId)?.club_name ?? clubId;
-      errors.push(`Najviše ${MAX_PLAYERS_PER_CLUB} igrača iz istog kluba — ${clubName}: ${count}.`);
+      errors.push({
+        key: "maxPerClub",
+        params: { max: MAX_PLAYERS_PER_CLUB, club: clubName, count },
+      });
     }
   }
 
@@ -135,32 +148,32 @@ export function validateStartingXI(
   startingIds: Set<string>,
   captainId: string | null,
   viceCaptainId: string | null
-): string[] {
-  const errors: string[] = [];
+): RuleIssue[] {
+  const errors: RuleIssue[] = [];
   const starting = squad.filter((p) => startingIds.has(p.id));
 
   if (starting.length !== STARTING_XI_SIZE) {
-    errors.push(`Prvih ${STARTING_XI_SIZE} mora biti izabrano (trenutno: ${starting.length}).`);
+    errors.push({ key: "startingSize", params: { size: STARTING_XI_SIZE, count: starting.length } });
   }
 
   for (const pos of POSITIONS) {
     const count = starting.filter((p) => p.position === pos).length;
     const [min, max] = STARTING_XI_BOUNDS[pos];
     if (count < min || count > max) {
-      errors.push(`${POSITION_LABELS[pos]} u prvih 11: ${count} (dozvoljeno ${min}–${max}).`);
+      errors.push({ key: "startingBounds", params: { position: pos, count, min, max } });
     }
   }
 
-  if (!captainId) errors.push("Izaberi kapitena.");
-  if (!viceCaptainId) errors.push("Izaberi vice-kapitena.");
+  if (!captainId) errors.push({ key: "pickCaptain" });
+  if (!viceCaptainId) errors.push({ key: "pickVice" });
   if (captainId && viceCaptainId && captainId === viceCaptainId) {
-    errors.push("Kapiten i vice-kapiten ne mogu biti isti igrač.");
+    errors.push({ key: "sameCaptain" });
   }
   if (captainId && !startingIds.has(captainId)) {
-    errors.push("Kapiten mora biti u prvih 11.");
+    errors.push({ key: "captainNotStarting" });
   }
   if (viceCaptainId && !startingIds.has(viceCaptainId)) {
-    errors.push("Vice-kapiten mora biti u prvih 11.");
+    errors.push({ key: "viceNotStarting" });
   }
 
   return errors;

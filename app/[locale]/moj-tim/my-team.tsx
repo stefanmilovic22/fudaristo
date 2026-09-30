@@ -12,8 +12,6 @@ import {
   FORMATIONS,
   MAX_PLAYERS_PER_CLUB,
   POSITIONS,
-  POSITION_LABELS,
-  POSITION_SHORT,
   STARTING_XI_BOUNDS,
   STARTING_XI_SIZE,
   formatEUR,
@@ -174,12 +172,12 @@ export function MyTeam({
   function blockedReason(p: SelectablePlayer): string | null {
     if (!activeSlot) return null;
     if (inSquadIds.has(p.id)) return tCommon("alreadyInSquad");
-    if (p.position !== activeSlot.current.position) return "Druga pozicija";
+    if (p.position !== activeSlot.current.position) return t("otherPosition");
     if (clubCountExcludingSlot(p.club_id, activeSlot.key) >= MAX_PLAYERS_PER_CLUB) {
       return tCommon("maxFromClub");
     }
     if (budgetForSwap - p.price < -1e-9) {
-      return `Nedostaje ${formatEUR(p.price - budgetForSwap)}`;
+      return t("missingAmount", { amount: formatEUR(p.price - budgetForSwap) });
     }
     return null;
   }
@@ -362,7 +360,7 @@ export function MyTeam({
     setFlash(
       changedRoles
         ? t("formationApplied", { formation: `${def}-${mid}-${fwd}` })
-        : `Formacija ${def}-${mid}-${fwd}.`
+        : t("formationSet", { formation: `${def}-${mid}-${fwd}` })
     );
   }
 
@@ -397,11 +395,11 @@ export function MyTeam({
       const n = starters.filter((s) => s.current.position === pos).length;
       const [min, max] = STARTING_XI_BOUNDS[pos];
       if (n < min || n > max) {
-        out.push(`${POSITION_LABELS[pos]} u prvih 11: ${n} (dozvoljeno ${min}–${max}).`);
+        out.push(t("startingBounds", { position: tPos(`label${pos}`), count: n, min, max }));
       }
     }
-    if (!slots.some((s) => s.state.captain && s.state.starting)) out.push("Izaberi kapitena iz prvih 11.");
-    if (!slots.some((s) => s.state.vice && s.state.starting)) out.push("Izaberi vice-kapitena iz prvih 11.");
+    if (!slots.some((s) => s.state.captain && s.state.starting)) out.push(t("pickCaptainXI"));
+    if (!slots.some((s) => s.state.vice && s.state.starting)) out.push(t("pickViceXI"));
     if (budgetNow < -1e-9) out.push(t("budgetNegative", { amount: formatEUR(budgetNow) }));
 
     const perClub = new Map<string, number>();
@@ -413,7 +411,7 @@ export function MyTeam({
       }
     }
     return out;
-  }, [slots, budgetNow]);
+  }, [slots, budgetNow, t, tPos]);
 
   async function handleSave() {
     setSaving(true);
@@ -541,8 +539,8 @@ export function MyTeam({
           onPitch
             ? undefined
             : s.current.position === "GK"
-              ? POSITION_SHORT.GK
-              : `${benchOutfield.findIndex((b) => b.key === s.key) + 1} · ${POSITION_SHORT[s.current.position]}`
+              ? tPos("shortGK")
+              : `${benchOutfield.findIndex((b) => b.key === s.key) + 1} · ${tPos(`short${s.current.position}`)}`
         }
         isCaptain={s.state.captain}
         isViceCaptain={s.state.vice}
@@ -669,7 +667,7 @@ export function MyTeam({
                 onClick={() => setTransferSlot(null)}
                 className="mt-3 border border-navy-600 text-slate-300 font-semibold text-sm px-3 py-1.5 rounded-lg hover:text-chalk-50"
               >
-                Odustani
+                {tCommon("cancel")}
               </button>
             </div>
             <PlayerPicker

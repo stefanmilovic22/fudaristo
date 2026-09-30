@@ -3,11 +3,7 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
-import { playerFullName, POSITION_SHORT, type Position } from "@/lib/fantasy-rules";
-
-// Napomena: POSITION_SHORT (GOL/ODB/VEZ/NAP) je fiksno srpski, ne prevodi se
-// po lokalu — isto kao što ga my-team.tsx već koristi za oznake na klupi.
-// Nije uvedena nova nedoslednost, samo ista koja već postoji u toj datoteci.
+import { playerFullName, type Position } from "@/lib/fantasy-rules";
 
 export type UpcomingFixture = {
   /** Već formatirano, npr. "PAOK (H)" — isti oblik kao opponentByClub. */
@@ -47,6 +43,7 @@ export type PlayerInfoPopoverProps = {
 export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: PlayerInfoPopoverProps) {
   const locale = useLocale();
   const t = useTranslations("playerInfo");
+  const tPos = useTranslations("positions");
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
   useLayoutEffect(() => {
@@ -105,7 +102,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: Play
 
       <div className="flex items-center gap-1.5 mt-1.5">
         <span className="text-[10px] font-bold tracking-wide text-navy-950 bg-slate-300 px-1.5 py-0.5 rounded-full shrink-0">
-          {POSITION_SHORT[player.position]}
+          {tPos(`short${player.position}`)}
         </span>
         <span className="text-slate-400 text-xs truncate">{player.club_name}</span>
       </div>

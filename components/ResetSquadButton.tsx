@@ -42,7 +42,7 @@ export function ResetSquadButton({ gameweekId }: { gameweekId: string }) {
         onClick={() => setConfirming(true)}
         className="border border-navy-600 text-slate-300 font-semibold text-sm px-3 py-2 rounded-lg hover:border-danger-400 hover:text-danger-400 transition-colors"
       >
-        Isprazni tim
+        {t("clear")}
       </button>
     );
   }
@@ -56,14 +56,14 @@ export function ResetSquadButton({ gameweekId }: { gameweekId: string }) {
         disabled={working}
         className="bg-danger-400 text-chalk-50 font-semibold px-3 py-1.5 rounded-lg disabled:opacity-50"
       >
-        {working ? "Praznim…" : "Da, isprazni"}
+        {working ? t("clearing") : t("confirmYes")}
       </button>
       <button
         type="button"
         onClick={() => setConfirming(false)}
         className="text-slate-300 px-2 py-1.5 hover:text-chalk-50"
       >
-        Odustani
+        {t("cancel")}
       </button>
       {error && <span className="text-danger-400 text-xs">{error}</span>}
     </span>

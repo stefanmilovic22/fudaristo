@@ -14,6 +14,7 @@
     "login": "Prijava",
     "register": "Registruj se",
     "logout": "Odjava",
+    "mySettings": "Moja podešavanja",
     "openMenu": "Otvori meni",
     "closeMenu": "Zatvori meni"
   },
@@ -137,6 +138,10 @@
     "gameweekPlayed": "Kolo {number} · odigrano"
   },
   "positions": {
+    "labelGK": "Golman",
+    "labelDEF": "Odbrana",
+    "labelMID": "Vezni red",
+    "labelFWD": "Napad",
     "GK": "Golmani",
     "DEF": "Odbrana",
     "MID": "Vezni red",
@@ -160,6 +165,8 @@
     "whatStats": "statistika"
   },
   "common": {
+    "cancel": "Odustani",
+    "budgetLock": "Ne bi ostalo za ostatak tima",
     "alreadyInSquad": "Već u timu",
     "maxFromClub": "Već 3 iz kluba",
     "saving": "Čuvam…",
@@ -192,6 +199,8 @@
     "joker2Blurb": "Neograničeni transferi bez penala. Otvara se pred plej-of."
   },
   "pitch": {
+    "captain": "Kapiten",
+    "viceCaptain": "Vice-kapiten",
     "bench": "Klupa",
     "benchNote": "Redosled klupe odlučuje ko prvi ulazi ako neko ne odigra nijedan minut.",
     "player": "Igrač",
@@ -204,6 +213,7 @@
     "formationLabel": "Formacija"
   },
   "picker": {
+    "priceUpTo": "Cena do",
     "choose": "Izaberi: {position}",
     "allPlayers": "Svi igrači",
     "showAll": "prikaži sve",
@@ -221,6 +231,11 @@
     "allClubs": "Svi klubovi"
   },
   "settings": {
+    "teamName": "Ime tima",
+    "teamColor": "Boja tima",
+    "teamColorNote": "Ovako izgleda grb tvog tima.",
+    "favoriteClub": "Omiljeni klub",
+    "noFavorite": "Bez omiljenog kluba",
     "title": "Moja podešavanja",
     "subtitle": "Ime i boja tima se prikazuju drugim igračima na tabeli lige.",
     "nameEmpty": "Ime tima ne može biti prazno.",
@@ -275,7 +290,52 @@
     "afterRefresh": "Posle toga osveži stranicu — link „Admin” će se pojaviti i u navigaciji.",
     "backToMyClub": "Nazad na moj klub"
   },
+  "colorPicker": {
+    "hue": "Nijansa",
+    "saturation": "Zasićenost",
+    "lightness": "Svetlina",
+    "hex": "Hex kod"
+  },
+  "validation": {
+    "squadSize": "Tim mora imati tačno {size} igrača (trenutno: {count}).",
+    "positionCount": "{position}: potrebno {required}, izabrano {count}.",
+    "budgetExceeded": "Budžet premašen: {spent}M od {budget}M.",
+    "maxPerClub": "Najviše {max} igrača iz istog kluba — {club}: {count}.",
+    "startingSize": "Prvih {size} mora biti izabrano (trenutno: {count}).",
+    "startingBounds": "{position} u prvih 11: {count} (dozvoljeno {min}–{max}).",
+    "pickCaptain": "Izaberi kapitena.",
+    "pickVice": "Izaberi vice-kapitena.",
+    "sameCaptain": "Kapiten i vice-kapiten ne mogu biti isti igrač.",
+    "captainNotStarting": "Kapiten mora biti u prvih 11.",
+    "viceNotStarting": "Vice-kapiten mora biti u prvih 11."
+  },
+  "scoring": {
+    "appearance60": "Nastup (60+ min)",
+    "appearance1": "Nastup (1–59 min)",
+    "goal": "Gol",
+    "goals": "Golovi ({count})",
+    "assist": "Asistencija",
+    "assists": "Asistencije ({count})",
+    "cleanSheet": "Čista mreža",
+    "saves": "Odbrane ({count})",
+    "penSaved": "Odbranjen penal",
+    "penSavedN": "Odbranjeni penali ({count})",
+    "conceded": "Primljeni golovi ({count})",
+    "penMissed": "Promašen penal",
+    "penMissedN": "Promašeni penali ({count})",
+    "yellow": "Žuti karton",
+    "red": "Crveni karton",
+    "ownGoal": "Autogol",
+    "ownGoals": "Autogolovi ({count})",
+    "bonus": "Bonus",
+    "noMinutes": "Bez odigranih minuta",
+    "match": "Meč {number}"
+  },
   "reset": {
+    "clear": "Isprazni tim",
+    "clearing": "Praznim…",
+    "confirmYes": "Da, isprazni",
+    "cancel": "Odustani",
     "confirmClear": "Ukloniti svih 15 igrača?"
   },
   "playerInfo": {
@@ -288,6 +348,12 @@
     "rating": "Ocena"
   },
   "team": {
+    "otherPosition": "Druga pozicija",
+    "missingAmount": "Nedostaje {amount}",
+    "formationSet": "Formacija {formation}.",
+    "pickCaptainXI": "Izaberi kapitena iz prvih 11.",
+    "pickViceXI": "Izaberi vice-kapitena iz prvih 11.",
+    "startingBounds": "{position} u prvih 11: {count} (dozvoljeno {min}–{max}).",
     "gameweek": "Kolo",
     "swapBudget": "Budžet za zamenu",
     "wallet": "U kasi",
@@ -323,6 +389,12 @@
     "deadlineAndBudget": "Rok za predaju tima: {deadline} · Budžet: {budget}M"
   },
   "builder": {
+    "tooExpensive": "Preskup",
+    "positionFull": "{position} popunjen",
+    "tabSquad": "Sastav {count}/{total}",
+    "tabLineup": "Postava i kapiten",
+    "autoFill": "Popuni automatski",
+    "clearSquad": "Isprazni tim",
     "cleared": "Tim je ispražnjen. U bazu se ništa ne upisuje dok ne klikneš „Sačuvaj tim”.",
     "autoFailed": "Automatski izbor nije našao validan tim sa trenutnim igračima i budžetom — sastavi tim ručno.",
     "notSaved": "Tim nije sačuvan — pokušaj ponovo.",

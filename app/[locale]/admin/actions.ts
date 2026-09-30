@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath as nextRevalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/admin-guard";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import {
@@ -18,6 +18,7 @@ import {
 import { parseEspnSummary, extractEspnEventId } from "@/lib/espn-parser";
 import { findEspnLinksForFixtures, type EspnLinksResult } from "@/lib/espn-fixtures";
 import { runScoringForGameweek } from "@/lib/scoring";
+
 import {
   backfillFixtureIds,
   refreshResults,
@@ -26,6 +27,16 @@ import {
 } from "@/lib/maintenance";
 import { parseSofascoreLineups, parseSofascoreLineupsObject } from "@/lib/sofascore-parser";
 import type { Position } from "@/lib/fantasy-rules";
+
+/**
+ * Svaka admin izmena podataka poništava i keš javnih podataka (statistike,
+ * raspored, liga, igrači — lib/cached-data.ts), ne samo stranicu. Inače bi
+ * posetioci do 60s videli stare rezultate.
+ */
+function revalidatePath(path: string) {
+  nextRevalidatePath(path);
+  revalidateTag("public-data", { expire: 0 });
+}
 
 /**
  * Sve akcije ovde prvo prolaze requireAdmin() (redirect ako nije admin), pa

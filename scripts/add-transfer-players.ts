@@ -56,6 +56,18 @@ const NEW_PLAYERS: NewPlayer[] = [
   { firstName: "Xande", lastName: "Silva", clubName: "Iraklis", position: "FWD", marketValueRaw: "€600k" },
   { firstName: "Adam", lastName: "Žulevič", clubName: "Iraklis", position: "FWD", marketValueRaw: "€300k" },
   { firstName: "Marius", lastName: "Mouandilmadji", clubName: "Olympiacos", position: "FWD", marketValueRaw: "€7.00m" },
+
+  // Novi talas transfera.
+  // ⚠️ "Kifisia" i "Volos" ovde su puna zvanična imena iz baze
+  // (AE Kifisia / Volos NFC, videti migrations/data-transferi-klubovi.sql) —
+  // klub se poredi TAČNIM nazivom (posle normalizeName), ne podnizom, pa bi
+  // kratko ime bilo tiho preskočeno kao "klub nije nađen".
+  { firstName: "Yuri", lastName: "Lodygin", clubName: "Volos NFC", position: "GK", marketValueRaw: "€250k" },
+  { firstName: "Georgios", lastName: "Kyriopoulos", clubName: "AE Kifisia", position: "FWD", marketValueRaw: "€300k" },
+  { firstName: "Dani", lastName: "García", clubName: "Atromitos", position: "MID", marketValueRaw: "€700k" },
+  { firstName: "Kelvin", lastName: "Ofori", clubName: "Atromitos", position: "FWD", marketValueRaw: "€500k" },
+  { firstName: "Rasmus", lastName: "Lauritsen", clubName: "Iraklis", position: "DEF", marketValueRaw: "€1.00m" },
+  { firstName: "Mohamed", lastName: "Elneny", clubName: "Levadiakos", position: "MID", marketValueRaw: "€1.20m" },
 ];
 
 const PRICE_BOUNDS: Record<Position, { floor: number; ceiling: number }> = {

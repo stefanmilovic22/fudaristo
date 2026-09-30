@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import { playerFullName, POSITION_SHORT, type Position } from "@/lib/fantasy-rules";
+import { playerFullName, type Position } from "@/lib/fantasy-rules";
 import type { ScoringLineItem } from "@/lib/scoring";
 
 export type BreakdownGroup = {
@@ -53,6 +53,8 @@ export function PlayerPointsBreakdownPopover({
   onClose,
 }: PlayerPointsBreakdownPopoverProps) {
   const t = useTranslations("playerInfo");
+  const tPos = useTranslations("positions");
+  const tScoring = useTranslations("scoring");
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const finalTotal = total * multiplier;
 
@@ -107,7 +109,7 @@ export function PlayerPointsBreakdownPopover({
 
       <div className="flex items-center gap-1.5 mt-1.5 mb-2.5">
         <span className="text-[10px] font-bold tracking-wide text-navy-950 bg-slate-300 px-1.5 py-0.5 rounded-full shrink-0">
-          {POSITION_SHORT[player.position]}
+          {tPos(`short${player.position}`)}
         </span>
         <span className="text-slate-400 text-xs truncate">{player.club_name}</span>
       </div>
@@ -134,7 +136,11 @@ export function PlayerPointsBreakdownPopover({
                 key={ii}
                 className="flex items-center justify-between text-xs py-1 border-t border-white/5 first:border-t-0"
               >
-                <span className="text-chalk-50">{item.label}</span>
+                <span className="text-chalk-50">
+                  {(tScoring as (k: string, v?: Record<string, number>) => string)(item.key, {
+                    count: item.count ?? 0,
+                  })}
+                </span>
                 <span
                   className={`font-semibold tabular-nums ${
                     item.value > 0 ? "text-pitch-400" : item.value < 0 ? "text-danger-400" : "text-slate-500"

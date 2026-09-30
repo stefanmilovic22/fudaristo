@@ -179,7 +179,7 @@ export function Jersey({
                     ? "bg-gold-400 text-navy-950 border-gold-400"
                     : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-gold-400"
                 }`}
-                title="Kapiten"
+                title={t("captain")}
               >
                 C
               </button>
@@ -193,7 +193,7 @@ export function Jersey({
                     ? "bg-chalk-50 text-navy-950 border-chalk-50"
                     : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-chalk-50"
                 }`}
-                title="Vice-kapiten"
+                title={t("viceCaptain")}
               >
                 V
               </button>
@@ -250,7 +250,7 @@ export function Jersey({
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- spoljni URL po klubu, next/image domenska bela lista nepotrebna komplikacija za ovoliko slika */}
-              <img src={photoUrl} alt="" className="w-full h-auto block" />
+              <img src={photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-auto block" />
             </div>
           ) : (
             <svg viewBox="0 0 100 76" className="w-[45px] sm:w-[58px] drop-shadow-[0_2px_3px_rgba(0,0,0,0.45)]">
@@ -327,7 +327,7 @@ export function Jersey({
                   ? "bg-gold-400 text-navy-950 border-gold-400"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-gold-400"
               }`}
-              title="Kapiten"
+              title={t("captain")}
             >
               C
             </button>
@@ -344,7 +344,7 @@ export function Jersey({
                   ? "bg-chalk-50 text-navy-950 border-chalk-50"
                   : "bg-navy-800/80 text-slate-300 border-navy-600 hover:border-chalk-50"
               }`}
-              title="Vice-kapiten"
+              title={t("viceCaptain")}
             >
               V
             </button>

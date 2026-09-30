@@ -5,7 +5,8 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
 import { createClient } from "@/lib/supabase/server";
-import { LogoutButton } from "@/components/LogoutButton";
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { UserMenu } from "@/components/UserMenu";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { MainNav } from "@/components/MainNav";
 import { Link } from "@/i18n/navigation";
@@ -66,15 +67,13 @@ export default async function LocaleLayout({
   // je uslov da statičko generisanje po jeziku uopšte radi.
   setRequestLocale(locale);
 
-  const t = await getTranslations("nav");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Prevodi i sesija se čitaju istovremeno; profil zavisi od korisnika pa ide
+  // odmah posle (jedan upit, ne dva).
+  const [t, user] = await Promise.all([getTranslations("nav"), getCurrentUser()]);
 
   let profile: { team_name: string; team_color: string; is_admin: boolean } | null = null;
   if (user) {
+    const supabase = await createClient();
     const { data } = await supabase
       .from("users")
       .select("team_name, team_color, is_admin")
@@ -91,7 +90,7 @@ export default async function LocaleLayout({
       <body className="font-body">
         <NextIntlClientProvider>
           <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-            <header className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+            <header className="sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
               <Link href="/" className="order-1 flex items-baseline gap-2.5 shrink-0">
                 <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                   Fudaristo
@@ -109,7 +108,7 @@ export default async function LocaleLayout({
                   ima max-w-[220px] ali to ne pomaže ako mu roditelj dobije
                   manje mesta nego što bedž traži), pa bi tekst tima curio
                   preko granice bedža. */}
-              <div className="order-2 xl:order-3 flex items-center gap-2 sm:gap-3 min-w-0 xl:shrink-0">
+              <div className="order-2 xl:order-3 flex items-center gap-1.5 sm:gap-3 min-w-0 xl:shrink-0">
                 <LocaleSwitcher />
 
                 {/* max-w se vraća na xl (kad se traka sa tabovima pojavi i
@@ -117,18 +116,7 @@ export default async function LocaleLayout({
                     dug naziv tima mogao opet da gurne tabove van ekrana, isti
                     problem kao onaj koji je xl prag gore rešio. */}
                 {profile ? (
-                  <div className="flex items-center gap-2 sm:gap-3 bg-navy-800 rounded-full pl-1.5 pr-3 sm:pr-4 py-1.5 border border-navy-600 min-w-0 max-w-[190px] sm:max-w-none xl:max-w-[220px]">
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-xs"
-                      style={{ backgroundColor: profile.team_color }}
-                    >
-                      {profile.team_name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="leading-tight min-w-0">
-                      <div className="text-xs font-semibold truncate">{profile.team_name}</div>
-                      <LogoutButton />
-                    </div>
-                  </div>
+                  <UserMenu teamName={profile.team_name} teamColor={profile.team_color} />
                 ) : (
                   <div className="flex gap-3 text-sm font-semibold">
                     <Link href="/login" className="text-slate-300 hover:text-chalk-50">

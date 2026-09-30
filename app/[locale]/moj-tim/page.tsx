@@ -3,12 +3,29 @@ import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { localePath } from "@/lib/locale-path";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getActivePlayersCached,
+  getAvgRatingsCached,
+  getGameweekFixturesCached,
+  getUpcomingFixturesCached,
+} from "@/lib/cached-data";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { getTargetGameweek, isBuildingFirstSquad } from "@/lib/gameweek";
 import { SquadBuilder } from "./squad-builder";
 import { MyTeam, type SquadEntry } from "./my-team";
 import { ChipsPanel, type ChipState, type ChipType } from "./chips-panel";
 import { ResetSquadButton } from "@/components/ResetSquadButton";
 import type { SelectablePlayer } from "@/lib/fantasy-rules";
+
+/** Keširan javni upit koji ne sme da sruši stranicu — kao pre, prazna lista + log. */
+async function safeCached<T extends unknown[]>(load: () => Promise<T>, label: string): Promise<T> {
+  try {
+    return await load();
+  } catch (e) {
+    console.error(`[/moj-tim] ${label}:`, e);
+    return [] as unknown as T;
+  }
+}
 
 export default async function MojTimPage({
   params,
@@ -17,13 +34,13 @@ export default async function MojTimPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("team");
-  const tSettings = await getTranslations("settings");
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Prevodi, klijent i sesija su nezavisni — istovremeno.
+  const [t, tSettings, supabase, user] = await Promise.all([
+    getTranslations("team"),
+    getTranslations("settings"),
+    createClient(),
+    getCurrentUser(),
+  ]);
 
   if (!user) {
     redirect(await localePath("/login?redirect=/moj-tim"));
@@ -39,11 +56,47 @@ export default async function MojTimPage({
     await supabase.rpc("carry_over_squad", { p_gameweek_id: targetGw.id });
   }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("team_name, team_color, budget_remaining, free_transfers, favorite_club_id, clubs(name)")
-    .eq("id", user.id)
-    .single();
+  // Sve što ne zavisi jedno od drugog ide istovremeno (ranije 9 upita jedan
+  // za drugim). Javni podaci (igrači, ocene, mečevi) dolaze iz keša.
+  const [
+    { data: profile },
+    { data: squadRows },
+    players,
+    avgRatings,
+    gwFixtures,
+    upcomingFixtures,
+    { data: chipRows },
+    { data: gwWindow },
+    preSeason,
+  ] = await Promise.all([
+    supabase
+      .from("users")
+      .select("team_name, team_color, budget_remaining, free_transfers, favorite_club_id, clubs(name)")
+      .eq("id", user.id)
+      .single(),
+    targetGw
+      ? supabase
+          .from("squads")
+          .select(
+            "player_id, is_starting, squad_order, is_captain, is_vice_captain, purchase_price, players(id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url))"
+          )
+          .eq("user_id", user.id)
+          .eq("gameweek_id", targetGw.id)
+      : Promise.resolve({ data: null }),
+    targetGw ? safeCached(getActivePlayersCached, "players") : Promise.resolve([] as any[]),
+    targetGw
+      ? safeCached(getAvgRatingsCached, "avg-ratings")
+      : Promise.resolve([] as { player_id: string; avg_rating: number }[]),
+    targetGw
+      ? safeCached(() => getGameweekFixturesCached(targetGw.id), "gameweek-fixtures")
+      : Promise.resolve([] as any[]),
+    targetGw ? safeCached(getUpcomingFixturesCached, "upcoming-fixtures") : Promise.resolve([] as any[]),
+    supabase.from("chips_usage").select("chip_type, gameweeks(number)").eq("user_id", user.id),
+    targetGw
+      ? supabase.from("gameweeks").select("joker_window").eq("id", targetGw.id).single()
+      : Promise.resolve({ data: null }),
+    targetGw ? isBuildingFirstSquad(supabase, user.id, targetGw.number) : Promise.resolve(false),
+  ]);
 
   if (!targetGw) {
     return (
@@ -59,31 +112,13 @@ export default async function MojTimPage({
     );
   }
 
-  const { data: squadRows } = await supabase
-    .from("squads")
-    .select(
-      "player_id, is_starting, squad_order, is_captain, is_vice_captain, purchase_price, players(id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url))"
-    )
-    .eq("user_id", user.id)
-    .eq("gameweek_id", targetGw.id);
-
   const hasSquad = Boolean(squadRows && squadRows.length > 0);
 
-  // Lista svih igrača treba i builderu i transferima na "Moj tim" ekranu.
-  const { data: players } = await supabase
-    .from("players")
-    .select("id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url)")
-    .eq("is_active", true)
-    .order("position")
-    .order("price", { ascending: false });
-
-  // Prosečna ocena — pogled, ne ručna agregacija (videti migraciju 010).
-  const { data: avgRatings } = await supabase.from("v_player_avg_rating").select("player_id, avg_rating");
   const avgRatingByPlayer = new Map<string, number>(
-    (avgRatings ?? []).map((r: any) => [r.player_id, Number(r.avg_rating)])
+    avgRatings.map((r) => [r.player_id, Number(r.avg_rating)])
   );
 
-  const selectablePlayers: SelectablePlayer[] = (players ?? []).map((p: any) => ({
+  const selectablePlayers: SelectablePlayer[] = players.map((p: any) => ({
     id: p.id,
     first_name: p.first_name,
     last_name: p.last_name,
@@ -120,8 +155,6 @@ export default async function MojTimPage({
 
   // Pre prvog roka tim se sme isprazniti i sastaviti ispočetka (isto pravilo
   // proverava i reset_squad u bazi). Posle toga izmene idu kroz transfere.
-  const preSeason = await isBuildingFirstSquad(supabase, user.id, targetGw.number);
-
   /**
    * Protivnik po klubu za ovo kolo, kao u FPL-u: "PAO (H)" ispod igrača.
    * Ključ je klub, ne igrač — svi igrači istog kluba imaju isti meč.
@@ -130,14 +163,8 @@ export default async function MojTimPage({
    * ("PAO (H), OFI (A)"). Klub bez meča (slobodno kolo) prosto neće imati unos
    * i ispod igrača ostaje cena, kao do sad.
    */
-  const { data: gwFixtures } = await supabase
-    .from("fixtures")
-    .select("home_club_id, away_club_id, status, home:home_club_id(short_name), away:away_club_id(short_name)")
-    .eq("gameweek_id", targetGw.id)
-    .neq("status", "cancelled");
-
   const opponentByClub = new Map<string, string>();
-  for (const f of (gwFixtures ?? []) as any[]) {
+  for (const f of gwFixtures) {
     const homeShort = f.home?.short_name ?? "?";
     const awayShort = f.away?.short_name ?? "?";
     const push = (clubId: string, text: string) => {
@@ -154,14 +181,8 @@ export default async function MojTimPage({
    * SVE zakazane mečeve unapred, ne samo za ovo kolo. Kapirano na 3 po klubu
    * ovde, u JS-u — filtriranje u samom upitu bi tražilo poseban upit po klubu.
    */
-  const { data: upcomingFixtures } = await supabase
-    .from("fixtures")
-    .select("home_club_id, away_club_id, kickoff_at, home:home_club_id(short_name), away:away_club_id(short_name)")
-    .eq("status", "scheduled")
-    .order("kickoff_at", { ascending: true });
-
   const upcomingByClub = new Map<string, { label: string; kickoffAt: string }[]>();
-  for (const f of (upcomingFixtures ?? []) as any[]) {
+  for (const f of upcomingFixtures) {
     const homeShort = f.home?.short_name ?? "?";
     const awayShort = f.away?.short_name ?? "?";
     const pushUpcoming = (clubId: string, label: string) => {
@@ -179,17 +200,6 @@ export default async function MojTimPage({
   // chips_usage je privatan (RLS: samo vlasnik), pa ovaj upit vraća isključivo
   // sopstvene redove. Prozor za jokere stoji na samom kolu (gameweeks.joker_window,
   // migracija 008) — Triple Captain i Favorite Club x2 su slobodni uvek.
-  const { data: chipRows } = await supabase
-    .from("chips_usage")
-    .select("chip_type, gameweeks(number)")
-    .eq("user_id", user.id);
-
-  const { data: gwWindow } = await supabase
-    .from("gameweeks")
-    .select("joker_window")
-    .eq("id", targetGw.id)
-    .single();
-
   const usedByChip = new Map<string, { gameweekNumber: number }>();
   for (const row of (chipRows ?? []) as any[]) {
     usedByChip.set(row.chip_type, { gameweekNumber: row.gameweeks?.number ?? 0 });

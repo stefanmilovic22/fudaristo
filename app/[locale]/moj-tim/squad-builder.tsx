@@ -12,8 +12,6 @@ import {
   MAX_PLAYERS_PER_CLUB,
   POSITIONS,
   FORMATIONS,
-  POSITION_LABELS,
-  POSITION_SHORT,
   SQUAD_COMPOSITION,
   SQUAD_SIZE,
   STARTING_XI_BOUNDS,
@@ -45,6 +43,7 @@ export function SquadBuilder({
   const tTeam = useTranslations("team");
   const tCommon = useTranslations("common");
   const tPos = useTranslations("positions");
+  const tVal = useTranslations("validation");
   const router = useRouter();
   const supabase = createClient();
 
@@ -133,10 +132,10 @@ export function SquadBuilder({
 
   function blockedReason(p: SelectablePlayer): string | null {
     if (countByPosition(p.position) >= SQUAD_COMPOSITION[p.position]) {
-      return `${POSITION_LABELS[p.position]} popunjen`;
+      return t("positionFull", { position: tPos(`label${p.position}`) });
     }
     if (countByClub(p.club_id) >= MAX_PLAYERS_PER_CLUB) return tCommon("maxFromClub");
-    if (p.price > remaining + 1e-9) return "Preskup";
+    if (p.price > remaining + 1e-9) return t("tooExpensive");
     if (spent + p.price + affordability.minCostAfterAdding(p) > budgetAvailable + 1e-9) {
       return BUDGET_LOCK_REASON;
     }
@@ -371,14 +370,14 @@ export function SquadBuilder({
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <div className="flex gap-1 bg-navy-800 p-1 rounded-lg">
             <StepTab active={step === "squad"} onClick={() => setStep("squad")}>
-              Sastav {selected.length}/{SQUAD_SIZE}
+              {t("tabSquad", { count: selected.length, total: SQUAD_SIZE })}
             </StepTab>
             <StepTab
               active={step === "lineup"}
               disabled={!isComplete}
               onClick={() => setStep("lineup")}
             >
-              Postava i kapiten
+              {t("tabLineup")}
             </StepTab>
           </div>
 
@@ -388,7 +387,7 @@ export function SquadBuilder({
               onClick={handleAutoPick}
               className="bg-navy-800 border border-gold-400 text-gold-300 font-semibold text-sm px-3 py-2 rounded-lg hover:bg-gold-400 hover:text-navy-950 transition-colors"
             >
-              Popuni automatski
+              {t("autoFill")}
             </button>
             <button
               type="button"
@@ -396,7 +395,7 @@ export function SquadBuilder({
               disabled={selected.length === 0}
               className="border border-navy-600 text-slate-300 font-semibold text-sm px-3 py-2 rounded-lg hover:border-danger-400 hover:text-danger-400 transition-colors disabled:opacity-40"
             >
-              Isprazni tim
+              {t("clearSquad")}
             </button>
           </div>
         </div>
@@ -476,7 +475,14 @@ export function SquadBuilder({
               </summary>
               <ul className="text-danger-400 text-xs mt-2 px-3 flex flex-col gap-1 list-disc list-inside">
                 {allErrors.map((err, i) => (
-                  <li key={i}>{err}</li>
+                  <li key={i}>
+                    {(tVal as (k: string, v?: Record<string, string | number>) => string)(err.key, {
+                      ...err.params,
+                      ...(err.params?.position
+                        ? { position: tPos(`label${err.params.position}` as "labelGK") }
+                        : {}),
+                    })}
+                  </li>
                 ))}
               </ul>
             </details>
@@ -579,6 +585,7 @@ function SquadStep({
   onSlotClick: (pos: Position) => void;
   onRemove: (id: string) => void;
 }) {
+  const tPos = useTranslations("positions");
   return (
     <Pitch>
       <div className="flex flex-col gap-3 xs:gap-4 sm:gap-7">
@@ -606,7 +613,7 @@ function SquadStep({
               {Array.from({ length: empties }).map((_, i) => (
                 <EmptySlot
                   key={`${pos}-${i}`}
-                  label={POSITION_LABELS[pos]}
+                  label={tPos(`label${pos}`)}
                   highlighted={pendingPosition === pos}
                   onAdd={() => onSlotClick(pos)}
                 />
@@ -644,6 +651,7 @@ function LineupStep({
 }) {
   const t = useTranslations("builder");
   const tPitch = useTranslations("pitch");
+  const tPos = useTranslations("positions");
   const starters = selected.filter((p) => startingIds.has(p.id));
   const bench = selected
     .filter((p) => !startingIds.has(p.id))
@@ -672,8 +680,8 @@ function LineupStep({
         onPitch
           ? undefined
           : p.position === "GK"
-            ? POSITION_SHORT.GK
-            : `${benchOutfield.findIndex((b) => b.id === p.id) + 1} · ${POSITION_SHORT[p.position]}`
+            ? tPos("shortGK")
+            : `${benchOutfield.findIndex((b) => b.id === p.id) + 1} · ${tPos(`short${p.position}`)}`
       }
       isCaptain={p.id === captainId}
       isViceCaptain={p.id === viceCaptainId}

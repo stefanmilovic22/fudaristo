@@ -2,6 +2,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { localePath } from "@/lib/locale-path";
 import { createClient } from "@/lib/supabase/server";
+import { getClubsCached } from "@/lib/cached-data";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { SettingsForm } from "./settings-form";
 
 export default async function PodesavanjaPage({
@@ -14,24 +16,20 @@ export default async function PodesavanjaPage({
   const t = await getTranslations("settings");
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     redirect(await localePath("/login?redirect=/podesavanja"));
   }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("team_name, team_color, favorite_club_id")
-    .eq("id", user.id)
-    .single();
-
-  const { data: clubs } = await supabase
-    .from("clubs")
-    .select("id, name, primary_color")
-    .order("name");
+  const [{ data: profile }, clubs] = await Promise.all([
+    supabase
+      .from("users")
+      .select("team_name, team_color, favorite_club_id")
+      .eq("id", user.id)
+      .single(),
+    getClubsCached(),
+  ]);
 
   return (
     <div className="max-w-lg">
@@ -44,7 +42,7 @@ export default async function PodesavanjaPage({
         teamName={profile?.team_name ?? ""}
         teamColor={profile?.team_color ?? "#E8B33D"}
         favoriteClubId={profile?.favorite_club_id ?? null}
-        clubs={clubs ?? []}
+        clubs={clubs}
       />
     </div>
   );

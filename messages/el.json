@@ -14,6 +14,7 @@
     "login": "Σύνδεση",
     "register": "Εγγραφή",
     "logout": "Αποσύνδεση",
+    "mySettings": "Οι ρυθμίσεις μου",
     "openMenu": "Άνοιγμα μενού",
     "closeMenu": "Κλείσιμο μενού"
   },
@@ -137,6 +138,10 @@
     "gameweekPlayed": "Αγων. {number} · έγινε"
   },
   "positions": {
+    "labelGK": "Τερματοφύλακας",
+    "labelDEF": "Άμυνα",
+    "labelMID": "Κέντρο",
+    "labelFWD": "Επίθεση",
     "GK": "Τερματοφύλακες",
     "DEF": "Αμυντικοί",
     "MID": "Μέσοι",
@@ -160,6 +165,8 @@
     "whatStats": "στατιστικών"
   },
   "common": {
+    "cancel": "Ακύρωση",
+    "budgetLock": "Δεν θα έμενε αρκετό για την υπόλοιπη ομάδα",
     "alreadyInSquad": "Ήδη στην ομάδα",
     "maxFromClub": "Ήδη 3 από την ομάδα",
     "saving": "Αποθήκευση…",
@@ -192,6 +199,8 @@
     "joker2Blurb": "Απεριόριστες μεταγραφές χωρίς ποινή. Ανοίγει πριν τα play-off."
   },
   "pitch": {
+    "captain": "Αρχηγός",
+    "viceCaptain": "Υπαρχηγός",
     "bench": "Πάγκος",
     "benchNote": "Η σειρά του πάγκου καθορίζει ποιος μπαίνει πρώτος αν κάποιος δεν παίξει ούτε λεπτό.",
     "player": "Παίκτης",
@@ -204,6 +213,7 @@
     "formationLabel": "Σχηματισμός"
   },
   "picker": {
+    "priceUpTo": "Τιμή έως",
     "choose": "Διάλεξε: {position}",
     "allPlayers": "Όλοι οι παίκτες",
     "showAll": "δείξε όλους",
@@ -221,6 +231,11 @@
     "allClubs": "Όλες οι ομάδες"
   },
   "settings": {
+    "teamName": "Όνομα ομάδας",
+    "teamColor": "Χρώμα ομάδας",
+    "teamColorNote": "Έτσι φαίνεται το έμβλημα της ομάδας σου.",
+    "favoriteClub": "Αγαπημένος σύλλογος",
+    "noFavorite": "Χωρίς αγαπημένο σύλλογο",
     "title": "Οι ρυθμίσεις μου",
     "subtitle": "Το όνομα και το χρώμα της ομάδας σου φαίνονται στους άλλους στη βαθμολογία.",
     "nameEmpty": "Το όνομα ομάδας δεν μπορεί να είναι κενό.",
@@ -275,7 +290,52 @@
     "afterRefresh": "Μετά ανανέωσε τη σελίδα — ο σύνδεσμος «Διαχείριση» θα εμφανιστεί στο μενού.",
     "backToMyClub": "Πίσω στην ομάδα μου"
   },
+  "colorPicker": {
+    "hue": "Απόχρωση",
+    "saturation": "Κορεσμός",
+    "lightness": "Φωτεινότητα",
+    "hex": "Κωδικός hex"
+  },
+  "validation": {
+    "squadSize": "Η ομάδα πρέπει να έχει ακριβώς {size} παίκτες (τώρα: {count}).",
+    "positionCount": "{position}: απαιτούνται {required}, επιλέχθηκαν {count}.",
+    "budgetExceeded": "Υπέρβαση budget: {spent}M από {budget}M.",
+    "maxPerClub": "Το πολύ {max} παίκτες από τον ίδιο σύλλογο — {club}: {count}.",
+    "startingSize": "Πρέπει να επιλεγούν {size} βασικοί (τώρα: {count}).",
+    "startingBounds": "{position} στην ενδεκάδα: {count} (επιτρέπονται {min}–{max}).",
+    "pickCaptain": "Διάλεξε αρχηγό.",
+    "pickVice": "Διάλεξε υπαρχηγό.",
+    "sameCaptain": "Ο αρχηγός και ο υπαρχηγός δεν μπορούν να είναι ο ίδιος παίκτης.",
+    "captainNotStarting": "Ο αρχηγός πρέπει να είναι στην ενδεκάδα.",
+    "viceNotStarting": "Ο υπαρχηγός πρέπει να είναι στην ενδεκάδα."
+  },
+  "scoring": {
+    "appearance60": "Συμμετοχή (60+ λεπτά)",
+    "appearance1": "Συμμετοχή (1–59 λεπτά)",
+    "goal": "Γκολ",
+    "goals": "Γκολ ({count})",
+    "assist": "Ασίστ",
+    "assists": "Ασίστ ({count})",
+    "cleanSheet": "Απαραβίαστο",
+    "saves": "Επεμβάσεις ({count})",
+    "penSaved": "Απόκρουση πέναλτι",
+    "penSavedN": "Αποκρούσεις πέναλτι ({count})",
+    "conceded": "Γκολ που δέχτηκε ({count})",
+    "penMissed": "Χαμένο πέναλτι",
+    "penMissedN": "Χαμένα πέναλτι ({count})",
+    "yellow": "Κίτρινη κάρτα",
+    "red": "Κόκκινη κάρτα",
+    "ownGoal": "Αυτογκόλ",
+    "ownGoals": "Αυτογκόλ ({count})",
+    "bonus": "Μπόνους",
+    "noMinutes": "Δεν έπαιξε",
+    "match": "Αγώνας {number}"
+  },
   "reset": {
+    "clear": "Άδειασμα ομάδας",
+    "clearing": "Άδειασμα…",
+    "confirmYes": "Ναι, άδειασε",
+    "cancel": "Ακύρωση",
     "confirmClear": "Αφαίρεση και των 15 παικτών;"
   },
   "playerInfo": {
@@ -288,6 +348,12 @@
     "rating": "Βαθμολογία"
   },
   "team": {
+    "otherPosition": "Άλλη θέση",
+    "missingAmount": "Λείπουν {amount}",
+    "formationSet": "Διάταξη {formation}.",
+    "pickCaptainXI": "Διάλεξε αρχηγό από την ενδεκάδα.",
+    "pickViceXI": "Διάλεξε υπαρχηγό από την ενδεκάδα.",
+    "startingBounds": "{position} στην ενδεκάδα: {count} (επιτρέπονται {min}–{max}).",
     "gameweek": "Αγων.",
     "swapBudget": "Διαθέσιμο για αλλαγή",
     "wallet": "Στο ταμείο",
@@ -323,6 +389,12 @@
     "deadlineAndBudget": "Προθεσμία: {deadline} · Προϋπολογισμός: {budget}M"
   },
   "builder": {
+    "tooExpensive": "Πολύ ακριβός",
+    "positionFull": "{position}: συμπληρώθηκε",
+    "tabSquad": "Ομάδα {count}/{total}",
+    "tabLineup": "Ενδεκάδα και αρχηγός",
+    "autoFill": "Αυτόματη συμπλήρωση",
+    "clearSquad": "Άδειασμα ομάδας",
     "cleared": "Η ομάδα άδειασε. Τίποτα δεν γράφεται στη βάση μέχρι να πατήσεις «Αποθήκευση ομάδας».",
     "autoFailed": "Η αυτόματη επιλογή δεν βρήκε έγκυρη ομάδα με τους τρέχοντες παίκτες και προϋπολογισμό — φτιάξ' την χειροκίνητα.",
     "notSaved": "Η ομάδα δεν αποθηκεύτηκε — δοκίμασε ξανά.",

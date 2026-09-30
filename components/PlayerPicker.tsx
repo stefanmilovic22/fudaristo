@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import {
   BUDGET_LOCK_REASON,
   POSITIONS,
-  POSITION_LABELS,
   formatEUR,
   playerFullName,
   type Position,
@@ -155,7 +154,7 @@ export function PlayerPicker({
           </select>
         </label>
         <label className="flex flex-col gap-1 text-[11px] text-slate-400">
-          Cena do
+          {t("priceUpTo")}
           <select
             value={maxPrice ?? "ALL"}
             onChange={(e) => setMaxPrice(e.target.value === "ALL" ? null : Number(e.target.value))}
@@ -247,7 +246,7 @@ export function PlayerPicker({
                         : "text-slate-400"
                     }`}
                   >
-                    {reason}
+                    {reason === BUDGET_LOCK_REASON ? tCommon("budgetLock") : reason}
                   </span>
                 )}
               </span>

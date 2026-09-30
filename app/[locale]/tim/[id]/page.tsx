@@ -31,6 +31,7 @@ export default async function TimPage({
   setRequestLocale(locale);
   const t = await getTranslations("publicTeam");
   const tPitch = await getTranslations("pitch");
+  const tScoring = await getTranslations("scoring");
   const supabase = await createClient();
 
   const { data: owner } = await supabase
@@ -108,7 +109,7 @@ export default async function TimPage({
       const groups: BreakdownGroup[] = prows.map((r, i) => ({
         // Oznaka meča samo kod duplog kola (2+ redova za istog igrača) — inače
         // se izostavlja, videti PlayerPointsBreakdownPopover.
-        matchLabel: prows.length > 1 ? `Meč ${i + 1}` : undefined,
+        matchLabel: prows.length > 1 ? tScoring("match", { number: i + 1 }) : undefined,
         items: describeRowFantasyPoints({
           position,
           minutes_played: r.minutes_played,
@@ -198,7 +199,7 @@ export default async function TimPage({
     // nisu uneti) — isti tekst koji describeRowFantasyPoints koristi za red
     // sa svim nulama, da se ne izmišlja drugačija poruka za isto stanje.
     breakdown: breakdownByPlayer.get(r.player_id) ?? [
-      { items: [{ label: "Bez odigranih minuta", value: 0 }], subtotal: 0 },
+      { items: [{ label: "Bez odigranih minuta", key: "noMinutes", value: 0 }], subtotal: 0 },
     ],
   })) as any;
 

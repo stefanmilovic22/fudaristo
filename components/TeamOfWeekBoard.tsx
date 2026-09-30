@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { Pitch, PitchRow } from "@/components/Pitch";
-import { POSITION_SHORT } from "@/lib/fantasy-rules";
 
 export type TeamOfWeekPlayer = {
   id: string;
@@ -109,6 +108,7 @@ function TeamOfWeekJersey({
  */
 export function TeamOfWeekBoard({ data }: { data: TeamOfWeekData }) {
   const t = useTranslations("stats");
+  const tPos = useTranslations("positions");
   const rows = POSITION_ORDER.map((pos) => data.players.filter((p) => p.position === pos)).filter(
     (row) => row.length > 0
   );
@@ -159,7 +159,7 @@ export function TeamOfWeekBoard({ data }: { data: TeamOfWeekData }) {
                 className="text-[10px] font-bold tracking-wide text-navy-950 bg-slate-300 px-1.5 py-0.5 rounded-full shrink-0"
                 aria-hidden
               >
-                {POSITION_SHORT[p.position]}
+                {tPos(`short${p.position}`)}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="text-sm truncate">{p.fullName}</div>

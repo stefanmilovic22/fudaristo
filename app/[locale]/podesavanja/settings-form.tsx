@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { useState } from "react";
+import { ColorPicker } from "@/components/ColorPicker";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -78,7 +79,7 @@ export function SettingsForm({
   return (
     <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-5 flex flex-col gap-5">
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-slate-300">Ime tima</span>
+        <span className="text-slate-300">{t("teamName")}</span>
         <input
           value={teamName}
           onChange={(e) => {
@@ -91,17 +92,15 @@ export function SettingsForm({
       </label>
 
       <div className="flex flex-col gap-1.5 text-sm">
-        <span className="text-slate-300">Boja tima</span>
+        <span className="text-slate-300">{t("teamColor")}</span>
         <div className="flex items-center gap-3">
-          <input
-            type="color"
+          <ColorPicker
             value={teamColor}
-            onChange={(e) => {
-              setTeamColor(e.target.value);
+            onChange={(c) => {
+              setTeamColor(c);
               setSaved(false);
             }}
-            className="w-12 h-11 rounded-lg bg-navy-900/60 border border-navy-600 cursor-pointer"
-            aria-label="Boja tima"
+            label={t("teamColor")}
           />
           <span
             className="w-11 h-11 rounded-full flex items-center justify-center font-display font-bold text-navy-950"
@@ -109,12 +108,12 @@ export function SettingsForm({
           >
             {(teamName || "??").slice(0, 2).toUpperCase()}
           </span>
-          <span className="text-slate-400 text-xs">Ovako izgleda grb tvog tima.</span>
+          <span className="text-slate-400 text-xs">{t("teamColorNote")}</span>
         </div>
       </div>
 
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-slate-300">Omiljeni klub</span>
+        <span className="text-slate-300">{t("favoriteClub")}</span>
         <select
           value={favoriteClubId ?? ""}
           onChange={(e) => {
@@ -123,7 +122,7 @@ export function SettingsForm({
           }}
           className={inputClass}
         >
-          <option value="">Bez omiljenog kluba</option>
+          <option value="">{t("noFavorite")}</option>
           {clubs.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
