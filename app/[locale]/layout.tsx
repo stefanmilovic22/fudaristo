@@ -90,7 +90,7 @@ export default async function LocaleLayout({
       <body className="font-body">
         <NextIntlClientProvider>
           <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-            <header className="sticky top-0 z-40 bg-[#0b1526]/95 backdrop-blur flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+            <header className="sticky top-0 z-40 bg-[#0b1526] flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
               <Link href="/" className="order-1 flex items-baseline gap-2.5 shrink-0">
                 <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                   Fudaristo
