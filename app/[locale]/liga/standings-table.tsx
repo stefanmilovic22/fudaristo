@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 export type StandingsRow = {
@@ -31,6 +31,15 @@ export function StandingsTable({
   const t = useTranslations("league");
   const [query, setQuery] = useState("");
   const myRowRef = useRef<HTMLTableRowElement | null>(null);
+  const [flash, setFlash] = useState(false);
+
+  // Kratko isticanje reda posle klika — kad je red već na ekranu, skrol se ne
+  // vidi, pa bez ovoga klik deluje kao da se ništa nije desilo.
+  useEffect(() => {
+    if (!flash) return;
+    const id = setTimeout(() => setFlash(false), 1800);
+    return () => clearTimeout(id);
+  }, [flash]);
 
   const normalized = query.trim().toLowerCase();
   const visible = useMemo(
@@ -43,9 +52,10 @@ export function StandingsTable({
   const jumpToMe = () => {
     setQuery("");
     // Sledeći frejm: red mora prvo da se vrati u DOM ako ga je pretraga sklonila.
-    requestAnimationFrame(() =>
-      myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-    );
+    requestAnimationFrame(() => {
+      myRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFlash(true);
+    });
   };
 
   return (
@@ -60,6 +70,7 @@ export function StandingsTable({
         />
         {myRank !== null && (
           <button
+            type="button"
             onClick={jumpToMe}
             className="text-sm font-semibold text-gold-300 hover:text-gold-400 whitespace-nowrap"
           >
@@ -98,8 +109,10 @@ export function StandingsTable({
                 <tr
                   key={row.userId}
                   ref={isMe ? myRowRef : undefined}
-                  className={`border-t border-navy-700 ${
+                  className={`border-t border-navy-700 scroll-mt-24 ${
                     isMe ? "bg-navy-700/60" : "hover:bg-navy-800/60"
+                  } ${
+                    isMe && flash ? "outline outline-2 -outline-offset-2 outline-gold-400 bg-gold-400/15" : ""
                   } transition-colors`}
                 >
                   <td className="py-2.5 pl-3 pr-2 font-display font-bold text-slate-300 tabular-nums">
