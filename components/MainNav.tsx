@@ -125,9 +125,9 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
     const bar = barRef.current;
     const inner = innerRef.current;
     if (!bar || !inner) return;
-    // Traka se razvlači preko celog prostora, pa je prelivanje (scrollWidth) jedini
-    // pouzdan znak da tabovi ne staju.
-    if (inner.scrollWidth > inner.clientWidth && levelRef.current < 2) {
+    // Traka ima širinu svog sadržaja (razmaci među tabovima ostaju mali), pa se
+    // poredi sa prostorom koji joj stoji na raspolaganju.
+    if (inner.offsetWidth > bar.clientWidth && levelRef.current < 2) {
       levelRef.current += 1;
       setLevel(levelRef.current);
     }
@@ -185,13 +185,13 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
           (videti barFits iznad); inače ostaje samo hamburger. */}
       <div
         ref={barRef}
-        className={`order-2 hidden lg:flex flex-1 min-w-0 mx-3 xl:mx-5 ${
+        className={`order-2 hidden lg:flex flex-1 min-w-0 justify-center overflow-hidden mx-3 xl:mx-5 ${
           level < 2 ? "" : "invisible"
         }`}
       >
       <nav
             ref={innerRef}
-            className="flex w-full gap-0.5 bg-navy-800 p-1 rounded-lg whitespace-nowrap overflow-hidden"
+            className="inline-flex shrink-0 gap-0.5 bg-navy-800 p-1 rounded-lg whitespace-nowrap"
           >
           {items.map(({ key, href }) => {
             const active = isActive(href);
@@ -201,8 +201,8 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-1 items-center justify-center gap-1.5 text-sm font-semibold ${
-                  level === 0 ? "px-2.5" : "px-2"
+                className={`flex items-center gap-1.5 text-sm font-semibold ${
+                  level === 0 ? "px-3" : "px-3"
                 } py-2 rounded-md whitespace-nowrap transition-colors ${
                   active
                     ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
