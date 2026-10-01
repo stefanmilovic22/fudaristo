@@ -95,3 +95,24 @@ export const getClubsCached = unstable_cache(
   ["clubs-v1"],
   { revalidate: 300, tags: TAGS }
 );
+
+/** Mečevi jednog kola sa imenima i bojama klubova — kartica "Sledeći mečevi" na početnoj. */
+export const getRoundMatchesCached = unstable_cache(
+  async (gameweekId: string) => {
+    const supabase = createPublicClient();
+    return throwIfError(
+      await supabase
+        .from("fixtures")
+        .select(
+          "id, kickoff_at, status, home:home_club_id(name, short_name, primary_color), away:away_club_id(name, short_name, primary_color)"
+        )
+        .eq("gameweek_id", gameweekId)
+        .neq("status", "cancelled")
+        .order("kickoff_at", { ascending: true })
+        .limit(8),
+      "fixtures(round)"
+    ) as any[];
+  },
+  ["round-matches-v1"],
+  { revalidate: TTL, tags: TAGS }
+);

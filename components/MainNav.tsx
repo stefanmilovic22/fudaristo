@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 
 /**
@@ -79,6 +79,60 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  // Traka sa tabovima se prilagođava dostupnoj širini u tri koraka:
+  //   0 — ikonice + tekst, 1 — samo tekst (kompaktno), 2 — sakrivena.
+  // Širina zavisi od jezika (grčki je najduži) i od admin stavke, pa se ne
+  // može pogoditi fiksnim pragom — meri se stvarna širina. Hamburger sa
+  // bočnim menijem je uvek tu, pa korak 2 ništa ne gubi.
+  const locale = useLocale();
+  const barRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLElement>(null);
+  const levelRef = useRef(0);
+  const skipRef = useRef(false);
+  const [level, setLevel] = useState(0);
+
+  const reset = () => {
+    skipRef.current = levelRef.current !== 0;
+    levelRef.current = 0;
+    setLevel(0);
+  };
+
+  // Promena jezika/uloge ili širine prostora → kreni ispočetka od koraka 0.
+  useLayoutEffect(() => {
+    reset();
+  }, [locale, isAdmin]);
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    let lastWidth = bar.clientWidth;
+    const ro = new ResizeObserver(() => {
+      if (bar.clientWidth !== lastWidth) {
+        lastWidth = bar.clientWidth;
+        reset();
+      }
+    });
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
+
+  // Posle svakog iscrtavanja proveri da li stane; ako ne, pređi na sledeći korak.
+  useLayoutEffect(() => {
+    if (skipRef.current) {
+      skipRef.current = false;
+      return;
+    }
+    const bar = barRef.current;
+    const inner = innerRef.current;
+    if (!bar || !inner) return;
+    // Traka se razvlači preko celog prostora, pa je prelivanje (scrollWidth) jedini
+    // pouzdan znak da tabovi ne staju.
+    if (inner.scrollWidth > inner.clientWidth && levelRef.current < 2) {
+      levelRef.current += 1;
+      setLevel(levelRef.current);
+    }
+  }, [level, locale, isAdmin]);
+
   const items = isAdmin ? [...LINKS, { key: "admin" as NavKey, href: "/admin" }] : LINKS;
 
   // Poklapanje po prefiksu, da /admin/mecevi/... i dalje ističe "Admin".
@@ -107,20 +161,14 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <>
-      {/* Dugme za meni — samo ispod 1280px.
-          Prag je namerno xl (1280), ne lg (1024): sa 6-7 tabova (uključujući
-          Pravila i, za admina, Admin) i grčkim prevodom (duži od srpskog i
-          engleskog — "Διαχείριση", "Η ομάδα μου"...), traka + logo + profil
-          NE STAJU u 1024-1279px opseg — poslednji tabovi i profil bedž su
-          bili gurnuti van vidljivog dela ekrana (potvrđeno merenjem, ne samo
-          "sitno seče" kao ranija ispravka). Ispod xl korisnik uvek dobija
-          bočni meni, koji ne zavisi od širine sadržaja pa ne može da procuri. */}
+      {/* Hamburger pored logoa (kao u FPL-u) — na svim širinama; otvara bočni
+          meni sa istim stavkama kao traka sa tabovima. */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("openMenu")}
         aria-expanded={open}
-        className="order-3 xl:hidden shrink-0 w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
+        className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
       >
         <svg
           viewBox="0 0 24 24"
@@ -133,45 +181,53 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
         </svg>
       </button>
 
-      {/* Traka sa tabovima — od 1280px, videti obrazloženje iznad.
-          NAMERNO min-w-0 (ne shrink-0) + overflow-x-auto: broj tabova raste
-          (Pravila je tek dodato, admin dobija još jedan), a grčki prevod je
-          duži od ostala dva jezika — kombinacija bez ovoga probija čak i
-          1280-1366px prozore i gura logo/profil van ekrana (izmereno). Ako
-          jednog dana ni ovde ne stane sve, traka se sama skroluje vodoravno
-          umesto da nešto drugo pukne — jedini ishod koji ne zavisi od toga
-          koliko će tabova/jezika biti sutra. */}
-      <nav className="order-2 hidden xl:flex min-w-0 gap-0.5 bg-navy-800 p-1 rounded-lg">
-        {items.map(({ key, href }) => {
-          const active = isActive(href);
-          const Icon = ICONS[key];
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-1.5 text-sm font-semibold px-2.5 py-2 rounded-md whitespace-nowrap transition-colors ${
-                active
-                  ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
-                  : key === "admin"
-                    ? "text-gold-300 hover:text-gold-400"
-                    : "text-slate-300 hover:text-chalk-50"
-              }`}
-            >
-              <Icon
-                className={`w-4 h-4 shrink-0 ${
-                  active || key === "admin" ? "text-gold-300" : "text-slate-400"
+      {/* Traka sa tabovima — od 1024px, ali se prikazuje samo ako cela stane
+          (videti barFits iznad); inače ostaje samo hamburger. */}
+      <div
+        ref={barRef}
+        className={`order-2 hidden lg:flex flex-1 min-w-0 mx-3 xl:mx-5 ${
+          level < 2 ? "" : "invisible"
+        }`}
+      >
+      <nav
+            ref={innerRef}
+            className="flex w-full gap-0.5 bg-navy-800 p-1 rounded-lg whitespace-nowrap overflow-hidden"
+          >
+          {items.map(({ key, href }) => {
+            const active = isActive(href);
+            const Icon = ICONS[key];
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-1 items-center justify-center gap-1.5 text-sm font-semibold ${
+                  level === 0 ? "px-2.5" : "px-2"
+                } py-2 rounded-md whitespace-nowrap transition-colors ${
+                  active
+                    ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
+                    : key === "admin"
+                      ? "text-gold-300 hover:text-gold-400"
+                      : "text-slate-300 hover:text-chalk-50"
                 }`}
-              />
-              {t(key)}
-            </Link>
-          );
-        })}
-      </nav>
+              >
+                {level === 0 && (
+                  <Icon
+                    className={`w-4 h-4 shrink-0 ${
+                      active || key === "admin" ? "text-gold-300" : "text-slate-400"
+                    }`}
+                  />
+                )}
+                {t(key)}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
       {/* Bočni meni */}
       {open && (
-        <div className="xl:hidden fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50 flex">
           <button
             type="button"
             aria-label={t("closeMenu")}
@@ -179,7 +235,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
             className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"
           />
 
-          <div className="relative ml-auto h-full w-[78%] max-w-[300px] bg-navy-900 border-l border-navy-700 flex flex-col shadow-2xl">
+          <div className="relative mr-auto h-full w-[78%] max-w-[300px] bg-navy-900 border-r border-navy-700 flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-navy-700">
               <span className="font-display font-bold text-lg bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                 Fudaristo

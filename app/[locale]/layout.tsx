@@ -89,8 +89,8 @@ export default async function LocaleLayout({
     >
       <body className="font-body">
         <NextIntlClientProvider>
-          <div className="max-w-[1180px] mx-auto min-h-screen flex flex-col">
-            <header className="sticky top-0 z-40 bg-[#0b1526] flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+          <div className="max-w-[1360px] mx-auto min-h-screen flex flex-col">
+            <header className="sticky top-0 z-40 bg-[#0b1526] flex items-center gap-2 sm:gap-3 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
               <Link href="/" className="order-1 flex items-baseline gap-2.5 shrink-0">
                 <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
                   Fudaristo
@@ -108,7 +108,7 @@ export default async function LocaleLayout({
                   ima max-w-[220px] ali to ne pomaže ako mu roditelj dobije
                   manje mesta nego što bedž traži), pa bi tekst tima curio
                   preko granice bedža. */}
-              <div className="order-2 xl:order-3 flex items-center gap-1.5 sm:gap-3 min-w-0 xl:shrink-0">
+              <div className="order-3 ml-auto flex items-center gap-1.5 sm:gap-3 min-w-0 shrink-0">
                 <LocaleSwitcher />
 
                 {/* max-w se vraća na xl (kad se traka sa tabovima pojavi i
