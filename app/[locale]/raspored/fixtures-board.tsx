@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
+import { intlTag } from "@/lib/intl-locale";
 
 export type Match = {
   id: string;
@@ -130,7 +131,7 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
               <h3 className="font-display text-lg">{tCommon("gameweekN", { number: gw.number })}</h3>
               <span className="text-slate-400 text-xs">
                 {tCommon("deadline")}{" "}
-                {new Date(gw.deadlineAt).toLocaleString(locale, {
+                {new Date(gw.deadlineAt).toLocaleString(intlTag(locale), {
                   day: "numeric",
                   month: "short",
                   hour: "2-digit",
@@ -171,7 +172,7 @@ function MatchRow({ match: m }: { match: Match }) {
           {m.home.name}
         </span>
         <span
-          className="w-1.5 h-6 rounded-full shrink-0"
+          className="w-1.5 h-6 rounded-full shrink-0 ring-1 ring-white/25"
           style={{ backgroundColor: m.home.color }}
           aria-hidden
         />
@@ -186,19 +187,19 @@ function MatchRow({ match: m }: { match: Match }) {
           <span className="text-danger-400 text-xs">{t(STATUS_KEY[m.status] as never)}</span>
         ) : (
           <span className="text-slate-300 text-sm tabular-nums">
-            {kickoff.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
+            {kickoff.toLocaleTimeString(intlTag(locale), { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
         <span className="block text-[10px] text-slate-500 mt-0.5">
           {m.status === "live"
             ? t("statusLive")
-            : kickoff.toLocaleDateString(locale, { day: "numeric", month: "short" })}
+            : kickoff.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" })}
         </span>
       </span>
 
       <span className="flex items-center gap-2 min-w-0">
         <span
-          className="w-1.5 h-6 rounded-full shrink-0"
+          className="w-1.5 h-6 rounded-full shrink-0 ring-1 ring-white/25"
           style={{ backgroundColor: m.away.color }}
           aria-hidden
         />

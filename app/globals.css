@@ -4,7 +4,7 @@
 
 html,
 body {
-  background-color: #0b1526;
+  background-color: #0D1326;
   color: #f4f6f8;
   /* Govori pregledaču da su nativne kontrole tamne. Bez ovoga padajuća lista
      <select>-a, birač boje i skrolbarovi ostaju u sistemskoj svetloj temi —
@@ -17,7 +17,7 @@ body {
   /* Stavke padajuće liste se crtaju izvan stranice (na nivou OS-a), pa ih
      klase sa samog <select>-a ne dohvataju — moraju eksplicitno. */
   option {
-    background-color: #101f38;
+    background-color: #111933;
     color: #f4f6f8;
   }
 
@@ -40,5 +40,18 @@ body {
     textarea {
       font-size: inherit;
     }
+  }
+}
+
+@layer components {
+  /* Isti „čelični” obruč kao na logou: koristi se za dugmad i traku u zaglavlju. */
+  .steel-frame {
+    border: 1.5px solid transparent;
+    background:
+      linear-gradient(#151e39, #151e39) padding-box,
+      linear-gradient(135deg, #bfe4ff, #47769d 45%, #7cc4ff) border-box;
+  }
+  .steel-ring {
+    background: linear-gradient(135deg, #bfe4ff, #47769d 45%, #7cc4ff);
   }
 }

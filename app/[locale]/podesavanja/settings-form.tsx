@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ColorPicker } from "@/components/ColorPicker";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { readableInk } from "@/lib/color";
 
 type Club = { id: string; name: string; primary_color: string };
 
@@ -103,8 +104,8 @@ export function SettingsForm({
             label={t("teamColor")}
           />
           <span
-            className="w-11 h-11 rounded-full flex items-center justify-center font-display font-bold text-navy-950"
-            style={{ backgroundColor: teamColor }}
+            className="w-11 h-11 rounded-full flex items-center justify-center font-display font-bold"
+            style={{ backgroundColor: teamColor, color: readableInk(teamColor) }}
           >
             {(teamName || "??").slice(0, 2).toUpperCase()}
           </span>

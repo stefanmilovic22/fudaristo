@@ -16,6 +16,8 @@ import { MyTeam, type SquadEntry } from "./my-team";
 import { ChipsPanel, type ChipState, type ChipType } from "./chips-panel";
 import { ResetSquadButton } from "@/components/ResetSquadButton";
 import type { SelectablePlayer } from "@/lib/fantasy-rules";
+import { intlTag } from "@/lib/intl-locale";
+import { readableInk } from "@/lib/color";
 
 /** Keširan javni upit koji ne sme da sruši stranicu — kao pre, prazna lista + log. */
 async function safeCached<T extends unknown[]>(load: () => Promise<T>, label: string): Promise<T> {
@@ -140,7 +142,7 @@ export default async function MojTimPage({
         <h2 className="font-display text-2xl mb-2">{t("buildTitle", { number: targetGw.number })}</h2>
         <p className="text-slate-400 text-sm mb-6">
           {t("deadlineAndBudget", {
-            deadline: new Date(targetGw.deadline_at).toLocaleString(locale),
+            deadline: new Date(targetGw.deadline_at).toLocaleString(intlTag(locale)),
             budget: Number(profile?.budget_remaining ?? 100).toFixed(1),
           })}
         </p>
@@ -248,8 +250,8 @@ export default async function MojTimPage({
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-sm"
-            style={{ backgroundColor: profile?.team_color ?? "#E8B33D" }}
+            className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-sm"
+            style={{ backgroundColor: profile?.team_color ?? "#E8B33D", color: readableInk(profile?.team_color ?? "#E8B33D") }}
           >
             {(profile?.team_name ?? "??").slice(0, 2).toUpperCase()}
           </div>
@@ -299,8 +301,8 @@ async function TeamBadge({
   return (
     <div className="bg-navy-800 rounded-xl p-5 max-w-sm flex items-center gap-4">
       <div
-        className="w-14 h-14 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-lg"
-        style={{ backgroundColor: teamColor ?? "#E8B33D" }}
+        className="w-14 h-14 rounded-full flex items-center justify-center font-display font-bold text-lg"
+        style={{ backgroundColor: teamColor ?? "#E8B33D", color: readableInk(teamColor ?? "#E8B33D") }}
       >
         {(teamName ?? "??").slice(0, 2).toUpperCase()}
       </div>

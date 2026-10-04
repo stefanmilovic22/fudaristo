@@ -3,13 +3,14 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/current-user";
 import { getTargetGameweek } from "@/lib/gameweek";
-import { Pitch, PitchRow } from "@/components/Pitch";
-import { Jersey } from "@/components/Jersey";
 import { DeadlineCountdown } from "@/components/DeadlineCountdown";
-import { getRoundMatchesCached } from "@/lib/cached-data";
+import { getMostSelectedCached, getRoundMatchesCached, getTableDataCached } from "@/lib/cached-data";
 import { loadLeague } from "@/lib/league-data";
 import { loadStats } from "@/lib/stats-data";
-import { LeagueTopCard, NextMatchesCard, StatusStrip, TeamOfWeekCard } from "./home-sections";
+import { HeroPanel, NextMatchesCard, StatusStrip, SuperLeagueCard } from "./home-sections";
+import { TeamOfWeekBoard } from "@/components/TeamOfWeekBoard";
+import { computeLeagueTable } from "@/lib/league-table";
+import { pickFeaturedMatch } from "@/lib/featured-match";
 
 /**
  * Poziv na akciju zavisi od toga dokle je korisnik stigao. Ranije je svima
@@ -53,7 +54,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   // Javni podaci za kartice (keširani) — istovremeno. Liga se učitava samo za
   // prijavljene: gost ne dobija prave podatke u HTML-u.
-  const [roundMatches, league, stats] = await Promise.all([
+  const [roundMatches, league, stats, tableData, mostSelected] = await Promise.all([
     targetGw
       ? getRoundMatchesCached(targetGw.id).catch((e) => {
           console.error("[/] round matches:", e);
@@ -65,7 +66,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       console.error("[/] stats:", e);
       return null;
     }),
+    getTableDataCached().catch((e) => {
+      console.error("[/] table:", e);
+      return { clubs: [], fixtures: [] };
+    }),
+    getMostSelectedCached().catch((e) => {
+      console.error("[/] most selected:", e);
+      return { gameweekNumber: null as number | null, players: [] as any[] };
+    }),
   ]);
+  const tableRows = computeLeagueTable(tableData.clubs, tableData.fixtures);
+  const featuredMatch = pickFeaturedMatch(
+    roundMatches,
+    new Map(tableRows.map((r) => [r.name, r.rank]))
+  );
 
   const leagueRows = league && !league.error ? league.standings : null;
   const myStanding = user && leagueRows ? leagueRows.find((r: any) => r.user_id === user.id) : null;
@@ -125,46 +139,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
         </div>
 
-        {/* Mockup postava — isti Pitch/Jersey koje koristi /moj-tim, ovde
-            samo dekorativan (bez onClick/onRemove). Puna postava 4-3-3
-            (golman + sve tri linije), u "compact" veličini dresa — isti
-            trik kao na /moj-tim — da cela slika stane na ekran bez
-            skrolovanja, a da se ništa od formacije ne izbaci. Ovo je
-            najjača vizuelna stvar u aplikaciji i ranije je posetilac nikad
-            nije video pre registracije. */}
-        <div className="relative w-[210px] xs:w-[240px] sm:w-[270px] mx-auto lg:mx-0 lg:shrink-0" aria-hidden>
-          <div className="absolute z-10 -left-6 bottom-10 hidden sm:block bg-navy-900 border border-navy-600 rounded-xl px-3.5 py-2.5 shadow-xl text-xs">
-            <span className="text-slate-300">{t("floatBudget")}</span>
-            <b className="block font-display text-xl text-gold-300 leading-tight">100M</b>
-          </div>
-          <div className="absolute z-10 -right-5 top-8 hidden sm:block bg-navy-900 border border-navy-600 rounded-xl px-3.5 py-2.5 shadow-xl text-xs">
-            <span className="text-slate-300">{t("floatCaptain")}</span>
-            <b className="block font-display text-xl text-gold-300 leading-tight">×2</b>
-          </div>
-          <Pitch>
-            <div className="flex flex-col gap-1.5 xs:gap-2 sm:gap-2.5">
-              <PitchRow>
-                <Jersey compact color="#28405F" isGoalkeeper />
-              </PitchRow>
-              <PitchRow>
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" />
-              </PitchRow>
-              <PitchRow>
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" />
-              </PitchRow>
-              <PitchRow>
-                <Jersey compact color="#E8B33D" />
-                <Jersey compact color="#E8B33D" isCaptain />
-                <Jersey compact color="#E8B33D" />
-              </PitchRow>
-            </div>
-          </Pitch>
-        </div>
+        <HeroPanel match={featuredMatch} gwNumber={targetGw?.number ?? null} mostSelected={mostSelected} />
       </section>
 
       {user && (
@@ -183,22 +158,28 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         />
       )}
 
-      <section className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr_1fr] gap-4">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {targetGw && <NextMatchesCard matches={roundMatches} gwNumber={targetGw.number} />}
-        <LeagueTopCard
-          rows={
-            user && leagueRows
-              ? leagueRows.slice(0, 5).map((r: any) => ({
-                  userId: r.user_id,
-                  teamName: r.team_name,
-                  totalPoints: r.total_points ?? 0,
-                  rank: Number(r.rank),
-                }))
-              : null
-          }
-          currentUserId={user?.id ?? null}
-        />
-        <TeamOfWeekCard data={stats?.data.teamOfWeek ?? null} />
+        <SuperLeagueCard rows={tableRows} />
+      </section>
+
+      {/* Ceo Tim kola — teren sa imenima i poenima + spisak, isto kao u Statistikama. */}
+      <section>
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <h2 className="font-display text-xl sm:text-2xl">
+            {stats?.data.teamOfWeek
+              ? t("totwTitle", { number: stats.data.teamOfWeek.gameweekNumber })
+              : t("totwTitle", { number: "—" })}
+          </h2>
+          <Link href="/statistike" className="text-xs font-bold text-gold-300 hover:text-gold-400 whitespace-nowrap">
+            {t("statsLink")} →
+          </Link>
+        </div>
+        {stats?.data.teamOfWeek ? (
+          <TeamOfWeekBoard data={stats.data.teamOfWeek} layout="split" />
+        ) : (
+          <p className="text-sm text-slate-400 bg-navy-800 border border-navy-700 rounded-xl p-4">{t("noTotw")}</p>
+        )}
       </section>
 
       {!user && (
@@ -212,7 +193,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#5b4a1d] bg-navy-900 bg-[radial-gradient(700px_180px_at_100%_0,rgba(232,179,61,0.18),transparent)] px-5 sm:px-8 py-6 flex flex-wrap items-center justify-between gap-4">
+          <section className="rounded-2xl border border-navy-600 bg-navy-900 bg-[radial-gradient(700px_180px_at_100%_0,rgba(90,180,255,0.20),transparent)] px-5 sm:px-8 py-6 flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="font-display text-xl sm:text-2xl">
                 {targetGw ? t("ctaBandTitle", { number: targetGw.number }) : t("ctaBandTitleNoGw")}

@@ -4,6 +4,7 @@
     "description": "Fantasy ποδόσφαιρο για την ελληνική Super League"
   },
   "nav": {
+    "table": "Βαθμολογία",
     "myTeam": "Η ομάδα μου",
     "fixtures": "Πρόγραμμα",
     "league": "Λίγκα",
@@ -19,6 +20,18 @@
     "closeMenu": "Κλείσιμο μενού"
   },
   "home": {
+    "featuredMatch": "Αγώνας αγωνιστικής {number}",
+    "allMatches": "Όλοι οι αγώνες της αγωνιστικής",
+    "mostSelected": "Δημοφιλέστεροι παίκτες",
+    "mostSelectedEmpty": "Δεν υπάρχουν ομάδες ακόμη — γίνε ο πρώτος.",
+    "gwShort": "αγ. {number}",
+    "superLeagueTop5": "Βαθμολογία Super League Ελλάδας",
+    "superLeagueEmpty": "Η βαθμολογία συμπληρώνεται μόλις παιχτούν οι πρώτοι αγώνες.",
+    "cardPos": "ΕΠΙ",
+    "cardPts": "ΠΟΝ",
+    "cardGoals": "ΓΚΟΛ",
+    "cardAst": "ΑΣΙ",
+    "cardRating": "ΒΑΘ",
     "eyebrow": "Αγωνιστική {number} · ανοιχτή επιλογή ομάδας",
     "floatBudget": "Budget",
     "floatCaptain": "Αρχηγός",
@@ -174,6 +187,7 @@
     "shortFWD": "ΕΠΙ"
   },
   "errors": {
+    "whatTable": "της βαθμολογίας",
     "loadFailed": "Η φόρτωση ({what}) απέτυχε.",
     "unknown": "Άγνωστο σφάλμα — δες τα logs στο Vercel.",
     "code": "Κωδικός",
@@ -352,6 +366,35 @@
     "bonus": "Μπόνους",
     "noMinutes": "Δεν έπαιξε",
     "match": "Αγώνας {number}"
+  },
+  "table": {
+    "zone_championship": "Πρόκριση - Super League (Όμιλος Τίτλου / Championship Group)",
+    "zone_conference": "Πρόκριση - Super League (Όμιλος Conference League)",
+    "zone_relegation": "Super League (Όμιλος Υποβιβασμού / Relegation Group)",
+    "title": "Βαθμολογία Super League Ελλάδας",
+    "subtitle": "Υπολογίζεται από τους αγώνες που έχουν παιχτεί: νίκη 3 βαθμοί, ισοπαλία 1, ήττα 0.",
+    "noMatches": "Δεν έχουν παιχτεί αγώνες ακόμη — η βαθμολογία συμπληρώνεται καθώς καταχωρούνται τα αποτελέσματα.",
+    "colPos": "#",
+    "colClub": "Σύλλογος",
+    "colP": "Αγ",
+    "colW": "Ν",
+    "colD": "Ι",
+    "colL": "Η",
+    "colGoals": "Γκολ",
+    "colGD": "Δ",
+    "colPts": "Βαθ",
+    "colForm": "Φόρμα",
+    "tipPlayed": "Αγώνες",
+    "tipWon": "Νίκες",
+    "tipDrawn": "Ισοπαλίες",
+    "tipLost": "Ήττες",
+    "tipGoals": "Γκολ υπέρ : κατά",
+    "tipDiff": "Διαφορά τερμάτων",
+    "tipPoints": "Βαθμοί",
+    "formW": "Ν",
+    "formD": "Ι",
+    "formL": "Η",
+    "note": "Σειρά: βαθμοί, διαφορά τερμάτων, γκολ υπέρ. Δεν λαμβάνονται υπόψη οι μεταξύ τους αγώνες."
   },
   "reset": {
     "clear": "Άδειασμα ομάδας",

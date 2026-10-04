@@ -4,6 +4,7 @@ import { useLayoutEffect, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { playerFullName, type Position } from "@/lib/fantasy-rules";
+import { intlTag } from "@/lib/intl-locale";
 
 export type UpcomingFixture = {
   /** Već formatirano, npr. "PAOK (H)" — isti oblik kao opponentByClub. */
@@ -134,7 +135,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: Play
           >
             <span className="truncate">{f.label}</span>
             <span className="text-slate-400 tabular-nums shrink-0 ml-2">
-              {new Date(f.kickoffAt).toLocaleDateString(locale, { day: "numeric", month: "numeric" })}
+              {new Date(f.kickoffAt).toLocaleDateString(intlTag(locale), { day: "numeric", month: "numeric" })}
             </span>
           </div>
         ))}
@@ -143,7 +144,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: Play
       {/* Strelica koja pokazuje ka dresu ispod. */}
       <div
         aria-hidden
-        className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-[10px] border-t-[#142238]"
+        className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-[10px] border-t-[#151E39]"
       />
     </div>,
     document.body

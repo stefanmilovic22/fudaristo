@@ -171,7 +171,7 @@ export function PlayerPointsBreakdownPopover({
 
       <div
         aria-hidden
-        className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-[10px] border-t-[#142238]"
+        className="absolute left-1/2 top-full -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-[10px] border-t-[#151E39]"
       />
     </div>,
     document.body

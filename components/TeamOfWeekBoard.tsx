@@ -106,7 +106,14 @@ function TeamOfWeekJersey({
  * "Tim kola" — po uzoru na FPL: najbolji sastav CELE lige za jedno kolo, ne
  * sastav nijednog konkretnog korisnika. Čisto informativan prikaz (bez klika).
  */
-export function TeamOfWeekBoard({ data }: { data: TeamOfWeekData }) {
+export function TeamOfWeekBoard({
+  data,
+  layout = "stack",
+}: {
+  data: TeamOfWeekData;
+  /** "split": teren levo, spisak desno (široki ekrani, npr. početna); "stack": jedno ispod drugog. */
+  layout?: "stack" | "split";
+}) {
   const t = useTranslations("stats");
   const tPos = useTranslations("positions");
   const rows = POSITION_ORDER.map((pos) => data.players.filter((p) => p.position === pos)).filter(
@@ -118,9 +125,11 @@ export function TeamOfWeekBoard({ data }: { data: TeamOfWeekData }) {
     .map((pos) => data.players.filter((p) => p.position === pos).length)
     .join("-");
 
+  const split = layout === "split";
+
   return (
-    <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+    <div className={split ? "lg:grid lg:grid-cols-[minmax(0,460px)_1fr] lg:gap-6 lg:items-start" : ""}>
+      <div className={`flex flex-wrap items-baseline justify-between gap-2 mb-3 ${split ? "lg:col-span-2" : ""}`}>
         <p className="text-slate-400 text-sm">{t("teamOfWeekSubtitle", { number: data.gameweekNumber })}</p>
         <span className="text-xs font-display bg-navy-800 border border-navy-600 rounded-full px-2.5 py-1 text-slate-300">
           {t("teamOfWeekFormation", { formation })}
@@ -148,7 +157,7 @@ export function TeamOfWeekBoard({ data }: { data: TeamOfWeekData }) {
 
       {/* Pun spisak ispod terena — sa pozicijom, da se vidi ceo raspored bez
           oslanjanja samo na pločicu dresa. */}
-      <div className="mt-3 bg-navy-800 border border-navy-600 rounded-lg p-4">
+      <div className={`${split ? "mt-3 lg:mt-0" : "mt-3"} bg-navy-800 border border-navy-600 rounded-lg p-4`}>
         <ol className="flex flex-col">
           {rows.flat().map((p) => (
             <li

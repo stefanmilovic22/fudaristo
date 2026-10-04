@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Oswald, Inter } from "next/font/google";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
@@ -36,7 +37,7 @@ const inter = Inter({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0B1526",
+  themeColor: "#0D1326",
 };
 
 export function generateStaticParams() {
@@ -89,12 +90,21 @@ export default async function LocaleLayout({
     >
       <body className="font-body">
         <NextIntlClientProvider>
-          <div className="max-w-[1280px] mx-auto min-h-screen flex flex-col">
-            <header className="sticky top-0 z-40 bg-[#0b1526] flex items-center gap-2 sm:gap-3 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
-              <Link href="/" className="order-1 flex items-baseline gap-2.5 shrink-0">
-                <span className="font-display font-bold text-xl bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
-                  Fudaristo
-                </span>
+          {/* Zaglavlje je na grčkom šire (tabovi su duži), a sadržaj ispod ostaje iste
+              širine kao na ostalim jezicima. */}
+          <div
+            className={`${locale === "el" ? "max-w-[1440px]" : "max-w-[1280px]"} mx-auto min-h-screen flex flex-col`}
+          >
+            <header className="sticky top-0 z-40 bg-gradient-to-r from-navy-950 via-navy-800 to-[#1C3A6E] flex items-center gap-2 sm:gap-3 px-3 sm:px-7 py-3 sm:py-4 border-b border-navy-700">
+              <Link href="/" aria-label="Fudaristo" className="order-1 flex items-center gap-3 shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Fudaristo"
+                  width={56}
+                  height={56}
+                  priority
+                  className="w-11 h-11 sm:w-14 sm:h-14 rounded-full drop-shadow-[0_4px_14px_rgba(124,196,255,0.30)]"
+                />
                 <span className="hidden xs:inline text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
               </Link>
 
@@ -130,7 +140,7 @@ export default async function LocaleLayout({
               </div>
             </header>
 
-            <main className="flex-1 px-3 sm:px-7 py-4 sm:py-6">{children}</main>
+            <main className="flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-7 py-4 sm:py-6">{children}</main>
           </div>
         </NextIntlClientProvider>
       </body>

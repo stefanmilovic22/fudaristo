@@ -3,6 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { readableInk } from "@/lib/color";
 
 export type StandingsRow = {
   userId: string;
@@ -121,8 +122,8 @@ export function StandingsTable({
                   <td className="py-2.5 px-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
-                        className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-[10px]"
-                        style={{ backgroundColor: row.teamColor }}
+                        className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-[10px]"
+                        style={{ backgroundColor: row.teamColor, color: readableInk(row.teamColor) }}
                       >
                         {row.teamName.slice(0, 2).toUpperCase()}
                       </span>

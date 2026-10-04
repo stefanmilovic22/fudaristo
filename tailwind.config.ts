@@ -3,7 +3,7 @@ import type { Config } from "tailwindcss";
 // Design tokeni preuzeti direktno iz fudaristo-mockup.html — jedan izvor
 // istine za boje kroz ceo projekat.
 const config: Config = {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     screens: {
       // Prelomna tačka za uske telefone (iPhone SE je 375px). Dresovi na terenu
@@ -17,15 +17,15 @@ const config: Config = {
     extend: {
       colors: {
         navy: {
-          950: "#0B1526",
+          950: "#0D1326",
           // 900 se koristio na 14 mesta (polja za unos, pretraga igrača, admin
           // unos statistike) a NIJE postojao u paleti — Tailwind takvu klasu
           // tiho izbaci, pa su ta polja ostajala bez pozadine: bela kutija sa
           // belim tekstom. Vrednost je između 950 i 800.
-          900: "#101F38",
-          800: "#142238",
-          700: "#1C2E4A",
-          600: "#28405F",
+          900: "#111933",
+          800: "#151E39",
+          700: "#1F2E50",
+          600: "#2C4468",
         },
         pitch: {
           // Trava je posvetljena da odgovara stvarnom terenu Agia Sofia Arene:
@@ -39,17 +39,17 @@ const config: Config = {
           400: "#57C983",
         },
         gold: {
-          400: "#E8B33D",
-          300: "#F0C868",
+          400: "#5AB4FF",
+          300: "#8CCBFF",
         },
         chalk: {
           50: "#F4F6F8",
         },
         slate: {
           300: "#B7C3D6",
-          400: "#8494AC",
+          400: "#93ADCC",
           500: "#64718A",
-          600: "#4A566B",
+          600: "#4A5F82",
         },
         danger: {
           400: "#E2574C",

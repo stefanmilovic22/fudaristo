@@ -220,7 +220,7 @@ export function Jersey({
       <div
         className={`relative w-full rounded-[9px] bg-white/[0.07] border pt-[5px] transition-transform ${
           active
-            ? "border-gold-400 shadow-[0_3px_10px_rgba(232,179,61,0.35)]"
+            ? "border-gold-400 shadow-[0_3px_10px_rgba(90,180,255,0.35)]"
             : "border-white/10 shadow-[0_3px_8px_rgba(0,0,0,0.25)]"
         } ${onClick ? "hover:-translate-y-0.5" : ""} ${active ? "-translate-y-1" : ""}`}
       >
@@ -401,7 +401,7 @@ export function EmptySlot({
             <path
               d={SHIRT_PATH}
               fill="rgba(11,21,38,0.35)"
-              stroke={highlighted ? "#E8B33D" : "rgba(244,246,248,0.5)"}
+              stroke={highlighted ? "#5AB4FF" : "rgba(244,246,248,0.5)"}
               strokeWidth="2.5"
               strokeDasharray="6 5"
               strokeLinejoin="round"
@@ -412,7 +412,7 @@ export function EmptySlot({
               textAnchor="middle"
               fontSize="30"
               fontWeight="300"
-              fill={highlighted ? "#E8B33D" : "rgba(244,246,248,0.75)"}
+              fill={highlighted ? "#5AB4FF" : "rgba(244,246,248,0.75)"}
             >
               +
             </text>

@@ -29,16 +29,17 @@ export function Pitch({ children }: { children: React.ReactNode }) {
 
       <Goal />
 
-      {/* Travnjak. Gornji razmak nosi gol i reklame. */}
-      <div className="relative mx-1.5 mb-1.5 mt-[56px] xs:mx-2 xs:mb-2 xs:mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden bg-pitch-700 ring-1 ring-gold-400/25">
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, rgba(255,255,255,0.07) 0 56px, rgba(0,0,0,0.07) 56px 112px)",
-          }}
-        />
+      {/* Travnjak. Gornji razmak nosi gol i reklame.
+          Boja trave namerno NIJE u pitch-* tokenima iz tailwind.config.ts —
+          taj isti "pitch" naziv već nosi posve drugo značenje na drugim
+          mestima (text-pitch-400 = zelena za "pozitivnu" vrednost u
+          statistici/tabeli/rasporisu poena, videti PlayerPointsBreakdownPopover,
+          liga/standings-table, pravila). Da su travu i taj semantički zeleni
+          ton delili isti token, promena boje trave bi nehotice prefarbala i
+          sve te brojeve — zato su boje trave ovde direktne heksadecimalne
+          vrednosti, van deljene palete. */}
+      <div className="relative mx-1.5 mb-1.5 mt-[56px] xs:mx-2 xs:mb-2 xs:mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden ring-1 ring-gold-400/25">
+        <GrassTexture />
 
         <svg
           aria-hidden
@@ -48,7 +49,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
         >
           <g
             fill="none"
-            stroke="rgba(255,255,255,0.55)"
+            stroke="#F2F3E8"
             strokeWidth="0.45"
             vectorEffect="non-scaling-stroke"
           >
@@ -66,7 +67,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
             <path d="M 3 133 A 4 4 0 0 1 7 137" />
             <path d="M 93 137 A 4 4 0 0 1 97 133" />
           </g>
-          <g fill="rgba(255,255,255,0.55)">
+          <g fill="#F2F3E8">
             <circle cx="50" cy="70" r="0.9" />
             <circle cx="50" cy="16" r="0.9" />
             <circle cx="50" cy="124" r="0.9" />
@@ -77,6 +78,50 @@ export function Pitch({ children }: { children: React.ReactNode }) {
             poenima ISPOD dresa, a one su ranije izlazile iz okvira terena. */}
         <div className="relative px-1 pt-4 pb-7 xs:px-2 sm:px-5 sm:pt-6 sm:pb-10">{children}</div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Trava — 10 vodoravnih redova (naizmenično svetao/taman = pokošene pruge),
+ * svaki podeljen na 8 kolona sa blago različitom nijansom (neparno/parno) —
+ * ista tehnika i iste boje kao referentni HTML koji je poslao korisnik.
+ * Kontrast red-na-red nosi pruge; kontrast kolona unutar reda je namerno
+ * suptilan (samo par nijansi razlike), da se ne pretvori u šahovnicu —
+ * ranija verzija sa jednakim kontrastom u oba pravca je upravo to i uradila.
+ */
+function GrassTexture() {
+  const rows = 10;
+  const cols = 8;
+  const LIGHT_ODD = "#8FD957";
+  const LIGHT_EVEN = "#82CC4D";
+  const DARK_ODD = "#6FBA42";
+  const DARK_EVEN = "#62AA3A";
+
+  return (
+    <div aria-hidden className="absolute inset-0 flex flex-col overflow-hidden" style={{ background: "#70BD3F" }}>
+      {Array.from({ length: rows }).map((_, r) => {
+        const dark = r % 2 === 1;
+        return (
+          <div key={r} className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+            {Array.from({ length: cols }).map((__, c) => {
+              const odd = c % 2 === 0; // c=0 je 1. dete → CSS nth-child(odd)
+              const color = dark ? (odd ? DARK_ODD : DARK_EVEN) : odd ? LIGHT_ODD : LIGHT_EVEN;
+              return <div key={c} style={{ background: color }} />;
+            })}
+          </div>
+        );
+      })}
+      {/* Sitna vodoravna tekstura + blaga promena osvetljenja po dijagonali —
+          isti recept kao u referentnom fajlu. */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent 0, transparent 5px, rgba(255,255,255,0.025) 6px), linear-gradient(105deg, rgba(255,255,255,0.08), transparent 25%, rgba(0,0,0,0.035) 70%, rgba(255,255,255,0.04))",
+          mixBlendMode: "soft-light",
+        }}
+      />
     </div>
   );
 }

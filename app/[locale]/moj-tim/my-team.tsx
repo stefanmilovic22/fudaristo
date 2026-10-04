@@ -19,6 +19,7 @@ import {
   playerShirtName,
   type SelectablePlayer,
 } from "@/lib/fantasy-rules";
+import { intlTag } from "@/lib/intl-locale";
 
 export type SquadEntry = {
   player: SelectablePlayer;
@@ -621,7 +622,7 @@ export function MyTeam({
             </select>
           </label>
           <span className="text-slate-400 w-full lg:w-auto text-xs sm:text-[13px]">
-            {tCommon("deadline")} {new Date(deadlineAt).toLocaleString(locale)}
+            {tCommon("deadline")} {new Date(deadlineAt).toLocaleString(intlTag(locale))}
           </span>
         </div>
 

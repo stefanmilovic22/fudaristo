@@ -12,6 +12,7 @@ import {
 import type { Position } from "@/lib/fantasy-rules";
 import { PublicSquadPitch, type PublicEntry } from "@/components/PublicSquadPitch";
 import type { BreakdownGroup } from "@/components/PlayerPointsBreakdownPopover";
+import { readableInk } from "@/lib/color";
 
 /**
  * Javni pregled tuđeg tima. Middleware ovu rutu od početka tretira kao javnu
@@ -280,8 +281,8 @@ async function Shell({
 
       <div className="flex items-center gap-4 mt-3 mb-6">
         <div
-          className="w-14 h-14 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-lg"
-          style={{ backgroundColor: owner.team_color ?? "#E8B33D" }}
+          className="w-14 h-14 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-lg"
+          style={{ backgroundColor: owner.team_color ?? "#E8B33D", color: readableInk(owner.team_color ?? "#E8B33D") }}
         >
           {(owner.team_name ?? "??").slice(0, 2).toUpperCase()}
         </div>

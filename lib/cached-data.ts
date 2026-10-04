@@ -116,3 +116,65 @@ export const getRoundMatchesCached = unstable_cache(
   ["round-matches-v1"],
   { revalidate: TTL, tags: TAGS }
 );
+
+/** Klubovi + odigrani mečevi za tabelu Super lige (lib/league-table.ts). */
+export const getTableDataCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const [clubsRes, fxRes] = await Promise.all([
+      supabase.from("clubs").select("id, name, short_name, primary_color").eq("is_active", true),
+      supabase
+        .from("fixtures")
+        .select("home_club_id, away_club_id, home_score, away_score, kickoff_at")
+        .eq("status", "finished")
+        .order("kickoff_at", { ascending: true }),
+    ]);
+    if (clubsRes.error) throw new Error(`clubs: ${clubsRes.error.message}`);
+    if (fxRes.error) throw new Error(`fixtures(finished): ${fxRes.error.message}`);
+    return { clubs: clubsRes.data ?? [], fixtures: fxRes.data ?? [] };
+  },
+  ["league-table-v1"],
+  { revalidate: TTL, tags: TAGS }
+);
+
+/**
+ * Najtraženiji igrači: procenat sastava koji sadrži igrača, za najnovije kolo
+ * koje ima sastave (v_player_ownership, migracija 012). Vraća do 3 igrača.
+ * Kratak keš (5 min): menja se dok korisnici sastavljaju timove.
+ */
+export const getMostSelectedCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { data: latest, error: latestError } = await supabase
+      .from("v_player_ownership")
+      .select("gameweek_id, gameweek_number")
+      .order("gameweek_number", { ascending: false })
+      .limit(1);
+    if (latestError) throw new Error(`v_player_ownership: ${latestError.message}`);
+    const gw = latest?.[0];
+    if (!gw) return { gameweekNumber: null as number | null, players: [] as any[] };
+
+    const { data: top, error: topError } = await supabase
+      .from("v_player_ownership")
+      .select("player_id, pct, picks")
+      .eq("gameweek_id", gw.gameweek_id)
+      .order("pct", { ascending: false })
+      .limit(3);
+    if (topError) throw new Error(`v_player_ownership(top): ${topError.message}`);
+    const ids = (top ?? []).map((r: any) => r.player_id);
+    if (ids.length === 0) return { gameweekNumber: gw.gameweek_number as number, players: [] as any[] };
+
+    const { data: players, error: pError } = await supabase
+      .from("players")
+      .select("id, first_name, last_name, position, clubs(name, short_name, primary_color)")
+      .in("id", ids);
+    if (pError) throw new Error(`players: ${pError.message}`);
+    const byId = new Map((players ?? []).map((p: any) => [p.id, p]));
+    return {
+      gameweekNumber: gw.gameweek_number as number,
+      players: (top ?? []).map((r: any) => ({ pct: Number(r.pct), picks: r.picks, player: byId.get(r.player_id) })).filter((x) => x.player),
+    };
+  },
+  ["most-selected-v1"],
+  { revalidate: 300, tags: TAGS }
+);

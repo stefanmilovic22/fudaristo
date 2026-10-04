@@ -4,6 +4,7 @@
     "description": "Fantasy fudbal aplikacija za grčku Super ligu"
   },
   "nav": {
+    "table": "Tabela",
     "myTeam": "Moj klub",
     "fixtures": "Raspored",
     "league": "Liga",
@@ -19,6 +20,18 @@
     "closeMenu": "Zatvori meni"
   },
   "home": {
+    "featuredMatch": "Meč kola {number}",
+    "allMatches": "Sve utakmice kola",
+    "mostSelected": "Najtraženiji igrači",
+    "mostSelectedEmpty": "Još nema sastava — budi prvi.",
+    "gwShort": "kolo {number}",
+    "superLeagueTop5": "Tabela grčke Super lige",
+    "superLeagueEmpty": "Tabela se popunjava kad se odigraju prvi mečevi.",
+    "cardPos": "NAP",
+    "cardPts": "POE",
+    "cardGoals": "GOL",
+    "cardAst": "AST",
+    "cardRating": "OC",
     "eyebrow": "Kolo {number} · prijem sastava otvoren",
     "floatBudget": "Budžet",
     "floatCaptain": "Kapiten",
@@ -174,6 +187,7 @@
     "shortFWD": "NAP"
   },
   "errors": {
+    "whatTable": "tabele",
     "loadFailed": "Učitavanje {what} nije uspelo.",
     "unknown": "Nepoznata greška — pogledaj log na Vercel-u.",
     "code": "Kod",
@@ -352,6 +366,35 @@
     "bonus": "Bonus",
     "noMinutes": "Bez odigranih minuta",
     "match": "Meč {number}"
+  },
+  "table": {
+    "zone_championship": "Prolaz u Championship Group",
+    "zone_conference": "Prolaz u Conference League Group",
+    "zone_relegation": "Relegation Group (borba za opstanak)",
+    "title": "Tabela grčke Super lige",
+    "subtitle": "Računa se iz odigranih mečeva: pobeda 3 boda, nerešeno 1, poraz 0.",
+    "noMatches": "Još nema odigranih mečeva — tabela se popunjava čim se upišu rezultati.",
+    "colPos": "#",
+    "colClub": "Klub",
+    "colP": "OU",
+    "colW": "P",
+    "colD": "N",
+    "colL": "I",
+    "colGoals": "Golovi",
+    "colGD": "GR",
+    "colPts": "Bod",
+    "colForm": "Forma",
+    "tipPlayed": "Odigrano",
+    "tipWon": "Pobede",
+    "tipDrawn": "Nerešeno",
+    "tipLost": "Porazi",
+    "tipGoals": "Postignuti : primljeni golovi",
+    "tipDiff": "Gol-razlika",
+    "tipPoints": "Bodovi",
+    "formW": "P",
+    "formD": "N",
+    "formL": "I",
+    "note": "Redosled: bodovi, gol-razlika, postignuti golovi. Ne uračunava međusobne susrete."
   },
   "reset": {
     "clear": "Isprazni tim",

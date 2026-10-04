@@ -4,6 +4,7 @@
     "description": "Fantasy football for the Greek Super League"
   },
   "nav": {
+    "table": "Table",
     "myTeam": "My club",
     "fixtures": "Fixtures",
     "league": "League",
@@ -19,6 +20,18 @@
     "closeMenu": "Close menu"
   },
   "home": {
+    "featuredMatch": "Match of gameweek {number}",
+    "allMatches": "All matches this gameweek",
+    "mostSelected": "Most selected players",
+    "mostSelectedEmpty": "No squads yet — be the first.",
+    "gwShort": "GW {number}",
+    "superLeagueTop5": "Greek Super League table",
+    "superLeagueEmpty": "The table fills in once the first matches are played.",
+    "cardPos": "FWD",
+    "cardPts": "PTS",
+    "cardGoals": "GLS",
+    "cardAst": "AST",
+    "cardRating": "RTG",
     "eyebrow": "Gameweek {number} · squad selection open",
     "floatBudget": "Budget",
     "floatCaptain": "Captain",
@@ -174,6 +187,7 @@
     "shortFWD": "FWD"
   },
   "errors": {
+    "whatTable": "the table",
     "loadFailed": "Could not load {what}.",
     "unknown": "Unknown error — check the Vercel logs.",
     "code": "Code",
@@ -352,6 +366,35 @@
     "bonus": "Bonus",
     "noMinutes": "Did not play",
     "match": "Match {number}"
+  },
+  "table": {
+    "zone_championship": "Promotion - Super League (Championship Group)",
+    "zone_conference": "Promotion - Super League (Conference League Group)",
+    "zone_relegation": "Super League (Relegation Group)",
+    "title": "Greek Super League table",
+    "subtitle": "Calculated from played matches: win 3 points, draw 1, loss 0.",
+    "noMatches": "No matches played yet — the table fills in as results are entered.",
+    "colPos": "#",
+    "colClub": "Club",
+    "colP": "P",
+    "colW": "W",
+    "colD": "D",
+    "colL": "L",
+    "colGoals": "Goals",
+    "colGD": "GD",
+    "colPts": "Pts",
+    "colForm": "Form",
+    "tipPlayed": "Played",
+    "tipWon": "Won",
+    "tipDrawn": "Drawn",
+    "tipLost": "Lost",
+    "tipGoals": "Goals for : against",
+    "tipDiff": "Goal difference",
+    "tipPoints": "Points",
+    "formW": "W",
+    "formD": "D",
+    "formL": "L",
+    "note": "Order: points, goal difference, goals scored. Head-to-head is not taken into account."
   },
   "reset": {
     "clear": "Clear squad",

@@ -36,6 +36,12 @@ const ICONS = {
       <path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M9 20h6M12 15v5" strokeLinecap="round" />
     </svg>
   ),
+  table: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18M3 14h18M9 9v11" strokeLinecap="round" />
+    </svg>
+  ),
   stats: (p: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <path d="M5 20V10M12 20V4M19 20v-6" strokeLinecap="round" />
@@ -68,6 +74,7 @@ type NavKey = keyof typeof ICONS;
 const LINKS: { key: NavKey; href: string }[] = [
   { key: "myTeam", href: "/moj-tim" },
   { key: "fixtures", href: "/raspored" },
+  { key: "table", href: "/tabela" },
   { key: "league", href: "/liga" },
   { key: "stats", href: "/statistike" },
   { key: "rules", href: "/pravila" },
@@ -86,52 +93,44 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
   // bočnim menijem je uvek tu, pa korak 2 ništa ne gubi.
   const locale = useLocale();
   const barRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLElement>(null);
-  const levelRef = useRef(0);
-  const skipRef = useRef(false);
-  const [level, setLevel] = useState(0);
+  const m0Ref = useRef<HTMLElement>(null); // skrivena kopija trake, korak 0 (ikonice)
+  const m1Ref = useRef<HTMLElement>(null); // skrivena kopija trake, korak 1 (samo tekst)
+  const [barW, setBarW] = useState(0);
+  const [w0, setW0] = useState(0);
+  const [w1, setW1] = useState(0);
+  // Povećava se kad se učita pravi font — tada se tabovi ponovo mere.
+  const [fontTick, setFontTick] = useState(0);
 
-  const reset = () => {
-    skipRef.current = levelRef.current !== 0;
-    levelRef.current = 0;
-    setLevel(0);
-  };
-
-  // Promena jezika/uloge ili širine prostora → kreni ispočetka od koraka 0.
+  // Mere se stvarne širine OBE varijante trake (skrivene kopije) i širina
+  // slobodnog prostora; korak se onda samo izračuna, bez „pokušaja i greške”.
   useLayoutEffect(() => {
-    reset();
-  }, [locale, isAdmin]);
+    const m0 = m0Ref.current;
+    const m1 = m1Ref.current;
+    const bar = barRef.current;
+    if (m0) setW0(m0.offsetWidth);
+    if (m1) setW1(m1.offsetWidth);
+    if (bar) setBarW(bar.clientWidth);
+  }, [locale, isAdmin, fontTick]);
 
   useLayoutEffect(() => {
     const bar = barRef.current;
     if (!bar) return;
-    let lastWidth = bar.clientWidth;
     const ro = new ResizeObserver(() => {
-      if (bar.clientWidth !== lastWidth) {
-        lastWidth = bar.clientWidth;
-        reset();
-      }
+      // Kopije su sakrivene (display: none) ispod 1024px, pa se tamo mere tek
+      // kad traka postane vidljiva — zato se i one ponovo mere ovde.
+      setBarW(bar.clientWidth);
+      if (m0Ref.current) setW0(m0Ref.current.offsetWidth);
+      if (m1Ref.current) setW1(m1Ref.current.offsetWidth);
     });
     ro.observe(bar);
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(() => setFontTick((n) => n + 1)).catch(() => {});
+    }
     return () => ro.disconnect();
   }, []);
 
-  // Posle svakog iscrtavanja proveri da li stane; ako ne, pređi na sledeći korak.
-  useLayoutEffect(() => {
-    if (skipRef.current) {
-      skipRef.current = false;
-      return;
-    }
-    const bar = barRef.current;
-    const inner = innerRef.current;
-    if (!bar || !inner) return;
-    // Traka ima širinu svog sadržaja (razmaci među tabovima ostaju mali), pa se
-    // poredi sa prostorom koji joj stoji na raspolaganju.
-    if (inner.offsetWidth > bar.clientWidth && levelRef.current < 2) {
-      levelRef.current += 1;
-      setLevel(levelRef.current);
-    }
-  }, [level, locale, isAdmin]);
+  // 24px rezerve: traka ne sme da dodiruje susedne elemente.
+  const level = barW === 0 ? 1 : w0 + 24 <= barW ? 0 : w1 + 24 <= barW ? 1 : 2;
 
   const items = isAdmin ? [...LINKS, { key: "admin" as NavKey, href: "/admin" }] : LINKS;
 
@@ -159,6 +158,46 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
     };
   }, [open]);
 
+  /** Traka sa tabovima u datom koraku (0 — ikonice, 1 — samo tekst). `measure` pravi nefokusiranu kopiju za merenje. */
+  const renderTabs = (lvl: 0 | 1 | 2, measure: boolean, ref?: React.Ref<HTMLElement>) => (
+    <nav ref={ref} className="inline-flex shrink-0 gap-0.5 steel-frame p-1 rounded-xl whitespace-nowrap">
+      {items.map(({ key, href }) => {
+        const active = !measure && isActive(href);
+        const Icon = ICONS[key];
+        const cls = `flex items-center gap-1.5 text-sm font-semibold ${
+          lvl === 0 ? (locale === "el" ? "px-2.5" : "px-3") : "px-3"
+        } py-2 rounded-md whitespace-nowrap transition-colors ${
+          active
+            ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
+            : key === "admin"
+              ? "text-gold-300 hover:text-gold-400"
+              : "text-slate-300 hover:text-chalk-50"
+        }`;
+        const inner = (
+          <>
+            {lvl === 0 && (
+              <Icon
+                className={`w-4 h-4 shrink-0 ${
+                  active || key === "admin" ? "text-gold-300" : "text-slate-400"
+                }`}
+              />
+            )}
+            {t(key)}
+          </>
+        );
+        return measure ? (
+          <span key={href} className={cls}>
+            {inner}
+          </span>
+        ) : (
+          <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cls}>
+            {inner}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <>
       {/* Hamburger pored logoa (kao u FPL-u) — na svim širinama; otvara bočni
@@ -168,7 +207,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
         onClick={() => setOpen(true)}
         aria-label={t("openMenu")}
         aria-expanded={open}
-        className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-lg bg-navy-800 border border-navy-600 text-slate-300 hover:text-chalk-50 transition-colors"
+        className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 grid place-items-center rounded-lg steel-frame text-slate-300 hover:text-chalk-50 transition-colors"
       >
         <svg
           viewBox="0 0 24 24"
@@ -182,47 +221,20 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
       </button>
 
       {/* Traka sa tabovima — od 1024px, ali se prikazuje samo ako cela stane
-          (videti barFits iznad); inače ostaje samo hamburger. */}
+          (videti `level` iznad); inače ostaje samo hamburger. */}
       <div
         ref={barRef}
         className={`order-2 hidden lg:flex flex-1 min-w-0 justify-center overflow-hidden mx-3 xl:mx-5 ${
           level < 2 ? "" : "invisible"
         }`}
       >
-      <nav
-            ref={innerRef}
-            className="inline-flex shrink-0 gap-0.5 bg-navy-800 p-1 rounded-lg whitespace-nowrap"
-          >
-          {items.map(({ key, href }) => {
-            const active = isActive(href);
-            const Icon = ICONS[key];
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={`flex items-center gap-1.5 text-sm font-semibold ${
-                  level === 0 ? "px-3" : "px-3"
-                } py-2 rounded-md whitespace-nowrap transition-colors ${
-                  active
-                    ? "bg-navy-950 text-chalk-50 ring-1 ring-navy-600"
-                    : key === "admin"
-                      ? "text-gold-300 hover:text-gold-400"
-                      : "text-slate-300 hover:text-chalk-50"
-                }`}
-              >
-                {level === 0 && (
-                  <Icon
-                    className={`w-4 h-4 shrink-0 ${
-                      active || key === "admin" ? "text-gold-300" : "text-slate-400"
-                    }`}
-                  />
-                )}
-                {t(key)}
-              </Link>
-            );
-          })}
-        </nav>
+        {renderTabs(level, false)}
+      </div>
+
+      {/* Skrivene kopije trake, samo za merenje širine (nikad se ne vide). */}
+      <div aria-hidden className="hidden lg:block fixed -left-[9999px] top-0 invisible pointer-events-none">
+        {renderTabs(0, true, m0Ref)}
+        {renderTabs(1, true, m1Ref)}
       </div>
 
       {/* Bočni meni */}
@@ -237,9 +249,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
 
           <div className="relative mr-auto h-full w-[78%] max-w-[300px] bg-navy-900 border-r border-navy-700 flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-4 py-3 border-b border-navy-700">
-              <span className="font-display font-bold text-lg bg-gold-400 text-navy-950 px-2 py-0.5 rounded">
-                Fudaristo
-              </span>
+              <img src="/logo.png" alt="Fudaristo" className="w-10 h-10 rounded-full" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}

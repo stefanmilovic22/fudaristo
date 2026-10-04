@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { readableInk } from "@/lib/color";
 import { createClient } from "@/lib/supabase/client";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
@@ -48,18 +49,20 @@ export function UserMenu({
 
   return (
     <div className="relative shrink-0" ref={boxRef}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={teamName}
-        title={teamName}
-        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-display font-bold text-navy-950 text-sm border border-navy-600 hover:ring-2 hover:ring-navy-600 transition-shadow"
-        style={{ backgroundColor: teamColor }}
-      >
-        {teamName.slice(0, 2).toUpperCase()}
-      </button>
+      <span className="steel-ring block rounded-full p-[2px]">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={teamName}
+          title={teamName}
+          className="w-9 h-9 sm:w-[38px] sm:h-[38px] rounded-full flex items-center justify-center font-display font-bold text-sm hover:brightness-110 transition"
+          style={{ backgroundColor: teamColor, color: readableInk(teamColor) }}
+        >
+          {teamName.slice(0, 2).toUpperCase()}
+        </button>
+      </span>
 
       {open && (
         <div

@@ -63,7 +63,7 @@ export function LocaleSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={LOCALE_META[locale].label}
-        className="flex items-center gap-1.5 bg-navy-800 border border-navy-600 rounded-lg px-2.5 py-2 text-sm hover:border-slate-500 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 steel-frame rounded-lg px-2.5 py-2 text-sm hover:brightness-125 transition disabled:opacity-50"
       >
         <span aria-hidden className="text-base leading-none">
           {LOCALE_META[locale].flag}
