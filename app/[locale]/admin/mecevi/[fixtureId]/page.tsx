@@ -1,4 +1,5 @@
 import { getAdminAccess } from "@/lib/admin-guard";
+import { LocalTime } from "@/components/LocalTime";
 import { AdminAccessDenied } from "@/components/AdminAccessDenied";
 import { updateFixtureScoreAction, saveWorldfootballStatsAction } from "../../actions";
 import { WorldfootballPuller } from "./worldfootball-puller";
@@ -55,7 +56,7 @@ export default async function AdminFixturePage({ params }: { params: Promise<{ f
           {(fixture.home as any)?.name} vs {(fixture.away as any)?.name}
         </h2>
         <p className="text-slate-400 text-sm">
-          Kolo {gwNumber} · {new Date(fixture.kickoff_at).toLocaleString("sr-RS")}
+          Kolo {gwNumber} · <LocalTime iso={fixture.kickoff_at} options={{ dateStyle: "short", timeStyle: "short" }} />
         </p>
       </div>
 

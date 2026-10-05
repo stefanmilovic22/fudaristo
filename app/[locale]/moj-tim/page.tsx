@@ -16,7 +16,7 @@ import { MyTeam, type SquadEntry } from "./my-team";
 import { ChipsPanel, type ChipState, type ChipType } from "./chips-panel";
 import { ResetSquadButton } from "@/components/ResetSquadButton";
 import type { SelectablePlayer } from "@/lib/fantasy-rules";
-import { intlTag } from "@/lib/intl-locale";
+import { LocalTime } from "@/components/LocalTime";
 import { readableInk } from "@/lib/color";
 
 /** Keširan javni upit koji ne sme da sruši stranicu — kao pre, prazna lista + log. */
@@ -141,8 +141,10 @@ export default async function MojTimPage({
       <div>
         <h2 className="font-display text-2xl mb-2">{t("buildTitle", { number: targetGw.number })}</h2>
         <p className="text-slate-400 text-sm mb-6">
-          {t("deadlineAndBudget", {
-            deadline: new Date(targetGw.deadline_at).toLocaleString(intlTag(locale)),
+          {t.rich("deadlineAndBudget", {
+            deadline: () => (
+              <LocalTime iso={targetGw.deadline_at} options={{ dateStyle: "short", timeStyle: "short" }} />
+            ),
             budget: Number(profile?.budget_remaining ?? 100).toFixed(1),
           })}
         </p>

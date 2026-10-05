@@ -20,26 +20,30 @@ export function DeadlineCountdown({
 }) {
   const t = useTranslations("home");
   const target = new Date(deadlineAt).getTime();
-  const [remaining, setRemaining] = useState(() => target - Date.now());
+  // Početno null: server i prvi render u pregledaču moraju dati ISTI HTML —
+  // Date.now() se razlikuje između njih (greška pri hidrataciji, sekunde se
+  // ne poklapaju). Prava vrednost se postavlja odmah po učitavanju.
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
+    setRemaining(target - Date.now());
     const id = setInterval(() => setRemaining(target - Date.now()), 1000);
     return () => clearInterval(id);
   }, [target]);
 
-  if (remaining <= 0) return null;
+  if (remaining !== null && remaining <= 0) return null;
 
-  const totalSeconds = Math.floor(remaining / 1000);
+  const totalSeconds = remaining === null ? 0 : Math.floor(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  const units: { value: number; label: string }[] = [
-    { value: days, label: t("countdown.days") },
-    { value: hours, label: t("countdown.hours") },
-    { value: minutes, label: t("countdown.minutes") },
-    { value: seconds, label: t("countdown.seconds") },
+  const units: { value: number | string; label: string }[] = [
+    { value: remaining === null ? "–" : days, label: t("countdown.days") },
+    { value: remaining === null ? "–" : hours, label: t("countdown.hours") },
+    { value: remaining === null ? "–" : minutes, label: t("countdown.minutes") },
+    { value: remaining === null ? "–" : seconds, label: t("countdown.seconds") },
   ];
 
   return (

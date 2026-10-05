@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { intlTag } from "@/lib/intl-locale";
+import { LocalTime } from "@/components/LocalTime";
 
 export type Match = {
   id: string;
@@ -131,12 +131,10 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
               <h3 className="font-display text-lg">{tCommon("gameweekN", { number: gw.number })}</h3>
               <span className="text-slate-400 text-xs">
                 {tCommon("deadline")}{" "}
-                {new Date(gw.deadlineAt).toLocaleString(intlTag(locale), {
-                  day: "numeric",
-                  month: "short",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                <LocalTime
+                  iso={gw.deadlineAt}
+                  options={{ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }}
+                />
               </span>
             </div>
 
@@ -187,13 +185,13 @@ function MatchRow({ match: m }: { match: Match }) {
           <span className="text-danger-400 text-xs">{t(STATUS_KEY[m.status] as never)}</span>
         ) : (
           <span className="text-slate-300 text-sm tabular-nums">
-            {kickoff.toLocaleTimeString(intlTag(locale), { hour: "2-digit", minute: "2-digit" })}
+            <LocalTime iso={m.kickoffAt} options={{ hour: "2-digit", minute: "2-digit" }} />
           </span>
         )}
         <span className="block text-[10px] text-slate-500 mt-0.5">
           {m.status === "live"
             ? t("statusLive")
-            : kickoff.toLocaleDateString(intlTag(locale), { day: "numeric", month: "short" })}
+            : <LocalTime iso={m.kickoffAt} options={{ day: "numeric", month: "short" }} />}
         </span>
       </span>
 

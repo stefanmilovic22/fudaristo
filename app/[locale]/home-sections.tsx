@@ -3,6 +3,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 import type { TableRow } from "@/lib/league-table";
 import { ClubBadge } from "@/components/ClubBadge";
+import { LocalTime } from "@/components/LocalTime";
+
+const KICKOFF_FMT = { weekday: "short", hour: "2-digit", minute: "2-digit" } as const;
 import { ZONE_RANK_CLASS, zoneFor } from "@/lib/league-zones";
 import { intlTag } from "@/lib/intl-locale";
 
@@ -96,12 +99,6 @@ function ClubDot({ short, color }: { short: string; color: string }) {
 export async function NextMatchesCard({ matches, gwNumber }: { matches: any[]; gwNumber: number }) {
   const t = await getTranslations("home");
   const locale = await getLocale();
-  const fmt = new Intl.DateTimeFormat(intlTag(locale), {
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Athens",
-  });
   return (
     <Card title={t("nextMatches", { number: gwNumber })} href="/raspored" linkLabel={t("fullSchedule")}>
       {matches.length === 0 ? (
@@ -118,7 +115,7 @@ export async function NextMatchesCard({ matches, gwNumber }: { matches: any[]; g
                 <span className="truncate">{m.home?.name ?? "?"}</span>
               </span>
               <span className="shrink-0 text-[11px] font-semibold text-slate-400 bg-navy-900 rounded-md px-2 py-1">
-                {fmt.format(new Date(m.kickoff_at))}
+                <LocalTime iso={m.kickoff_at} options={KICKOFF_FMT} />
               </span>
               <span className="flex items-center justify-end gap-2 flex-1 min-w-0 font-semibold text-right">
                 <span className="truncate">{m.away?.name ?? "?"}</span>
@@ -258,12 +255,6 @@ export async function HeroPanel({
   const t = await getTranslations("home");
   const tPos = await getTranslations("positions");
   const locale = await getLocale();
-  const fmt = new Intl.DateTimeFormat(intlTag(locale), {
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Athens",
-  });
 
   return (
     <div className="w-full max-w-[380px] mx-auto lg:mx-0 lg:shrink-0 flex flex-col gap-3.5">
@@ -271,7 +262,7 @@ export async function HeroPanel({
         <div className="bg-navy-800 border border-navy-700 rounded-2xl p-4 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <h3 className="text-[11px] uppercase tracking-[0.12em] font-bold text-slate-400">
-              {t("featuredMatch", { number: gwNumber })} · {fmt.format(new Date(match.kickoff_at))}
+              {t("featuredMatch", { number: gwNumber })} · <LocalTime iso={match.kickoff_at} options={KICKOFF_FMT} />
             </h3>
           </div>
           <div className="flex items-center justify-between text-center">

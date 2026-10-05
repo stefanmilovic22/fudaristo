@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import { LocalTime } from "@/components/LocalTime";
 import { getAdminAccess } from "@/lib/admin-guard";
 import { AdminAccessDenied } from "@/components/AdminAccessDenied";
 import {
@@ -330,7 +331,7 @@ export default async function AdminPage() {
                 className="bg-navy-800 rounded-lg px-3 py-2 text-sm flex items-center gap-3"
               >
                 <span className="text-slate-400 w-40 shrink-0">
-                  {new Date(r.started_at).toLocaleString("sr-RS")}
+                  <LocalTime iso={r.started_at} options={{ dateStyle: "short", timeStyle: "short" }} />
                 </span>
                 <span className="w-40 shrink-0">
                   {r.kind === "cron_results"
