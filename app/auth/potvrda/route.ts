@@ -73,5 +73,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}${prefix}${rawNext ? next : fallback}`);
   }
 
-  return fail("link");
+  // Nema ni koda ni token_hash: možda je sesija u HASH delu adrese
+  // (#access_token=..., implicit tok iz reseta lozinke). Server hash ne vidi,
+  // pa mala stranica prosleđuje pregledač na odredište SA hash-om; ako hash-a
+  // nema, vraća na prijavu sa greškom.
+  const failUrl = `${prefix}/login?greska=link`;
+  const expiredUrl = `${prefix}/login?greska=link-istekao`;
+  const html = `<!doctype html><meta charset="utf-8"><title>…</title><script>
+    var h = location.hash;
+    if (h.indexOf("access_token=") !== -1) {
+      location.replace(${JSON.stringify(`${prefix}${next}`)} + h);
+    } else if (h.indexOf("expired") !== -1) {
+      location.replace(${JSON.stringify(expiredUrl)});
+    } else {
+      location.replace(${JSON.stringify(failUrl)});
+    }
+  </script>`;
+  return new NextResponse(html, { headers: { "content-type": "text/html; charset=utf-8" } });
 }

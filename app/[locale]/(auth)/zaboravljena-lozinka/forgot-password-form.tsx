@@ -4,11 +4,10 @@ import { useState, type FormEvent } from "react";
 import { Link } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { createClient } from "@/lib/supabase/client";
+import { createClient as createPlainClient } from "@supabase/supabase-js";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth");
-  const supabase = createClient();
   const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
@@ -25,10 +24,19 @@ export function ForgotPasswordForm() {
     setError(null);
     setLoading(true);
 
+    // Namerno "implicit" tok, ne PKCE: kod PKCE-a pregledač pri slanju zahteva
+    // ostavlja tajni kolačić, pa link iz mejla radi samo u ISTOM pregledaču i
+    // prozoru (ne u privatnom, ne u mejl aplikaciji). Implicit tok vraća
+    // sesiju u adresi i radi gde god se link otvori, bez izmene mejl šablona
+    // (koji se na besplatnom planu bez SMTP-a ne može menjati).
+    const supabase = createPlainClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+    );
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      // Supabase prvo proverava token na svojoj strani, pa preusmerava OVDE sa
-      // kodom u query stringu. Origin se čita iz pregledača da isti kod radi i
-      // lokalno i na produkciji bez podešavanja.
+      // Supabase prvo proverava token na svojoj strani, pa preusmerava OVDE.
+      // Origin se čita iz pregledača da isti kod radi i lokalno i na produkciji.
       redirectTo: `${window.location.origin}/auth/potvrda?next=/nova-lozinka`,
     });
 

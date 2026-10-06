@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { NewPasswordForm } from "./new-password-form";
+import { HashSession } from "./hash-session";
 
 /**
  * Ova stranica NIJE u PROTECTED_PREFIXES u middleware-u, i to je namerno:
@@ -25,6 +26,7 @@ export default async function NewPasswordPage({
 
   if (!user) {
     return (
+      <HashSession>
       <div className="max-w-md mx-auto py-8">
         <h2 className="font-display text-2xl mb-2">{t("newPasswordTitle")}</h2>
         <div className="bg-navy-800 border border-navy-600 rounded-lg p-5 text-sm">
@@ -37,6 +39,7 @@ export default async function NewPasswordPage({
           </Link>
         </div>
       </div>
+      </HashSession>
     );
   }
 
