@@ -141,12 +141,21 @@ export default async function MojTimPage({
       <div>
         <h2 className="font-display text-2xl mb-2">{t("buildTitle", { number: targetGw.number })}</h2>
         <p className="text-slate-400 text-sm mb-6">
-          {t.rich("deadlineAndBudget", {
-            deadline: () => (
-              <LocalTime iso={targetGw.deadline_at} options={{ dateStyle: "short", timeStyle: "short" }} />
-            ),
-            budget: Number(profile?.budget_remaining ?? 100).toFixed(1),
-          })}
+          {/* Rok je element sa lokalnim vremenom (LocalTime), pa se poruka seče
+              na mestu zamene — t.rich() ne prima element kao obično polje. */}
+          {(() => {
+            const [before, after] = t("deadlineAndBudget", {
+              deadline: "\u0001",
+              budget: Number(profile?.budget_remaining ?? 100).toFixed(1),
+            }).split("\u0001");
+            return (
+              <>
+                {before}
+                <LocalTime iso={targetGw.deadline_at} options={{ dateStyle: "short", timeStyle: "short" }} />
+                {after}
+              </>
+            );
+          })()}
         </p>
         <SquadBuilder
           gameweekId={targetGw.id}
