@@ -7,6 +7,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/current-user";
+import { ensureProfile } from "@/lib/ensure-profile";
 import { UserMenu } from "@/components/UserMenu";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { MainNav } from "@/components/MainNav";
@@ -89,7 +90,9 @@ export default async function LocaleLayout({
       .select("team_name, team_color, is_admin")
       .eq("id", user.id)
       .single();
-    profile = data;
+    // Nalog bez reda u users (trigger nije radio) — napravi profil, da korisnik
+    // ne izgleda kao odjavljen.
+    profile = data ?? (await ensureProfile(user));
   }
 
   return (

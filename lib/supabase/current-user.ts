@@ -1,7 +1,12 @@
 import { cache } from "react";
 import { createClient } from "./server";
 
-export type CurrentUser = { id: string; email: string | null };
+export type CurrentUser = {
+  id: string;
+  email: string | null;
+  /** Podaci upisani pri registraciji (ime tima, boja, omiljeni klub). */
+  metadata: Record<string, unknown> | null;
+};
 
 /**
  * Prijavljen korisnik za OVAJ zahtev — jedan proračun, koliko god
@@ -21,7 +26,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     const { data } = await supabase.auth.getClaims();
     const claims = data?.claims;
     if (!claims?.sub) return null;
-    return { id: claims.sub, email: (claims.email as string | undefined) ?? null };
+    return {
+      id: claims.sub,
+      email: (claims.email as string | undefined) ?? null,
+      metadata: (claims.user_metadata as Record<string, unknown> | undefined) ?? null,
+    };
   } catch {
     return null;
   }
