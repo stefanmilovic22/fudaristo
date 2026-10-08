@@ -17,7 +17,10 @@
     "logout": "Odjava",
     "mySettings": "Moja podešavanja",
     "openMenu": "Otvori meni",
-    "closeMenu": "Zatvori meni"
+    "closeMenu": "Zatvori meni",
+    "about": "O nama",
+    "contact": "Kontakt",
+    "privacy": "Privatnost"
   },
   "home": {
     "featuredMatch": "Meč kola {number}",
@@ -554,19 +557,151 @@
       "colNote": "Napomena",
       "posAll": "svi",
       "posNone": "—",
-      "minutesShort": { "event": "Nastup, 1–59 min", "note": "Svaki ulazak u igru" },
-      "minutesLong": { "event": "Nastup, 60+ min", "note": "Umesto boda za 1–59 min, ne pored njega" },
-      "goal": { "event": "Gol", "note": "{gk} golman/odbrana, {mid} vezni, {fwd} napadač" },
-      "assist": { "event": "Asistencija", "note": "" },
-      "cleanSheet": { "event": "Čista mreža", "note": "{gk} golman/odbrana, {mid} vezni, napadač ne dobija" },
-      "saves": { "event": "Odbrane (na svake 3)", "note": "Samo golman" },
-      "penSaved": { "event": "Odbranjen penal", "note": "Samo golman" },
-      "conceded": { "event": "Primljeni golovi (na svaka 2)", "note": "Golman i odbrana" },
-      "penMissed": { "event": "Promašen penal", "note": "" },
-      "yellow": { "event": "Žuti karton", "note": "" },
-      "red": { "event": "Crveni karton", "note": "" },
-      "ownGoal": { "event": "Autogol", "note": "" },
-      "bonus": { "event": "Bonus", "note": "Najbolji u meču, dodeljuje liga" }
+      "minutesShort": {
+        "event": "Nastup, 1–59 min",
+        "note": "Svaki ulazak u igru"
+      },
+      "minutesLong": {
+        "event": "Nastup, 60+ min",
+        "note": "Umesto boda za 1–59 min, ne pored njega"
+      },
+      "goal": {
+        "event": "Gol",
+        "note": "{gk} golman/odbrana, {mid} vezni, {fwd} napadač"
+      },
+      "assist": {
+        "event": "Asistencija",
+        "note": ""
+      },
+      "cleanSheet": {
+        "event": "Čista mreža",
+        "note": "{gk} golman/odbrana, {mid} vezni, napadač ne dobija"
+      },
+      "saves": {
+        "event": "Odbrane (na svake 3)",
+        "note": "Samo golman"
+      },
+      "penSaved": {
+        "event": "Odbranjen penal",
+        "note": "Samo golman"
+      },
+      "conceded": {
+        "event": "Primljeni golovi (na svaka 2)",
+        "note": "Golman i odbrana"
+      },
+      "penMissed": {
+        "event": "Promašen penal",
+        "note": ""
+      },
+      "yellow": {
+        "event": "Žuti karton",
+        "note": ""
+      },
+      "red": {
+        "event": "Crveni karton",
+        "note": ""
+      },
+      "ownGoal": {
+        "event": "Autogol",
+        "note": ""
+      },
+      "bonus": {
+        "event": "Bonus",
+        "note": "Najbolji u meču, dodeljuje liga"
+      }
     }
+  },
+  "about": {
+    "title": "O nama",
+    "lead": "Fudaristo je nezvanična fantasy igra za grčku Super ligu — za sve koji vole sami da biraju sastav i da prate svako kolo.",
+    "sections": [
+      {
+        "title": "Šta je Fudaristo",
+        "body": "Sastaviš tim od 15 igrača iz klubova Super lige sa budžetom od 100M, izabereš postavu i kapitena, a igrači ti donose poene na osnovu onoga što stvarno urade na terenu: golovi, asistencije, ocene i ostali događaji na utakmici.\n\nPosle svakog kola možeš da menjaš tim kroz transfere."
+      },
+      {
+        "title": "Takmičenje",
+        "body": "Poeni se sabiraju u opštoj ligi, a posle svakog kola vidiš Tim kola i statistike igrača."
+      },
+      {
+        "title": "Nezvanična igra",
+        "body": "Fudaristo nije povezan sa Super ligom Grčke, njenim klubovima ni igračima. Imena klubova i igrača koriste se samo radi informisanja, a svi nazivi i oznake pripadaju njihovim vlasnicima."
+      },
+      {
+        "title": "Primedbe i predlozi",
+        "body": "Dobrodošli su — javi nam se preko stranice Kontakt."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Kontakt",
+    "lead": "Pitanje, predlog, prijava greške ili problem sa nalogom — piši nam.",
+    "specificTitle": "Posebni upiti",
+    "specificIntro": "Za brži odgovor izaberi temu — poruka se otvara sa već upisanim predmetom.",
+    "topics": [
+      {
+        "key": "account",
+        "title": "Nalog i igra",
+        "body": "Pitanja o tvom timu, nalogu ili pravilima igre.",
+        "subject": "Nalog i igra"
+      },
+      {
+        "key": "bugs",
+        "title": "Greške na sajtu",
+        "body": "Prijava tehničkih problema ili povratne informacije o sajtu. Napiši na kojoj stranici se desilo i šta si radio.",
+        "subject": "Greška na sajtu"
+      },
+      {
+        "key": "ideas",
+        "title": "Predlozi",
+        "body": "Ideje za nove funkcije i poboljšanja.",
+        "subject": "Predlog"
+      },
+      {
+        "key": "privacy",
+        "title": "Privatnost i podaci",
+        "body": "Uvid, ispravka ili brisanje naloga i podataka.",
+        "subject": "Privatnost i podaci"
+      },
+      {
+        "key": "business",
+        "title": "Saradnja",
+        "body": "Predlozi saradnje i partnerstva (navedi što više podataka).",
+        "subject": "Saradnja"
+      }
+    ],
+    "generalTitle": "Opšti upiti",
+    "generalBody": "Za sve ostalo, javi se direktno našem timu.",
+    "generalSubject": "Upit",
+    "noteTitle": "Zaboravljena lozinka?",
+    "noteBody": "Ne treba nam mejl — na stranici za prijavu klikni „Zaboravljena?” i stiže ti link za novu lozinku.",
+    "writeTo": "Piši nam na"
+  },
+  "privacy": {
+    "title": "Privatnost",
+    "lead": "Kratko i jasno: koje podatke čuvamo, zašto i šta možeš da uradiš sa njima.",
+    "updated": "Poslednja izmena: oktobar 2026.",
+    "sections": [
+      {
+        "title": "Koje podatke čuvamo",
+        "body": "Email adresu i lozinku (lozinka se čuva samo u zaštićenom, heširanom obliku), naziv i boju tima, omiljeni klub, kao i tvoj sastav, transfere i poene u igri."
+      },
+      {
+        "title": "Zašto",
+        "body": "Samo da bi igra radila: za prijavu, prikaz tvog tima, ligu i poredak. Ne prodajemo podatke i ne šaljemo reklame.\n\nNaziv tima, boja i poeni vidljivi su drugim prijavljenim igračima."
+      },
+      {
+        "title": "Gde se čuvaju",
+        "body": "Podaci se čuvaju kod Supabase-a (baza i prijava), a sajt radi na Vercel-u. Pri registraciji može da se koristi Google reCAPTCHA radi zaštite od botova."
+      },
+      {
+        "title": "Kolačići",
+        "body": "Koristimo samo neophodne kolačiće: za prijavu (sesija) i za izabrani jezik. Ne koristimo kolačiće za praćenje ni za reklame."
+      },
+      {
+        "title": "Tvoja prava",
+        "body": "Možeš da zatražiš uvid, ispravku ili brisanje svog naloga i podataka — piši nam preko stranice Kontakt."
+      }
+    ]
   }
 }

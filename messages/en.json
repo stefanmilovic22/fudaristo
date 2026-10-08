@@ -17,7 +17,10 @@
     "logout": "Log out",
     "mySettings": "My settings",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "about": "About us",
+    "contact": "Contact",
+    "privacy": "Privacy"
   },
   "home": {
     "featuredMatch": "Match of gameweek {number}",
@@ -554,19 +557,151 @@
       "colNote": "Note",
       "posAll": "all",
       "posNone": "—",
-      "minutesShort": { "event": "Played, 1–59 min", "note": "Any appearance" },
-      "minutesLong": { "event": "Played, 60+ min", "note": "Instead of the 1–59 min point, not on top of it" },
-      "goal": { "event": "Goal", "note": "{gk} GK/DEF, {mid} MID, {fwd} FWD" },
-      "assist": { "event": "Assist", "note": "" },
-      "cleanSheet": { "event": "Clean sheet", "note": "{gk} GK/DEF, {mid} MID, forwards score none" },
-      "saves": { "event": "Saves (every 3)", "note": "Goalkeepers only" },
-      "penSaved": { "event": "Penalty saved", "note": "Goalkeepers only" },
-      "conceded": { "event": "Goals conceded (every 2)", "note": "Goalkeepers and defenders" },
-      "penMissed": { "event": "Penalty missed", "note": "" },
-      "yellow": { "event": "Yellow card", "note": "" },
-      "red": { "event": "Red card", "note": "" },
-      "ownGoal": { "event": "Own goal", "note": "" },
-      "bonus": { "event": "Bonus", "note": "Best on the pitch, awarded by the league" }
+      "minutesShort": {
+        "event": "Played, 1–59 min",
+        "note": "Any appearance"
+      },
+      "minutesLong": {
+        "event": "Played, 60+ min",
+        "note": "Instead of the 1–59 min point, not on top of it"
+      },
+      "goal": {
+        "event": "Goal",
+        "note": "{gk} GK/DEF, {mid} MID, {fwd} FWD"
+      },
+      "assist": {
+        "event": "Assist",
+        "note": ""
+      },
+      "cleanSheet": {
+        "event": "Clean sheet",
+        "note": "{gk} GK/DEF, {mid} MID, forwards score none"
+      },
+      "saves": {
+        "event": "Saves (every 3)",
+        "note": "Goalkeepers only"
+      },
+      "penSaved": {
+        "event": "Penalty saved",
+        "note": "Goalkeepers only"
+      },
+      "conceded": {
+        "event": "Goals conceded (every 2)",
+        "note": "Goalkeepers and defenders"
+      },
+      "penMissed": {
+        "event": "Penalty missed",
+        "note": ""
+      },
+      "yellow": {
+        "event": "Yellow card",
+        "note": ""
+      },
+      "red": {
+        "event": "Red card",
+        "note": ""
+      },
+      "ownGoal": {
+        "event": "Own goal",
+        "note": ""
+      },
+      "bonus": {
+        "event": "Bonus",
+        "note": "Best on the pitch, awarded by the league"
+      }
     }
+  },
+  "about": {
+    "title": "About us",
+    "lead": "Fudaristo is an unofficial fantasy game for the Greek Super League — for everyone who likes to pick their own squad and follow every gameweek.",
+    "sections": [
+      {
+        "title": "What is Fudaristo",
+        "body": "You build a squad of 15 players from Super League clubs on a 100M budget, choose your lineup and a captain, and your players earn points from what they actually do on the pitch: goals, assists, ratings and other match events.\n\nAfter each gameweek you can change your squad with transfers."
+      },
+      {
+        "title": "The competition",
+        "body": "Points add up in the overall league, and after each gameweek you can see the Team of the Week and player stats."
+      },
+      {
+        "title": "Unofficial game",
+        "body": "Fudaristo is not affiliated with the Greek Super League, its clubs or its players. Club and player names are used for information only, and all names and marks belong to their respective owners."
+      },
+      {
+        "title": "Feedback",
+        "body": "It is welcome — get in touch through the Contact page."
+      }
+    ]
+  },
+  "contact": {
+    "title": "Contact",
+    "lead": "A question, a suggestion, a bug report or a problem with your account — write to us.",
+    "specificTitle": "Specific enquiries",
+    "specificIntro": "Pick a topic for a faster answer — the message opens with the subject already filled in.",
+    "topics": [
+      {
+        "key": "account",
+        "title": "Account and game",
+        "body": "Questions about your team, your account or the game rules.",
+        "subject": "Account and game"
+      },
+      {
+        "key": "bugs",
+        "title": "Website issues",
+        "body": "To report technical problems or give feedback about the site. Tell us which page it happened on and what you were doing.",
+        "subject": "Website issue"
+      },
+      {
+        "key": "ideas",
+        "title": "Suggestions",
+        "body": "Ideas for new features and improvements.",
+        "subject": "Suggestion"
+      },
+      {
+        "key": "privacy",
+        "title": "Privacy and data",
+        "body": "To see, correct or delete your account and data.",
+        "subject": "Privacy and data"
+      },
+      {
+        "key": "business",
+        "title": "Partnerships",
+        "body": "Collaboration and partnership proposals (include as much relevant information as you can).",
+        "subject": "Partnership"
+      }
+    ],
+    "generalTitle": "General enquiries",
+    "generalBody": "For everything else, contact our team directly.",
+    "generalSubject": "Enquiry",
+    "noteTitle": "Forgot your password?",
+    "noteBody": "No email needed — click “Forgot?” on the login page and you will get a link to set a new one.",
+    "writeTo": "Write to us at"
+  },
+  "privacy": {
+    "title": "Privacy",
+    "lead": "Short and clear: what data we keep, why, and what you can do with it.",
+    "updated": "Last updated: October 2026.",
+    "sections": [
+      {
+        "title": "What data we keep",
+        "body": "Your email address and password (the password is stored only in a protected, hashed form), your team name and colour, your favourite club, and your squad, transfers and points in the game."
+      },
+      {
+        "title": "Why",
+        "body": "Only to make the game work: sign-in, showing your team, the league and the standings. We do not sell data and we do not send advertising.\n\nYour team name, colour and points are visible to other signed-in players."
+      },
+      {
+        "title": "Where it is stored",
+        "body": "Data is stored with Supabase (database and sign-in) and the site runs on Vercel. Google reCAPTCHA may be used at sign-up to protect against bots."
+      },
+      {
+        "title": "Cookies",
+        "body": "We only use necessary cookies: for sign-in (session) and for your chosen language. We do not use tracking or advertising cookies."
+      },
+      {
+        "title": "Your rights",
+        "body": "You can ask to see, correct or delete your account and data — write to us through the Contact page."
+      }
+    ]
   }
 }

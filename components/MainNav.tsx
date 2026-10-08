@@ -62,6 +62,24 @@ const ICONS = {
       />
     </svg>
   ),
+  about: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
+    </svg>
+  ),
+  contact: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 7 9 6 9-6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  privacy: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" />
+    </svg>
+  ),
   admin: (p: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3Z" strokeLinejoin="round" />
@@ -79,6 +97,13 @@ const LINKS: { key: NavKey; href: string }[] = [
   { key: "stats", href: "/statistike" },
   { key: "rules", href: "/pravila" },
   { key: "settings", href: "/podesavanja" },
+];
+
+/** Dodatne stranice — samo u bočnom meniju (traka sa tabovima je već puna). */
+const EXTRA_LINKS: { key: NavKey; href: string }[] = [
+  { key: "about", href: "/o-nama" },
+  { key: "contact", href: "/kontakt" },
+  { key: "privacy", href: "/privatnost" },
 ];
 
 export function MainNav({ isAdmin }: { isAdmin: boolean }) {
@@ -198,6 +223,31 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
     </nav>
   );
 
+  /** Stavka u bočnom meniju (isti izgled za glavne i dodatne stranice). */
+  const drawerLink = ({ key, href }: { key: NavKey; href: string }) => {
+    const active = isActive(href);
+    const Icon = ICONS[key];
+    return (
+      <Link
+        key={href}
+        href={href}
+        aria-current={active ? "page" : undefined}
+        onClick={() => setOpen(false)}
+        className={`flex items-center gap-3 px-3 py-3 rounded-lg font-semibold transition-colors ${
+          active
+            ? "bg-navy-800 text-chalk-50 ring-1 ring-navy-600"
+            : key === "admin"
+              ? "text-gold-300 hover:bg-navy-800"
+              : "text-slate-300 hover:bg-navy-800 hover:text-chalk-50"
+        }`}
+      >
+        <Icon className={`w-5 h-5 shrink-0 ${active || key === "admin" ? "text-gold-300" : "text-slate-400"}`} />
+        {t(key)}
+        {active && <span aria-hidden className="ml-auto w-1.5 h-1.5 rounded-full bg-gold-300" />}
+      </Link>
+    );
+  };
+
   return (
     <>
       {/* Hamburger pored logoa (kao u FPL-u) — na svim širinama; otvara bočni
@@ -269,35 +319,9 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
             </div>
 
             <nav className="flex-1 overflow-y-auto p-2">
-              {items.map(({ key, href }) => {
-                const active = isActive(href);
-                const Icon = ICONS[key];
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => setOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-lg font-semibold transition-colors ${
-                      active
-                        ? "bg-navy-800 text-chalk-50 ring-1 ring-navy-600"
-                        : key === "admin"
-                          ? "text-gold-300 hover:bg-navy-800"
-                          : "text-slate-300 hover:bg-navy-800 hover:text-chalk-50"
-                    }`}
-                  >
-                    <Icon
-                      className={`w-5 h-5 shrink-0 ${
-                        active || key === "admin" ? "text-gold-300" : "text-slate-400"
-                      }`}
-                    />
-                    {t(key)}
-                    {active && (
-                      <span aria-hidden className="ml-auto w-1.5 h-1.5 rounded-full bg-gold-300" />
-                    )}
-                  </Link>
-                );
-              })}
+              {items.map((l) => drawerLink(l))}
+              <div className="my-2 mx-3 border-t border-navy-700" />
+              {EXTRA_LINKS.map((l) => drawerLink(l))}
             </nav>
           </div>
         </div>
