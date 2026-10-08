@@ -691,8 +691,8 @@
         "body": "Only to make the game work: sign-in, showing your team, the league and the standings. We do not sell data and we do not send advertising.\n\nYour team name, colour and points are visible to other signed-in players."
       },
       {
-        "title": "Where it is stored",
-        "body": "Data is stored with Supabase (database and sign-in) and the site runs on Vercel. Google reCAPTCHA may be used at sign-up to protect against bots."
+        "title": "Storage and security",
+        "body": "Data is stored on protected servers and access to it is restricted.\n\nTo run the site (hosting, data storage, bot protection) we use trusted technical partners, who process data only for that purpose."
       },
       {
         "title": "Cookies",

@@ -691,8 +691,8 @@
         "body": "Samo da bi igra radila: za prijavu, prikaz tvog tima, ligu i poredak. Ne prodajemo podatke i ne šaljemo reklame.\n\nNaziv tima, boja i poeni vidljivi su drugim prijavljenim igračima."
       },
       {
-        "title": "Gde se čuvaju",
-        "body": "Podaci se čuvaju kod Supabase-a (baza i prijava), a sajt radi na Vercel-u. Pri registraciji može da se koristi Google reCAPTCHA radi zaštite od botova."
+        "title": "Čuvanje i zaštita",
+        "body": "Podaci se čuvaju na zaštićenim serverima, a pristup im je ograničen.\n\nZa rad sajta (hosting, čuvanje podataka, zaštita od botova) koristimo proverene tehničke partnere, koji podatke obrađuju samo u tu svrhu."
       },
       {
         "title": "Kolačići",
