@@ -63,6 +63,9 @@ const VALUES: Record<string, Record<string, unknown>> = {
   "team.deadlineAndBudget": { deadline: "12.09.", budget: "100.0" },
   "builder.thingsMissing": { count: 4 },
   "errors.loadFailed": { what: "x" },
+  "clubs.rankPoints": { rank: 3, points: 7 },
+  "clubs.playedWdl": { played: 5, won: 3, drawn: 1, lost: 1 },
+  "clubs.showAll": { count: 4 },
 };
 
 function flatten(obj: Record<string, unknown>, prefix = ""): string[] {

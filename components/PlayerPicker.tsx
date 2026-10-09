@@ -123,13 +123,13 @@ export function PlayerPicker({
       />
 
       {!lockedPosition && (
-        <div className="flex gap-1 bg-navy-900/50 p-1 rounded-lg">
+        <div className="flex flex-wrap gap-1 bg-navy-900/50 p-1 rounded-lg">
           {(["ALL", ...POSITIONS] as const).map((pos) => (
             <button
               key={pos}
               type="button"
               onClick={() => setPosition(pos)}
-              className={`flex-1 text-xs font-semibold px-2 py-1.5 rounded-md transition-colors ${
+              className={`flex-1 min-w-fit whitespace-nowrap text-xs font-semibold px-2 py-1.5 rounded-md transition-colors ${
                 position === pos
                   ? "bg-gold-400 text-navy-950"
                   : "text-slate-300 hover:text-chalk-50"

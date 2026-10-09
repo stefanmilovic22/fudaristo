@@ -20,7 +20,13 @@
     "closeMenu": "Close menu",
     "about": "About us",
     "contact": "Contact",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "clubs": "Clubs",
+    "players": "Players",
+    "sectionGame": "Game",
+    "sectionFootball": "Football",
+    "sectionInfo": "Info",
+    "sectionMedia": "Media"
   },
   "home": {
     "featuredMatch": "Match of gameweek {number}",
@@ -703,5 +709,31 @@
         "body": "You can ask to see, correct or delete your account and data — write to us through the Contact page."
       }
     ]
+  },
+  "clubs": {
+    "title": "Clubs",
+    "lead": "Super League clubs: table position, form and next match. Click a club for its players and matches.",
+    "rankPoints": "Position {rank} · {points} pts",
+    "playedWdl": "{played} played ({won}W {drawn}D {lost}L)",
+    "nextMatch": "Next match",
+    "noNext": "No scheduled match",
+    "allClubs": "All clubs",
+    "upcoming": "Upcoming matches",
+    "results": "Latest results",
+    "noResults": "No matches played yet.",
+    "noPlayers": "No players for this club.",
+    "showAll": "Show all ({count} more)",
+    "showLess": "Show less"
+  },
+  "players": {
+    "title": "Players",
+    "lead": "All players by club. Open a club to see its players, and click a player for details.",
+    "colPrice": "Price",
+    "colPoints": "Points",
+    "colRating": "Rating",
+    "status_injured": "Injured",
+    "status_suspended": "Suspended",
+    "status_doubtful": "Doubtful",
+    "status_unavailable": "Unavailable"
   }
 }

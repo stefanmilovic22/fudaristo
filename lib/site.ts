@@ -16,3 +16,18 @@ export const CONTACT_EMAILS = {
 } as const;
 
 export type ContactTopic = keyof typeof CONTACT_EMAILS;
+
+/**
+ * Društvene mreže. Za sada su upisane POČETNE STRANE mreža kao privremeno
+ * rešenje (da se odeljak „Media” vidi); zameni ih punim URL-om naloga čim bude
+ * otvoren. Prazno polje ("") sakriva tu mrežu. Primer:
+ *   instagram: "https://www.instagram.com/fudaristo"
+ */
+export const SOCIAL_LINKS = {
+  instagram: "https://www.instagram.com/", // TODO: zameni nalogom, npr. https://www.instagram.com/fudaristo
+  facebook: "https://www.facebook.com/", // TODO: zameni stranicom
+  x: "https://x.com/", // TODO: zameni nalogom
+  tiktok: "https://www.tiktok.com/", // TODO: zameni nalogom
+} as const;
+
+export type SocialKey = keyof typeof SOCIAL_LINKS;

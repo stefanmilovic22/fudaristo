@@ -20,7 +20,13 @@
     "closeMenu": "Zatvori meni",
     "about": "O nama",
     "contact": "Kontakt",
-    "privacy": "Privatnost"
+    "privacy": "Privatnost",
+    "clubs": "Klubovi",
+    "players": "Igrači",
+    "sectionGame": "Igra",
+    "sectionFootball": "Fudbal",
+    "sectionInfo": "Info",
+    "sectionMedia": "Media"
   },
   "home": {
     "featuredMatch": "Meč kola {number}",
@@ -703,5 +709,31 @@
         "body": "Možeš da zatražiš uvid, ispravku ili brisanje svog naloga i podataka — piši nam preko stranice Kontakt."
       }
     ]
+  },
+  "clubs": {
+    "title": "Klubovi",
+    "lead": "Klubovi Super lige: mesto na tabeli, forma i sledeći meč. Klikni na klub za igrače i mečeve.",
+    "rankPoints": "Mesto {rank} · {points} bod.",
+    "playedWdl": "{played} utakmica ({won}P {drawn}N {lost}I)",
+    "nextMatch": "Sledeći meč",
+    "noNext": "Nema zakazanog meča",
+    "allClubs": "Svi klubovi",
+    "upcoming": "Naredni mečevi",
+    "results": "Poslednji rezultati",
+    "noResults": "Još nema odigranih mečeva.",
+    "noPlayers": "Nema igrača za ovaj klub.",
+    "showAll": "Prikaži sve ({count} više)",
+    "showLess": "Prikaži manje"
+  },
+  "players": {
+    "title": "Igrači",
+    "lead": "Svi igrači po klubovima. Otvori klub da vidiš igrače, a klikni na igrača za detalje.",
+    "colPrice": "Cena",
+    "colPoints": "Poeni",
+    "colRating": "Ocena",
+    "status_injured": "Povređen",
+    "status_suspended": "Suspendovan",
+    "status_doubtful": "Neizvestan",
+    "status_unavailable": "Nedostupan"
   }
 }

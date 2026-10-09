@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { SOCIAL_LINKS, type SocialKey } from "@/lib/site";
 
 /**
  * Glavna navigacija — bočni meni na telefonu, traka sa tabovima od 1024px.
@@ -62,6 +63,41 @@ const ICONS = {
       />
     </svg>
   ),
+  clubs: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6l-7-3Z" strokeLinejoin="round" />
+      <path d="M9 11h6M12 8v8" strokeLinecap="round" />
+    </svg>
+  ),
+  players: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" strokeLinecap="round" />
+      <path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.4c1.9.8 3 2.7 3 5.6" strokeLinecap="round" />
+    </svg>
+  ),
+  instagram: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+      <circle cx="12" cy="12" r="3.8" />
+      <circle cx="17" cy="7" r="0.6" fill="currentColor" />
+    </svg>
+  ),
+  facebook: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M14 8h2.5V4.5H14A3.5 3.5 0 0 0 10.5 8v2.5H8V14h2.5v6.5H14V14h2.5l.5-3.5H14V8.5A.5.5 0 0 1 14.5 8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  x: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M4.5 4.5 19.5 19.5M19.5 4.5 4.5 19.5" strokeLinecap="round" />
+    </svg>
+  ),
+  tiktok: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M14 4v10.2a3.7 3.7 0 1 1-3.7-3.7M14 4c.3 2.4 1.9 4 4.5 4.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   about: (p: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <circle cx="12" cy="12" r="9" />
@@ -99,11 +135,31 @@ const LINKS: { key: NavKey; href: string }[] = [
   { key: "settings", href: "/podesavanja" },
 ];
 
-/** Dodatne stranice — samo u bočnom meniju (traka sa tabovima je već puna). */
-const EXTRA_LINKS: { key: NavKey; href: string }[] = [
-  { key: "about", href: "/o-nama" },
-  { key: "contact", href: "/kontakt" },
-  { key: "privacy", href: "/privatnost" },
+/** Nazivi mreža su imena, ne prevode se. */
+const SOCIAL_NAMES: Record<SocialKey, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  x: "X",
+  tiktok: "TikTok",
+};
+
+/** Dodatni odeljci — samo u bočnom meniju (traka sa tabovima je već puna). */
+const EXTRA_SECTIONS: { title: "sectionFootball" | "sectionInfo"; links: { key: NavKey; href: string }[] }[] = [
+  {
+    title: "sectionFootball",
+    links: [
+      { key: "clubs", href: "/klubovi" },
+      { key: "players", href: "/igraci" },
+    ],
+  },
+  {
+    title: "sectionInfo",
+    links: [
+      { key: "about", href: "/o-nama" },
+      { key: "contact", href: "/kontakt" },
+      { key: "privacy", href: "/privatnost" },
+    ],
+  },
 ];
 
 export function MainNav({ isAdmin }: { isAdmin: boolean }) {
@@ -223,6 +279,9 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
     </nav>
   );
 
+  /** Samo mreže sa upisanim URL-om. */
+  const socials = (Object.entries(SOCIAL_LINKS) as [SocialKey, string][]).filter(([, url]) => url);
+
   /** Stavka u bočnom meniju (isti izgled za glavne i dodatne stranice). */
   const drawerLink = ({ key, href }: { key: NavKey; href: string }) => {
     const active = isActive(href);
@@ -319,13 +378,58 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
             </div>
 
             <nav className="flex-1 overflow-y-auto p-2">
+              <DrawerHeading>{t("sectionGame")}</DrawerHeading>
               {items.map((l) => drawerLink(l))}
-              <div className="my-2 mx-3 border-t border-navy-700" />
-              {EXTRA_LINKS.map((l) => drawerLink(l))}
+              {EXTRA_SECTIONS.map((sec) => (
+                <div key={sec.title}>
+                  {/* Društvene mreže idu pre „Info”; prikazuju se samo ako je bar jedna podešena. */}
+                  {sec.title === "sectionInfo" && socials.length > 0 && (
+                    <div>
+                      <DrawerHeading>{t("sectionMedia")}</DrawerHeading>
+                      {socials.map(([key, url]) => {
+                        const Icon = ICONS[key];
+                        return (
+                          <a
+                            key={key}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 px-3 py-3 rounded-lg font-semibold text-slate-300 hover:bg-navy-800 hover:text-chalk-50 transition-colors"
+                          >
+                            <Icon className="w-5 h-5 shrink-0 text-slate-400" />
+                            {SOCIAL_NAMES[key]}
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              className="w-3.5 h-3.5 ml-auto text-slate-500"
+                              aria-hidden
+                            >
+                              <path d="M7 17 17 7M9 7h8v8" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <DrawerHeading>{t(sec.title)}</DrawerHeading>
+                  {sec.links.map((l) => drawerLink(l))}
+                </div>
+              ))}
             </nav>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+/** Mali naslov grupe u bočnom meniju. */
+function DrawerHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 first:pt-1">
+      {children}
+    </p>
   );
 }

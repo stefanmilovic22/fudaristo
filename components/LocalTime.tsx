@@ -9,9 +9,8 @@ import { intlTag } from "@/lib/intl-locale";
  * grčko vreme. Termini su u bazi u UTC-u; server ne zna gde je posetilac, pa
  * se konačno vreme računa tek u pregledaču.
  *
- * Prvi prikaz (server + prvi render u pregledaču) je u grčkom vremenu —
- * identičan na obe strane, pa nema greške pri hidrataciji — i odmah po
- * učitavanju se menja u lokalno vreme posetioca.
+ * Prvi prikaz je u grčkom vremenu i odmah po učitavanju se menja u lokalno
+ * vreme posetioca (videti komentar kod `suppressHydrationWarning`).
  */
 const FALLBACK_TZ = "Europe/Athens";
 
@@ -34,13 +33,19 @@ export function LocalTime({
   };
 
   const [text, setText] = useState(() => format(FALLBACK_TZ));
+  const [local, setLocal] = useState(false);
   useEffect(() => {
     setText(format());
+    setLocal(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [iso, locale, optionsKey]);
 
+  // suppressHydrationWarning: server (Node) i pregledač imaju različite ICU
+  // podatke, pa isto vreme ume da se napiše drugačije ("10. 10. 2026." naspram
+  // "10.10.26."). Prvi prikaz je samo privremen; čim se učita, `key` menja
+  // element i upisuje se vreme formatirano u pregledaču.
   return (
-    <time dateTime={iso} className={className}>
+    <time key={local ? "local" : "initial"} dateTime={iso} className={className} suppressHydrationWarning>
       {text}
     </time>
   );
