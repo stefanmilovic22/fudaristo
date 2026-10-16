@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // Već posećena stranica se u pregledaču drži 30s (podrazumevano 0): povratak
+    // nazad i ponovno otvaranje iste stranice su trenutni. Posle izmena podataka
+    // (server akcije, router.refresh) keš se i dalje sam poništava, a prijava i
+    // odjava rade punom navigacijom.
+    staleTimes: { dynamic: 30, static: 180 },
     // Uvozi samo ono što se koristi iz paketa umesto celog modula (manji bundle).
     optimizePackageImports: ["next-intl", "@supabase/supabase-js"],
     // SofaScore bulk-unos šalje više mečeva odjednom (previewSofascoreBulkAction)

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { readableInk } from "@/lib/color";
-import { createClient } from "@/lib/supabase/client";
 import { navigateAfterAuth, resolveAuthRedirect } from "@/lib/auth-redirect";
 
 /**
@@ -20,7 +19,6 @@ export function UserMenu({
 }) {
   const t = useTranslations("nav");
   const locale = useLocale();
-  const supabase = createClient();
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +39,10 @@ export function UserMenu({
   }, [open]);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    // Supabase klijent (~65KB gz) treba SAMO pri odjavi, pa se učitava tek tada —
+    // inače ga svaka stranica skida u zaglavlju, i gostima koji ovaj meni ni ne vide.
+    const { createClient } = await import("@/lib/supabase/client");
+    await createClient().auth.signOut();
     // Puna navigacija iz istog razloga kao kod prijave: server mora da iscrta
     // stranicu BEZ sesije, a klijentski keš rutera bi i dalje držao staru.
     navigateAfterAuth(resolveAuthRedirect(null, locale, "/login"));
