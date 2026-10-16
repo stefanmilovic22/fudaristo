@@ -38,6 +38,10 @@ export type SofascorePlayerRating = {
   /** null = nije odigrao nijedan minut (SofaScore nema ocenu za njega). */
   rating: number | null;
   minutesPlayed: number | null;
+  /** Golovi / asistencije / autogolovi iz statistics (0 kad polje ne postoji). */
+  goals: number;
+  assists: number;
+  ownGoals: number;
 };
 
 export type SofascoreLineupsResult = {
@@ -46,12 +50,24 @@ export type SofascoreLineupsResult = {
   warnings: string[];
 };
 
+/** Nenegativan ceo broj ili 0 — polje koje ne postoji znači "nije bilo". */
+function count(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.round(v) : 0;
+}
+
 type SofascoreRosterPlayer = {
   player?: { name?: string; shortName?: string; position?: string };
   position?: string;
   substitute?: boolean;
   captain?: boolean;
-  statistics?: { rating?: number; minutesPlayed?: number };
+  statistics?: {
+    rating?: number;
+    minutesPlayed?: number;
+    goals?: number;
+    goalAssist?: number;
+    assists?: number;
+    ownGoals?: number;
+  };
 };
 
 type SofascoreSide = { players?: SofascoreRosterPlayer[] };
@@ -108,6 +124,9 @@ export function parseSofascoreLineupsObject(json: any): SofascoreLineupsResult {
         captain: Boolean(p.captain),
         rating: typeof p.statistics?.rating === "number" ? p.statistics.rating : null,
         minutesPlayed: typeof p.statistics?.minutesPlayed === "number" ? p.statistics.minutesPlayed : null,
+        goals: count(p.statistics?.goals),
+        assists: count(p.statistics?.goalAssist ?? p.statistics?.assists),
+        ownGoals: count(p.statistics?.ownGoals),
       });
     }
   }
@@ -117,4 +136,43 @@ export function parseSofascoreLineupsObject(json: any): SofascoreLineupsResult {
   }
 
   return { confirmed, players, warnings };
+}
+
+// ----------------------------------------------------------------------------
+// Incidents — golovi, asistencije i autogolovi. Odgovor sa sastavima
+// (lineups) NE nosi ih (u fajlu ostaju samo ocena i minuti), pa se čitaju iz
+// .../event/{id}/incidents, koji za svaki gol navodi strelca i asistenta.
+// ----------------------------------------------------------------------------
+
+export type SofascoreEvent = {
+  kind: "goal" | "assist" | "ownGoal";
+  name: string;
+  /** isHome iz samog incidenta (strana na koju gol ide, ne nužno strana igrača kod autogola). */
+  incidentHome: boolean;
+};
+
+/**
+ * `incidents` je niz iz odgovora (ili već sužen na golove skriptom). Čitaju se
+ * samo incidenti tipa "goal": običan gol i penal daju gol (+ asistenciju kad
+ * postoji), "ownGoal" daje autogol. Sve ostalo (kartoni, izmene, VAR) se
+ * preskače. Ako za kraj podaci nisu u očekivanom obliku, vraća prazan niz —
+ * pozivalac to proverava poređenjem sa rezultatom meča.
+ */
+export function parseSofascoreIncidents(incidents: unknown): SofascoreEvent[] {
+  if (!Array.isArray(incidents)) return [];
+  const out: SofascoreEvent[] = [];
+  for (const inc of incidents as any[]) {
+    if (inc?.incidentType !== "goal") continue;
+    const name: unknown = inc?.player?.name ?? inc?.playerName;
+    if (typeof name !== "string" || !name) continue;
+    const incidentHome = Boolean(inc?.isHome);
+    if (inc?.incidentClass === "ownGoal") {
+      out.push({ kind: "ownGoal", name, incidentHome });
+      continue;
+    }
+    out.push({ kind: "goal", name, incidentHome });
+    const assist: unknown = inc?.assist1?.name ?? inc?.assist1Name;
+    if (typeof assist === "string" && assist) out.push({ kind: "assist", name: assist, incidentHome });
+  }
+  return out;
 }

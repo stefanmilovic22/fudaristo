@@ -98,6 +98,7 @@ function ClubDot({ short, color }: { short: string; color: string }) {
 
 export async function NextMatchesCard({ matches, gwNumber }: { matches: any[]; gwNumber: number }) {
   const t = await getTranslations("home");
+  const tFx = await getTranslations("fixtures");
   const locale = await getLocale();
   return (
     <Card title={t("nextMatches", { number: gwNumber })} href="/raspored" linkLabel={t("fullSchedule")}>
@@ -114,9 +115,15 @@ export async function NextMatchesCard({ matches, gwNumber }: { matches: any[]; g
                 <ClubDot short={m.home?.short_name ?? "?"} color={m.home?.primary_color ?? "#8494AC"} />
                 <span className="truncate">{m.home?.name ?? "?"}</span>
               </span>
-              <span className="shrink-0 text-[11px] font-semibold text-slate-400 bg-navy-900 rounded-md px-2 py-1">
-                <LocalTime iso={m.kickoff_at} options={KICKOFF_FMT} />
-              </span>
+              {m.status === "postponed" ? (
+                <span className="shrink-0 text-[11px] font-semibold text-danger-400 bg-danger-400/10 rounded-md px-2 py-1">
+                  {tFx("statusPostponed")}
+                </span>
+              ) : (
+                <span className="shrink-0 text-[11px] font-semibold text-slate-400 bg-navy-900 rounded-md px-2 py-1">
+                  <LocalTime iso={m.kickoff_at} options={KICKOFF_FMT} />
+                </span>
+              )}
               <span className="flex items-center justify-end gap-2 flex-1 min-w-0 font-semibold text-right">
                 <span className="truncate">{m.away?.name ?? "?"}</span>
                 <ClubDot short={m.away?.short_name ?? "?"} color={m.away?.primary_color ?? "#8494AC"} />
@@ -339,8 +346,12 @@ export async function SuperLeagueCard({ rows }: { rows: TableRow[] }) {
               >
                 {r.rank}
               </span>
-              <ClubDot short={r.short} color={r.color} />
-              <span className="flex-1 truncate font-semibold">{r.name}</span>
+              <Link href={`/klubovi/${r.clubId}`} className="group flex items-center gap-3 flex-1 min-w-0">
+                <ClubDot short={r.short} color={r.color} />
+                <span className="flex-1 truncate font-semibold group-hover:text-gold-300 group-hover:underline underline-offset-2">
+                  {r.name}
+                </span>
+              </Link>
               <span className="text-xs text-slate-400 tabular-nums">{r.played}</span>
               <span className="font-display font-bold tabular-nums w-7 text-right">{r.points}</span>
             </li>

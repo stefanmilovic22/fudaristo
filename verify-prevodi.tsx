@@ -66,6 +66,7 @@ const VALUES: Record<string, Record<string, unknown>> = {
   "clubs.rankPoints": { rank: 3, points: 7 },
   "clubs.playedWdl": { played: 5, won: 3, drawn: 1, lost: 1 },
   "clubs.showAll": { count: 4 },
+  "stats.injuriesBeforeRound": { number: 7 },
 };
 
 function flatten(obj: Record<string, unknown>, prefix = ""): string[] {
@@ -102,7 +103,7 @@ for (const [locale, messages] of Object.entries(CATALOGS)) {
 // Mrtvi ključevi: ostaju posle uklanjanja ekrana i tiho trunu u sva tri
 // kataloga. Dinamički sastavljeni ključevi (t(nesto as never)) se ne mogu
 // otkriti ovako, pa se cele te grupe preskaču.
-const DINAMICKI = ["positions.", "chips.", "picker.sort", "fixtures.status", "errors.what", "builder.", "nav."];
+const DINAMICKI = ["injuryReasons.", "positions.", "chips.", "picker.sort", "fixtures.status", "errors.what", "builder.", "nav."];
 function citajRekurzivno(dir: string): string[] {
   const fs = require("fs") as typeof import("fs");
   const path = require("path") as typeof import("path");

@@ -106,6 +106,44 @@ export const loadStats = unstable_cache(
       }
     }
 
+    // --- Best XI (cela sezona) ---------------------------------------------------
+    // Najbolji sastav po UKUPNIM fantasy poenima igrača (players.total_points,
+    // keš koji obračun poena osvežava posle svakog kola), pa se sam menja kako
+    // poeni rastu. Isti izbor kao "Tim kola" (selectTeamOfTheWeek): minimum po
+    // poziciji, pa najbolji preostali, u granicama formacije.
+    let bestXI: TeamOfWeekData | null = null;
+    const { data: seasonRows } = await supabase
+      .from("players")
+      .select("id, first_name, last_name, position, total_points, clubs(name, short_name, primary_color)")
+      .eq("is_active", true)
+      .gt("total_points", 0);
+    const seasonPlayers = (seasonRows ?? []) as any[];
+    if (seasonPlayers.length >= 11) {
+      const picked = selectTeamOfTheWeek(
+        seasonPlayers.map((p) => ({ playerId: p.id, position: p.position as Position, points: p.total_points ?? 0 }))
+      );
+      // Nepotpun sastav (npr. nema nijednog golmana sa poenima) se ne prikazuje.
+      if (picked.size === 11) {
+        const byId = new Map(seasonPlayers.map((p) => [p.id as string, p]));
+        bestXI = {
+          gameweekNumber: finalized.data?.number ?? 0,
+          players: [...picked].map((id) => {
+            const p = byId.get(id)!;
+            return {
+              id,
+              name: playerShirtName(p),
+              fullName: playerFullName(p),
+              clubName: p.clubs?.name ?? "?",
+              clubShort: p.clubs?.short_name ?? "?",
+              clubColor: p.clubs?.primary_color ?? "#8494AC",
+              position: p.position as Position,
+              points: p.total_points ?? 0,
+            };
+          }),
+        };
+      }
+    }
+
     // --- Ocene (SofaScore) ------------------------------------------------------
     // v_player_avg_rating (migracija 010) — najviše jedan red po igraču, bez
     // rizika od Supabase-ove tihe granice od 1000 redova. Minimum 3 ocenjena
@@ -174,10 +212,11 @@ export const loadStats = unstable_cache(
         })),
       ratings,
       teamOfWeek,
+      bestXI,
     };
 
     return { data, lastGameweek: finalized.data?.number ?? null };
   },
-  ["stats-page-v1"],
+  ["stats-page-v2"],
   { revalidate: 60, tags: ["public-data"] }
 );

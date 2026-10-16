@@ -178,3 +178,38 @@ export const getMostSelectedCached = unstable_cache(
   ["most-selected-v1"],
   { revalidate: 300, tags: TAGS }
 );
+
+/** Povređeni, suspendovani i neizvesni igrači (tab „Povređeni” u Statistikama). */
+export const getUnavailablePlayersCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    return throwIfError(
+      await supabase
+        .from("players")
+        .select(
+          "id, first_name, last_name, position, price, status, status_note, status_until, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url)"
+        )
+        .eq("is_active", true)
+        .neq("status", "available"),
+      "players(unavailable)"
+    ) as any[];
+  },
+  ["unavailable-players-v1"],
+  { revalidate: TTL, tags: TAGS }
+);
+
+/** Kada je neki spisak poslednji put ažuriran (tabela data_updates). null = nikad. */
+export const getDataUpdateCached = unstable_cache(
+  async (key: string) => {
+    const supabase = createPublicClient();
+    const { data, error } = await supabase
+      .from("data_updates")
+      .select("updated_at, note")
+      .eq("key", key)
+      .maybeSingle();
+    if (error) throw new Error(`data_updates: ${error.message}`);
+    return (data ?? null) as { updated_at: string; note: string | null } | null;
+  },
+  ["data-update-v1"],
+  { revalidate: TTL, tags: TAGS }
+);

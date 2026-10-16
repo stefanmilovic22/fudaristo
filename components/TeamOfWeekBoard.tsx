@@ -109,8 +109,11 @@ function TeamOfWeekJersey({
 export function TeamOfWeekBoard({
   data,
   layout = "stack",
+  subtitle,
 }: {
   data: TeamOfWeekData;
+  /** Zamenjuje podrazumevani podnaslov ("Najbolji sastav N. kola…") — npr. za Best XI cele sezone. */
+  subtitle?: string;
   /** "split": teren levo, spisak desno (široki ekrani, npr. početna); "stack": jedno ispod drugog. */
   layout?: "stack" | "split";
 }) {
@@ -130,7 +133,7 @@ export function TeamOfWeekBoard({
   return (
     <div className={split ? "lg:grid lg:grid-cols-[minmax(0,460px)_1fr] lg:gap-6 lg:items-start" : ""}>
       <div className={`flex flex-wrap items-baseline justify-between gap-2 mb-3 ${split ? "lg:col-span-2" : ""}`}>
-        <p className="text-slate-400 text-sm">{t("teamOfWeekSubtitle", { number: data.gameweekNumber })}</p>
+        <p className="text-slate-400 text-sm">{subtitle ?? t("teamOfWeekSubtitle", { number: data.gameweekNumber })}</p>
         <span className="text-xs font-display bg-navy-800 border border-navy-600 rounded-full px-2.5 py-1 text-slate-300">
           {t("teamOfWeekFormation", { formation })}
         </span>

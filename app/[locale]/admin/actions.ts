@@ -25,8 +25,11 @@ import {
   importFixtures,
   type TaskResult,
 } from "@/lib/maintenance";
-import { parseSofascoreLineups, parseSofascoreLineupsObject } from "@/lib/sofascore-parser";
+import { parseSofascoreIncidents, parseSofascoreLineups, parseSofascoreLineupsObject } from "@/lib/sofascore-parser";
 import type { Position } from "@/lib/fantasy-rules";
+import { diffMatchEvents, eventsToPlayers, findPlayer, type EventDiffRow, type OurStatRow, type SquadPlayer } from "@/lib/sofascore-events";
+import { mapMissingStatus, parseInjuriesFile, type PlayerStatus } from "@/lib/sofascore-injuries";
+import { teamNamesMatch } from "@/lib/team-names";
 
 /**
  * Svaka admin izmena podataka poništava i keš javnih podataka (statistike,
@@ -1038,26 +1041,6 @@ export type SofascoreBulkPreview = {
   matches: SofascoreBulkMatch[];
 };
 
-function normalizeTeamName(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-// Isto pravilo kao lib/espn-fixtures.ts namesMatch — SofaScore često ima
-// zvaničniji pun naziv od naše baze (npr. "APO Levadiakos" vs "Levadiakos",
-// "GFS Panetolikos" vs "Panetolikos") — obostrana provera "sadrži" hvata sve
-// te slučajeve. Klubovi koji su potpuno promenili ime (npr. "Asteras Aktor"
-// nekad "Asteras Tripolis") NEĆE se naći ovako — ostaju u "nije nađen meč"
-// upozorenju za ručno uparivanje, umesto pogrešnog nagađanja.
-function teamNamesMatch(a: string, b: string): boolean {
-  const na = normalizeTeamName(a);
-  const nb = normalizeTeamName(b);
-  return na === nb || na.includes(nb) || nb.includes(na);
-}
-
 export async function previewSofascoreBulkAction(bulkJsonText: string): Promise<SofascoreBulkPreview> {
   await requireAdmin();
   const supabase = createServiceRoleClient();
@@ -1221,4 +1204,615 @@ export async function confirmSofascoreBulkAction(
 
   revalidatePath("/admin");
   return { written: entries.length };
+}
+
+// ----------------------------------------------------------------------------
+// SofaScore golovi / asistencije / autogolovi — isti fajl kao za ocene (bulk),
+// ali ovde se poredi sa onim što je kod nas upisano i predlažu se SAMO razlike
+// (videti lib/sofascore-events.ts za bezbednosne provere). Dva koraka: preview
+// (ne piše ništa) pa confirm (menja samo ta tri polja, ništa drugo).
+// ----------------------------------------------------------------------------
+
+export type SofascoreEventsMatch = {
+  sofaEventId: number | string;
+  label: string;
+  fixtureId: string | null;
+  gameweekNumber: number | null;
+  scoreOk: boolean;
+  scoreText: string;
+  warnings: string[];
+  rows: EventDiffRow[];
+  squadPlayers: { id: string; name: string }[];
+};
+
+export type SofascoreEventsPreview = { matches: SofascoreEventsMatch[] };
+
+export async function previewSofascoreEventsAction(bulkJsonText: string): Promise<SofascoreEventsPreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  let bulk: any;
+  try {
+    bulk = JSON.parse(bulkJsonText);
+  } catch {
+    throw new Error("Ovo nije validan JSON — proveri da li je ceo fajl učitan.");
+  }
+  const bulkMatches: any[] = Array.isArray(bulk?.matches) ? bulk.matches : [];
+  if (bulkMatches.length === 0) throw new Error("Fajl ne sadrži nijedan meč ('matches' je prazno).");
+
+  const { data: fixtures } = await supabase
+    .from("fixtures")
+    .select(
+      "id, home_club_id, away_club_id, home_score, away_score, home:home_club_id(name), away:away_club_id(name), gameweeks!gameweek_id(number)"
+    );
+  const { data: allPlayers } = await supabase.from("players").select("id, first_name, last_name, club_id");
+  const squadAll: SquadPlayer[] = ((allPlayers ?? []) as any[]).map((p) => ({
+    id: p.id,
+    name: `${p.first_name} ${p.last_name}`.trim(),
+    clubId: p.club_id,
+  }));
+
+  const matches: SofascoreEventsMatch[] = [];
+  for (const m of bulkMatches) {
+    const homeTeam = String(m.homeTeam ?? "?");
+    const awayTeam = String(m.awayTeam ?? "?");
+    const round = typeof m.round === "number" ? m.round : null;
+
+    // Isto uparivanje meča kao kod ocena: prvo tačno kolo (dozvoljen obrnut
+    // redosled), pa tačan redosled bez obzira na kolo.
+    const all = (fixtures ?? []) as any[];
+    let candidates = all.filter(
+      (f) =>
+        f.gameweeks?.number === round &&
+        ((teamNamesMatch(f.home?.name ?? "", homeTeam) && teamNamesMatch(f.away?.name ?? "", awayTeam)) ||
+          (teamNamesMatch(f.home?.name ?? "", awayTeam) && teamNamesMatch(f.away?.name ?? "", homeTeam)))
+    );
+    if (candidates.length !== 1) {
+      candidates = all.filter(
+        (f) => teamNamesMatch(f.home?.name ?? "", homeTeam) && teamNamesMatch(f.away?.name ?? "", awayTeam)
+      );
+    }
+
+    const label0 = `${homeTeam} — ${awayTeam}${round !== null ? ` (kolo ${round})` : ""}`;
+    if (candidates.length !== 1) {
+      matches.push({
+        sofaEventId: m.sofaEventId,
+        label: label0,
+        fixtureId: null,
+        gameweekNumber: null,
+        scoreOk: false,
+        scoreText: "",
+        warnings: [
+          candidates.length === 0
+            ? "Nije nađen odgovarajući meč u našoj bazi."
+            : `Nađeno ${candidates.length} mogućih mečeva u bazi — preskačem.`,
+        ],
+        rows: [],
+        squadPlayers: [],
+      });
+      continue;
+    }
+
+    const fx = candidates[0];
+    const parsed = parseSofascoreLineupsObject(m.lineups);
+    // SofaScore domaćin/gost ne mora da se poklopi sa našim (isti par, obrnut) —
+    // ako je obrnut, zameni strane da isHome znači "naš domaćin".
+    const swapped = !(teamNamesMatch(fx.home?.name ?? "", homeTeam));
+    const ourSquad = squadAll.filter((p) => p.clubId === fx.home_club_id || p.clubId === fx.away_club_id);
+    const homeSquad = ourSquad.filter((p) => p.clubId === fx.home_club_id);
+    const awaySquad = ourSquad.filter((p) => p.clubId === fx.away_club_id);
+
+    // Golovi dolaze iz "incidents" (skripta ih dodaje u fajl); sastavi ih ne
+    // nose. Ako fajl nema incidents, pada se na polja iz statistike sastava.
+    const hasIncidents = Array.isArray(m.incidents);
+    let sofaPlayers = hasIncidents
+      ? eventsToPlayers(parseSofascoreIncidents(m.incidents), homeSquad, awaySquad)
+      : parsed.players;
+    if (!hasIncidents && swapped) sofaPlayers = sofaPlayers.map((p) => ({ ...p, isHome: !p.isHome }));
+    // (eventsToPlayers već koristi naše sastavove, pa strane ne treba menjati.)
+
+    const noEventData =
+      !hasIncidents && !parsed.players.some((p) => p.goals > 0 || p.assists > 0 || p.ownGoals > 0);
+    if (noEventData && ((fx.home_score ?? 0) + (fx.away_score ?? 0) > 0)) {
+      matches.push({
+        sofaEventId: m.sofaEventId,
+        label: `${fx.home?.name ?? homeTeam} — ${fx.away?.name ?? awayTeam} (kolo ${fx.gameweeks?.number ?? "?"})`,
+        fixtureId: fx.id,
+        gameweekNumber: fx.gameweeks?.number ?? null,
+        scoreOk: false,
+        scoreText: "",
+        warnings: [
+          "Fajl nema podatke o golovima za ovaj meč (nema 'incidents'). Skini fajl ponovo skriptom scripts/sofascore-bulk-konzola.js i učitaj ga ponovo.",
+        ],
+        rows: [],
+        squadPlayers: [],
+      });
+      continue;
+    }
+
+    const { data: statRows } = await supabase
+      .from("player_gameweek_stats")
+      .select("player_id, goals, assists, own_goals")
+      .eq("fixture_id", fx.id);
+    const ours: OurStatRow[] = ((statRows ?? []) as any[]).map((r) => ({
+      playerId: r.player_id,
+      goals: r.goals ?? 0,
+      assists: r.assists ?? 0,
+      ownGoals: r.own_goals ?? 0,
+    }));
+
+    const squad = ourSquad;
+    const diff = diffMatchEvents({
+      sofaPlayers,
+      fixture: {
+        homeClubId: fx.home_club_id,
+        awayClubId: fx.away_club_id,
+        homeScore: fx.home_score,
+        awayScore: fx.away_score,
+      },
+      squad,
+      ours,
+    });
+
+    matches.push({
+      sofaEventId: m.sofaEventId,
+      label: `${fx.home?.name ?? homeTeam} — ${fx.away?.name ?? awayTeam} (kolo ${fx.gameweeks?.number ?? "?"})`,
+      fixtureId: fx.id,
+      gameweekNumber: fx.gameweeks?.number ?? null,
+      scoreOk: diff.scoreOk,
+      scoreText: diff.scoreText,
+      warnings: [...(hasIncidents ? [] : parsed.warnings.filter((w) => !w.includes("nepotvrđen"))), ...diff.warnings],
+      rows: diff.rows,
+      squadPlayers: squad.map((p) => ({ id: p.id, name: p.name })),
+    });
+  }
+
+  return { matches };
+}
+
+export async function confirmSofascoreEventsAction(
+  entries: { fixtureId: string; playerId: string; goals?: number; assists?: number; ownGoals?: number }[]
+): Promise<{ written: number; gameweeks: number[] }> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const fixtureIds = [...new Set(entries.map((e) => e.fixtureId))];
+  const { data: fixtures } = await supabase
+    .from("fixtures")
+    .select("id, gameweek_id, gameweeks!gameweek_id(number)")
+    .in("id", fixtureIds);
+  const fxById = new Map((fixtures ?? []).map((f: any) => [f.id as string, f]));
+
+  const playerIds = [...new Set(entries.map((e) => e.playerId))];
+  const { data: players } = await supabase.from("players").select("id, club_id").in("id", playerIds);
+  const clubByPlayer = new Map((players ?? []).map((p: any) => [p.id as string, p.club_id as string]));
+
+  const errors: string[] = [];
+  const gameweeks = new Set<number>();
+  await Promise.all(
+    entries.map(async (e) => {
+      const fx: any = fxById.get(e.fixtureId);
+      const clubId = clubByPlayer.get(e.playerId);
+      if (!fx || !clubId) {
+        errors.push(`${e.playerId}@${e.fixtureId}: meč ili igrač nije nađen.`);
+        return;
+      }
+      const values: Record<string, number> = {};
+      for (const [key, col] of [["goals", "goals"], ["assists", "assists"], ["ownGoals", "own_goals"]] as const) {
+        const v = e[key];
+        if (typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 20) values[col] = Math.round(v);
+      }
+      if (Object.keys(values).length === 0) return;
+      const { error } = await supabase.from("player_gameweek_stats").upsert(
+        {
+          player_id: e.playerId,
+          club_id: clubId,
+          gameweek_id: fx.gameweek_id,
+          fixture_id: e.fixtureId,
+          ...values,
+          is_admin_reviewed: true,
+        },
+        { onConflict: "player_id,fixture_id" }
+      );
+      if (error) errors.push(`${e.playerId}@${e.fixtureId}: ${error.message}`);
+      else if (fx.gameweeks?.number != null) gameweeks.add(fx.gameweeks.number);
+    })
+  );
+
+  if (errors.length > 0) throw new Error(`Neke izmene nisu upisane: ${errors.join("; ")}`);
+
+  revalidatePath("/admin");
+  return { written: entries.length, gameweeks: [...gameweeks].sort((a, b) => a - b) };
+}
+
+// ----------------------------------------------------------------------------
+// Termini mečeva po SofaScore-u — usklađuje kickoff_at za mečeve koji još nisu
+// odigrani (i, po želji, rok / početak / kraj kola). Fajl pravi skripta
+// scripts/sofascore-termini-konzola.js. Dva koraka: preview (ne piše ništa) pa
+// confirm. Odigrani i mečevi u toku se nikad ne diraju.
+// ----------------------------------------------------------------------------
+
+export type KickoffRow = {
+  sofaEventId: number | string;
+  label: string;
+  round: number | null;
+  fixtureId: string | null;
+  ourKickoff: string | null;
+  sofaKickoff: string | null;
+  ourStatus: string | null;
+  sofaStatus: string;
+  /** Razlika veća od minuta. */
+  changed: boolean;
+  /** Može da se primeni (naš meč nije odigran, SofaScore ima važeći termin i nije odložen). */
+  selectable: boolean;
+  /** Naš meč je bio odložen, a SofaScore ima novi termin — vraća ga u "zakazan". */
+  reschedules: boolean;
+  note: string | null;
+};
+
+export type KickoffGameweek = {
+  number: number;
+  current: { deadline: string; starts: string; ends: string };
+  proposed: { deadline: string; starts: string; ends: string };
+};
+
+export type KickoffPreview = { rows: KickoffRow[]; gameweeks: KickoffGameweek[]; warnings: string[] };
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/** Rok = sat pre prvog meča; kraj = dva sata posle poslednjeg (isto kao uvoz rasporeda). */
+function gameweekWindow(kickoffs: number[]) {
+  const first = Math.min(...kickoffs);
+  const last = Math.max(...kickoffs);
+  return {
+    deadline: new Date(first - HOUR_MS).toISOString(),
+    starts: new Date(first).toISOString(),
+    ends: new Date(last + 2 * HOUR_MS).toISOString(),
+  };
+}
+
+export async function previewSofascoreKickoffsAction(jsonText: string): Promise<KickoffPreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  let json: any;
+  try {
+    json = JSON.parse(jsonText);
+  } catch {
+    throw new Error("Ovo nije validan JSON — proveri da li je ceo fajl učitan.");
+  }
+  const list: any[] = Array.isArray(json?.fixtures) ? json.fixtures : [];
+  if (list.length === 0) throw new Error("Fajl ne sadrži nijedan meč ('fixtures' je prazno).");
+
+  const { data: fixtures } = await supabase
+    .from("fixtures")
+    .select(
+      "id, gameweek_id, kickoff_at, status, home_club_id, away_club_id, home:home_club_id(name), away:away_club_id(name), gameweeks!gameweek_id(number, status, deadline_at, starts_at, ends_at)"
+    );
+  const all = (fixtures ?? []) as any[];
+
+  const rows: KickoffRow[] = [];
+  const warnings: string[] = [];
+  /** fixtureId -> novi termin (ms) za mečeve koji se mogu primeniti. */
+  const proposed = new Map<string, number>();
+
+  for (const f of list) {
+    const homeTeam = String(f.homeTeam ?? "?");
+    const awayTeam = String(f.awayTeam ?? "?");
+    const round = typeof f.round === "number" ? f.round : null;
+    const sofaStatus = String(f.status ?? "");
+    const ts = typeof f.startTimestamp === "number" ? f.startTimestamp * 1000 : NaN;
+    const sofaKickoff = Number.isFinite(ts) ? new Date(ts).toISOString() : null;
+
+    let candidates = all.filter(
+      (x) =>
+        x.gameweeks?.number === round &&
+        ((teamNamesMatch(x.home?.name ?? "", homeTeam) && teamNamesMatch(x.away?.name ?? "", awayTeam)) ||
+          (teamNamesMatch(x.home?.name ?? "", awayTeam) && teamNamesMatch(x.away?.name ?? "", homeTeam)))
+    );
+    if (candidates.length !== 1) {
+      candidates = all.filter(
+        (x) => teamNamesMatch(x.home?.name ?? "", homeTeam) && teamNamesMatch(x.away?.name ?? "", awayTeam)
+      );
+    }
+
+    const base = {
+      sofaEventId: f.sofaEventId,
+      round,
+      sofaKickoff,
+      sofaStatus,
+    };
+
+    if (candidates.length !== 1) {
+      rows.push({
+        ...base,
+        label: `${homeTeam} — ${awayTeam}${round !== null ? ` (kolo ${round})` : ""}`,
+        fixtureId: null,
+        ourKickoff: null,
+        ourStatus: null,
+        changed: false,
+        selectable: false,
+        reschedules: false,
+        note: candidates.length === 0 ? "Nema ga u našoj bazi (kolo nije uvezeno?)" : "Više mogućih mečeva — preskačem",
+      });
+      continue;
+    }
+
+    const fx = candidates[0];
+    const ourMs = new Date(fx.kickoff_at).getTime();
+    const open = fx.status === "scheduled" || fx.status === "postponed";
+    const sofaPostponed = sofaStatus === "postponed" || sofaStatus === "canceled" || sofaStatus === "cancelled";
+    const validTime = Number.isFinite(ts);
+    const changed = validTime && Math.abs(ts - ourMs) >= 60_000;
+    const selectable = open && validTime && !sofaPostponed && changed;
+
+    let note: string | null = null;
+    if (!open) note = "Već odigran / u toku — ne diram";
+    else if (sofaPostponed) note = "SofaScore ga vodi kao odloženog";
+    else if (!validTime) note = "SofaScore nema termin";
+
+    if (selectable) proposed.set(fx.id, ts);
+
+    rows.push({
+      ...base,
+      label: `${fx.home?.name ?? homeTeam} — ${fx.away?.name ?? awayTeam} (kolo ${fx.gameweeks?.number ?? "?"})`,
+      fixtureId: fx.id,
+      ourKickoff: fx.kickoff_at,
+      ourStatus: fx.status,
+      changed,
+      selectable,
+      reschedules: selectable && fx.status === "postponed" && !sofaPostponed,
+      note,
+    });
+  }
+
+  // Predlog roka po kolu — samo za kola koja još nisu počela i imaju izmenjen meč.
+  const gameweeks: KickoffGameweek[] = [];
+  const byGw = new Map<number, any[]>();
+  for (const fx of all) {
+    const n = fx.gameweeks?.number;
+    if (typeof n !== "number") continue;
+    (byGw.get(n) ?? byGw.set(n, []).get(n)!).push(fx);
+  }
+  for (const [number, fxs] of [...byGw.entries()].sort((a, b) => a[0] - b[0])) {
+    if (!fxs.some((x) => proposed.has(x.id))) continue;
+    const gw = fxs[0].gameweeks;
+    if (gw.status !== "upcoming") continue;
+    const times = fxs
+      .filter((x) => x.status !== "cancelled" && !(x.status === "postponed" && !proposed.has(x.id)))
+      .map((x) => proposed.get(x.id) ?? new Date(x.kickoff_at).getTime());
+    if (times.length === 0) continue;
+    const next = gameweekWindow(times);
+    const differs =
+      Math.abs(new Date(next.deadline).getTime() - new Date(gw.deadline_at).getTime()) >= 60_000 ||
+      Math.abs(new Date(next.ends).getTime() - new Date(gw.ends_at).getTime()) >= 60_000;
+    if (!differs) continue;
+    gameweeks.push({
+      number,
+      current: { deadline: gw.deadline_at, starts: gw.starts_at, ends: gw.ends_at },
+      proposed: next,
+    });
+  }
+
+  if (gameweeks.length > 0) {
+    warnings.push("Pomeranje roka kola menja trenutak do kog korisnici mogu da menjaju tim — proveri pre potvrde.");
+  }
+  return { rows, gameweeks, warnings };
+}
+
+export async function confirmSofascoreKickoffsAction(input: {
+  fixtures: { fixtureId: string; kickoffAt: string; reschedules: boolean }[];
+  gameweekNumbers: number[];
+}): Promise<{ fixturesUpdated: number; gameweeksUpdated: number[] }> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const errors: string[] = [];
+  let fixturesUpdated = 0;
+
+  for (const f of input.fixtures) {
+    const ms = new Date(f.kickoffAt).getTime();
+    // Razuman opseg: sprečava slučajno upisivanje 1970. ili 2099. zbog lošeg fajla.
+    if (!Number.isFinite(ms) || ms < Date.UTC(2025, 0, 1) || ms > Date.UTC(2028, 0, 1)) {
+      errors.push(`${f.fixtureId}: neprihvatljiv termin`);
+      continue;
+    }
+    const patch: Record<string, unknown> = { kickoff_at: new Date(ms).toISOString() };
+    if (f.reschedules) patch.status = "scheduled";
+    const { error, data } = await supabase
+      .from("fixtures")
+      .update(patch)
+      .eq("id", f.fixtureId)
+      .in("status", ["scheduled", "postponed"]) // odigrane i mečeve u toku ne diramo
+      .select("id");
+    if (error) errors.push(`${f.fixtureId}: ${error.message}`);
+    else fixturesUpdated += data?.length ?? 0;
+  }
+
+  // Rok/početak/kraj kola se računaju iz STVARNIH termina u bazi posle izmene,
+  // da odgovaraju onome što je upisano (a ne onome što je pregled predlagao).
+  const gameweeksUpdated: number[] = [];
+  for (const number of input.gameweekNumbers) {
+    const { data: gw } = await supabase.from("gameweeks").select("id, status").eq("number", number).maybeSingle();
+    if (!gw || gw.status !== "upcoming") continue;
+    const { data: fxs } = await supabase
+      .from("fixtures")
+      .select("kickoff_at, status")
+      .eq("gameweek_id", gw.id);
+    const times = ((fxs ?? []) as any[])
+      .filter((x) => x.status !== "cancelled" && x.status !== "postponed")
+      .map((x) => new Date(x.kickoff_at).getTime());
+    if (times.length === 0) continue;
+    const w = gameweekWindow(times);
+    const { error } = await supabase
+      .from("gameweeks")
+      .update({ deadline_at: w.deadline, starts_at: w.starts, ends_at: w.ends })
+      .eq("id", gw.id);
+    if (error) errors.push(`kolo ${number}: ${error.message}`);
+    else gameweeksUpdated.push(number);
+  }
+
+  if (errors.length > 0) throw new Error(`Neke izmene nisu upisane: ${errors.join("; ")}`);
+
+  revalidatePath("/admin");
+  revalidatePath("/raspored");
+  return { fixturesUpdated, gameweeksUpdated };
+}
+
+// ----------------------------------------------------------------------------
+// Povrede i suspenzije po SofaScore-u — jednom nedeljno, pred kolo. Fajl pravi
+// scripts/sofascore-povrede-konzola.js. Spisak je "snimak stanja": igrač koji
+// je bio označen, a više nije na spisku kluba čiji je spisak u fajlu, vraća se
+// na "dostupan". Dva koraka: preview (ne piše ništa) pa confirm.
+// ----------------------------------------------------------------------------
+
+const PLAYER_STATUSES: PlayerStatus[] = ["available", "injured", "suspended", "doubtful", "unavailable"];
+
+export type InjuryRow = {
+  team: string;
+  /** Ime kod SofaScore-a; null = igrač koji se vraća na "dostupan" (nema ga na novom spisku). */
+  sofaName: string | null;
+  playerId: string | null;
+  /** Upareno tačnim imenom (true) ili samo po prezimenu (false). */
+  exact: boolean;
+  currentStatus: string;
+  proposedStatus: PlayerStatus;
+  note: string | null;
+  until: string | null;
+  /** Naše ime igrača za prikaz. */
+  playerName: string | null;
+};
+
+export type InjuriesPreview = {
+  round: number | null;
+  fetchedAt: string | null;
+  rows: InjuryRow[];
+  squadPlayers: { id: string; name: string; club: string }[];
+  warnings: string[];
+};
+
+export async function previewSofascoreInjuriesAction(jsonText: string): Promise<InjuriesPreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  let json: unknown;
+  try {
+    json = JSON.parse(jsonText);
+  } catch {
+    throw new Error("Ovo nije validan JSON — proveri da li je ceo fajl učitan.");
+  }
+  const file = parseInjuriesFile(json);
+  if (file.teams.length === 0) throw new Error("Fajl ne sadrži nijedan klub ('teams' je prazno).");
+
+  const { data: clubs } = await supabase.from("clubs").select("id, name");
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, club_id, status, status_note, status_until")
+    .eq("is_active", true);
+  const clubList = (clubs ?? []) as { id: string; name: string }[];
+  const playerList = (players ?? []) as any[];
+
+  const warnings: string[] = [];
+  const rows: InjuryRow[] = [];
+  const squadPlayers: InjuriesPreview["squadPlayers"] = [];
+
+  for (const t of file.teams) {
+    const club = clubList.find((c) => teamNamesMatch(c.name, t.team));
+    if (!club) {
+      warnings.push(`Klub „${t.team}” nije nađen u našoj bazi — preskačem.`);
+      continue;
+    }
+    const squad: (SquadPlayer & { raw: any })[] = playerList
+      .filter((p) => p.club_id === club.id)
+      .map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim(), clubId: club.id, raw: p }));
+    for (const p of squad) squadPlayers.push({ id: p.id, name: p.name, club: club.name });
+
+    const handled = new Set<string>();
+    for (const m of t.missing) {
+      const found = findPlayer(m.name, squad);
+      const raw = squad.find((s) => s.id === found?.player.id)?.raw;
+      if (found) handled.add(found.player.id);
+      const proposed = mapMissingStatus(m.type, m.reason, m.description);
+      const sameUntil = (raw?.status_until ?? null) === m.until || (!raw?.status_until && !m.until);
+      // Bez promene (isti status, napomena i datum) — nema šta da se prikaže.
+      if (raw && raw.status === proposed && (raw.status_note ?? null) === (m.description ?? null) && sameUntil) continue;
+      rows.push({
+        team: club.name,
+        sofaName: m.name,
+        playerId: found?.player.id ?? null,
+        exact: found?.exact ?? false,
+        currentStatus: raw?.status ?? "available",
+        proposedStatus: proposed,
+        note: m.description,
+        until: m.until,
+        playerName: found?.player.name ?? null,
+      });
+    }
+
+    // Označeni, a nema ih na novom spisku → vraćaju se.
+    for (const p of squad) {
+      if (handled.has(p.id)) continue;
+      if (p.raw.status && p.raw.status !== "available") {
+        rows.push({
+          team: club.name,
+          sofaName: null,
+          playerId: p.id,
+          exact: true,
+          currentStatus: p.raw.status,
+          proposedStatus: "available",
+          note: null,
+          until: null,
+          playerName: p.name,
+        });
+      }
+    }
+  }
+
+  return { round: file.round, fetchedAt: file.fetchedAt, rows, squadPlayers, warnings };
+}
+
+export async function confirmSofascoreInjuriesAction(input: {
+  round: number | null;
+  entries: { playerId: string; status: PlayerStatus; note: string | null; until: string | null }[];
+}): Promise<{ updated: number }> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+
+  const errors: string[] = [];
+  let updated = 0;
+  for (const e of input.entries) {
+    if (!PLAYER_STATUSES.includes(e.status)) {
+      errors.push(`${e.playerId}: nepoznat status`);
+      continue;
+    }
+    const available = e.status === "available";
+    const untilMs = e.until ? new Date(e.until).getTime() : NaN;
+    const { error } = await supabase
+      .from("players")
+      .update({
+        status: e.status,
+        status_note: available ? null : (e.note ?? null)?.slice(0, 200) ?? null,
+        status_until: available || !Number.isFinite(untilMs) ? null : new Date(untilMs).toISOString(),
+      })
+      .eq("id", e.playerId);
+    if (error) errors.push(`${e.playerId}: ${error.message}`);
+    else updated++;
+  }
+  if (errors.length > 0) throw new Error(`Neke izmene nisu upisane: ${errors.join("; ")}`);
+
+  // Vreme poslednjeg ažuriranja za prikaz u Statistikama — i kad nije bilo izmena
+  // (spisak je proveren, samo se ništa nije promenilo).
+  const { error: stampError } = await supabase.from("data_updates").upsert(
+    {
+      key: "injuries",
+      updated_at: new Date().toISOString(),
+      note: input.round !== null ? String(input.round) : null, // samo broj kola; tekst se sklapa po jeziku
+    },
+    { onConflict: "key" }
+  );
+  if (stampError) throw new Error(`Izmene su upisane, ali vreme ažuriranja nije: ${stampError.message}`);
+
+  revalidatePath("/admin");
+  revalidatePath("/statistike");
+  return { updated };
 }

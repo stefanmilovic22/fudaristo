@@ -15,6 +15,9 @@ import { MaintenancePanel } from "./maintenance-panel";
 import { PrepareStatsButton } from "./prepare-stats-button";
 import { FindEspnLinksButton } from "./find-espn-links-button";
 import { SofascoreBulkPuller } from "./sofascore-bulk-puller";
+import { SofascoreEventsPuller } from "./sofascore-events-puller";
+import { SofascoreKickoffsPuller } from "./sofascore-kickoffs-puller";
+import { SofascoreInjuriesPuller } from "./sofascore-injuries-puller";
 
 /**
  * Poslovi održavanja zovu TheSportsDB sa pauzama zbog rate limita, pa im
@@ -255,6 +258,12 @@ export default async function AdminPage() {
       />
 
       <SofascoreBulkPuller />
+
+      <SofascoreEventsPuller />
+
+      <SofascoreKickoffsPuller />
+
+      <SofascoreInjuriesPuller />
 
       <section className="bg-navy-800 border border-navy-600 rounded-lg p-5">
         <h3 className="font-display text-lg mb-2">Prozor za Joker #1 (zimska pauza)</h3>

@@ -1,5 +1,7 @@
 import { loadStats } from "@/lib/stats-data";
+import { getDataUpdateCached, getUnavailablePlayersCached } from "@/lib/cached-data";
 import { StatsBoard, type StatsData } from "./stats-board";
+import type { InjuriesData } from "./injuries-tab";
 import { DataLoadError } from "@/components/DataLoadError";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
@@ -49,6 +51,35 @@ export default async function StatistikePage({
   }
   const { data, lastGameweek } = stats;
 
+  // Povrede: ako migracija 013 nije pokrenuta (nema kolona/tabele), tab pokazuje
+  // poruku umesto da sruši celu stranicu.
+  let injuries: InjuriesData | null = null;
+  try {
+    const [players, stamp] = await Promise.all([getUnavailablePlayersCached(), getDataUpdateCached("injuries")]);
+    injuries = {
+      updatedAt: stamp?.updated_at ?? null,
+      round: stamp?.note && /^\d+$/.test(stamp.note) ? Number(stamp.note) : null,
+      players: players.map((p: any) => ({
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        position: p.position,
+        price: Number(p.price),
+        status: p.status,
+        total_points: p.total_points ?? 0,
+        note: p.status_note ?? null,
+        until: p.status_until ?? null,
+        clubId: p.club_id,
+        clubName: p.clubs?.name ?? "?",
+        clubShort: p.clubs?.short_name ?? "?",
+        clubColor: p.clubs?.primary_color ?? "#93ADCC",
+        jerseyPhoto: p.clubs?.jersey_photo_url ?? null,
+      })),
+    };
+  } catch (e) {
+    console.error("[/statistike] povrede:", e);
+  }
+
   const hasAnything =
     data.byPosition.length + data.scorers.length + data.assists.length + data.clubs.length + data.ratings.length >
     0;
@@ -63,7 +94,7 @@ export default async function StatistikePage({
 
   return (
     <Shell lastGameweek={lastGameweek}>
-      <StatsBoard data={data} />
+      <StatsBoard data={data} injuries={injuries} />
     </Shell>
   );
 }

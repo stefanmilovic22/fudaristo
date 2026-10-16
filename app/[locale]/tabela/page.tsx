@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { getTableDataCached } from "@/lib/cached-data";
 import { computeLeagueTable, type FormResult } from "@/lib/league-table";
 import { DataLoadError } from "@/components/DataLoadError";
@@ -80,10 +81,15 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
                     </span>
                   </td>
                   <td className="py-3 px-2">
-                    <div className="flex items-center gap-3 min-w-0">
+                    <Link
+                      href={`/klubovi/${r.clubId}`}
+                      className="group flex items-center gap-3 min-w-0"
+                    >
                       <ClubBadge short={r.short} color={r.color} size={28} />
-                      <span className="font-semibold truncate">{r.name}</span>
-                    </div>
+                      <span className="font-semibold truncate group-hover:text-gold-300 group-hover:underline underline-offset-2">
+                        {r.name}
+                      </span>
+                    </Link>
                   </td>
                   <td className="py-3 px-1.5 text-center tabular-nums text-slate-300">{r.played}</td>
                   <td className="py-3 px-1.5 text-center tabular-nums text-slate-300 hidden sm:table-cell">{r.won}</td>
