@@ -13,7 +13,7 @@ import { ClubBadge } from "@/components/ClubBadge";
 import { FormDots } from "@/components/FormDots";
 import { LocalTime } from "@/components/LocalTime";
 import { PlayerLine, PlayerLineHeader } from "@/components/PlayerLine";
-import { ExpandableList } from "@/components/ExpandableList";
+import { ExpandableCard } from "@/components/ExpandableCard";
 import { DataLoadError } from "@/components/DataLoadError";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }) {
@@ -158,14 +158,19 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
         {/* Mečevi */}
         <aside className="flex flex-col gap-4">
           <div className="bg-navy-800 border border-navy-700 rounded-xl p-4">
-            <h3 className="font-display text-lg mb-2">{t("upcoming")}</h3>
             {nextMatches.length === 0 ? (
-              <p className="text-sm text-slate-500">{t("noNext")}</p>
+              <>
+                <h3 className="font-display text-lg mb-2">{t("upcoming")}</h3>
+                <p className="text-sm text-slate-500">{t("noNext")}</p>
+              </>
             ) : (
-              <ExpandableList
+              <ExpandableCard
+                title={t("upcoming")}
                 limit={5}
-                className="divide-y divide-navy-700"
-                moreLabel={t("showAll", { count: Math.max(0, nextMatches.length - 5) })}
+                titleClassName="font-display text-lg"
+                headerClassName="mb-2"
+                listClassName="divide-y divide-navy-700"
+                moreLabel={t("showAll")}
                 lessLabel={t("showLess")}
               >
                 {nextMatches.map((m, i) => (
@@ -182,7 +187,7 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
                     </span>
                   </li>
                 ))}
-              </ExpandableList>
+              </ExpandableCard>
             )}
           </div>
 

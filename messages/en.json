@@ -175,7 +175,9 @@
     "injuriesUntil": "until",
     "tabBestXI": "Fudaristo XI",
     "bestXISubtitle": "The best 11 of the season by total fantasy points. It updates by itself as points grow from gameweek to gameweek.",
-    "noBestXI": "Fudaristo XI appears as soon as enough players have points."
+    "noBestXI": "Fudaristo XI appears as soon as enough players have points.",
+    "showLess": "See less",
+    "showAll": "See all"
   },
   "fixtures": {
     "title": "Fixtures and results",
@@ -733,8 +735,8 @@
     "results": "Latest results",
     "noResults": "No matches played yet.",
     "noPlayers": "No players for this club.",
-    "showAll": "Show all ({count} more)",
-    "showLess": "Show less"
+    "showAll": "See all",
+    "showLess": "See less"
   },
   "players": {
     "title": "Players",

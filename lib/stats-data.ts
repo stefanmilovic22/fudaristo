@@ -5,6 +5,9 @@ import { selectTeamOfTheWeek } from "@/lib/team-of-the-week";
 import type { TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 import type { StatsData } from "@/app/[locale]/statistike/stats-board";
 
+/** Najviše toliko igrača na listama strelaca i asistenata. */
+const TOP_LIST_LIMIT = 50;
+
 /**
  * Sve liste su javne i iste za sve — računaju se jednom u 60s (i odmah nakon
  * admin unosa, tag "public-data"), ne pri svakoj poseti.
@@ -21,8 +24,22 @@ export const loadStats = unstable_cache(
         .lte("rank_in_position", 5)
         .order("position", { ascending: true })
         .order("total_points", { ascending: false }),
-      supabase.from("v_top_scorers").select("id, first_name, last_name, club_name, total_goals"),
-      supabase.from("v_top_assists").select("id, first_name, last_name, club_name, total_assists"),
+      // Do 50 igrača sa bar jednim golom / asistencijom (migracija 014 diže LIMIT
+      // pogleda sa 5 na 50; bez nje se dobija samo prvih 5, što i dalje radi).
+      supabase
+        .from("v_top_scorers")
+        .select("id, first_name, last_name, club_name, total_goals")
+        .gt("total_goals", 0)
+        .order("total_goals", { ascending: false })
+        .order("last_name", { ascending: true })
+        .limit(TOP_LIST_LIMIT),
+      supabase
+        .from("v_top_assists")
+        .select("id, first_name, last_name, club_name, total_assists")
+        .gt("total_assists", 0)
+        .order("total_assists", { ascending: false })
+        .order("last_name", { ascending: true })
+        .limit(TOP_LIST_LIMIT),
       supabase
         .from("v_club_fantasy_standings")
         .select("id, name, total_club_fantasy_points")
@@ -153,7 +170,7 @@ export const loadStats = unstable_cache(
       .select("player_id, avg_rating, rated_appearances")
       .gte("rated_appearances", 3)
       .order("avg_rating", { ascending: false })
-      .limit(20);
+      .limit(TOP_LIST_LIMIT);
 
     const ratingPlayerIds = (ratingRows ?? []).map((r: any) => r.player_id);
     const { data: ratingPlayers } =
@@ -173,7 +190,8 @@ export const loadStats = unstable_cache(
           value: Number(r.avg_rating),
         };
       })
-      .filter((x: any): x is NonNullable<typeof x> => x !== null);
+      .filter((x: any): x is NonNullable<typeof x> => x !== null)
+      .slice(0, TOP_LIST_LIMIT);
 
     const data: StatsData = {
       byPosition: (byPosition.data ?? []).map((r: any) => ({
@@ -184,10 +202,12 @@ export const loadStats = unstable_cache(
         value: r.total_points,
         rank: Number(r.rank_in_position),
       })),
-      // Ovi view-ovi već nose LIMIT 5 u sebi, pa se filter na > 0 primenjuje na
-      // tih pet — što je tačno ono što treba: ko ima 0 golova nije strelac.
+      // Ko ima 0 golova / asistencija nije na listi. Redni brojevi su 1, 2, 3...
+      // kao na SofaScore-u (bez zajedničkih mesta); pri jednakom broju redosled
+      // je po prezimenu, pa je stabilan između osvežavanja.
       scorers: (scorers.data ?? [])
         .filter((r: any) => Number(r.total_goals) > 0)
+        .slice(0, TOP_LIST_LIMIT)
         .map((r: any) => ({
           id: r.id,
           name: playerFullName(r),
@@ -196,6 +216,7 @@ export const loadStats = unstable_cache(
         })),
       assists: (assists.data ?? [])
         .filter((r: any) => Number(r.total_assists) > 0)
+        .slice(0, TOP_LIST_LIMIT)
         .map((r: any) => ({
           id: r.id,
           name: playerFullName(r),

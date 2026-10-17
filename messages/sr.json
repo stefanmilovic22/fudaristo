@@ -175,7 +175,9 @@
     "injuriesUntil": "do",
     "tabBestXI": "Fudaristo XI",
     "bestXISubtitle": "Najboljih 11 sezone po ukupnim fantasy poenima. Menja se sam kako poeni rastu iz kola u kolo.",
-    "noBestXI": "Fudaristo XI se pojavljuje čim se obračunaju poeni za dovoljno igrača."
+    "noBestXI": "Fudaristo XI se pojavljuje čim se obračunaju poeni za dovoljno igrača.",
+    "showLess": "Vidi manje",
+    "showAll": "Vidi sve"
   },
   "fixtures": {
     "title": "Raspored i rezultati",
@@ -733,8 +735,8 @@
     "results": "Poslednji rezultati",
     "noResults": "Još nema odigranih mečeva.",
     "noPlayers": "Nema igrača za ovaj klub.",
-    "showAll": "Prikaži sve ({count} više)",
-    "showLess": "Prikaži manje"
+    "showAll": "Vidi sve",
+    "showLess": "Vidi manje"
   },
   "players": {
     "title": "Igrači",

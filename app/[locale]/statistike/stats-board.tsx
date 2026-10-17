@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TeamOfWeekBoard, type TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 import { InjuriesTab, type InjuriesData } from "./injuries-tab";
+import { ExpandableCard } from "@/components/ExpandableCard";
 
 export type StatEntry = {
   id: string;
@@ -138,6 +139,7 @@ export function StatsBoard({ data, injuries }: { data: StatsData; injuries: Inju
           unit={t("unitGoals")}
           entries={data.scorers}
           empty={t("noGoals")}
+          collapsible
         />
       )}
       {tab === "assists" && (
@@ -146,6 +148,7 @@ export function StatsBoard({ data, injuries }: { data: StatsData; injuries: Inju
           unit={t("unitAssists")}
           entries={data.assists}
           empty={t("noAssists")}
+          collapsible
         />
       )}
       {tab === "clubs" && (
@@ -157,7 +160,14 @@ export function StatsBoard({ data, injuries }: { data: StatsData; injuries: Inju
         />
       )}
       {tab === "ratings" && (
-        <SingleList title={t("topRatings")} unit="" entries={data.ratings} empty={t("noRatings")} />
+        <SingleList
+          title={t("topRatings")}
+          unit=""
+          entries={data.ratings}
+          empty={t("noRatings")}
+          collapsible
+          collapsedRows={10}
+        />
       )}
       {tab === "team" &&
         (data.teamOfWeek ? <TeamOfWeekBoard data={data.teamOfWeek} /> : <Empty text={t("noTeamOfWeek")} />)}
@@ -203,44 +213,70 @@ function SingleList({
   unit,
   entries,
   empty,
+  collapsible = false,
+  collapsedRows = COLLAPSED_ROWS,
 }: {
   title: string;
   unit: string;
   entries: StatEntry[];
   empty: string;
+  /** Prvih N + „Vidi sve” u gornjem desnom uglu — za duge liste (strelci, asistenti, ocene). */
+  collapsible?: boolean;
+  /** Koliko redova se vidi pre otvaranja (podrazumevano 5; ocene prikazuju 10). */
+  collapsedRows?: number;
 }) {
+  const t = useTranslations("stats");
   if (entries.length === 0) return <Empty text={empty} />;
+
+  const items = statRows(entries, unit);
+  const heading = "font-display text-sm uppercase tracking-wide text-slate-400";
+
   return (
     <div className="bg-navy-800 border border-navy-600 rounded-lg p-4 max-w-xl">
-      <h3 className="font-display text-sm uppercase tracking-wide text-slate-400 mb-3">{title}</h3>
-      <Rows entries={entries} unit={unit} />
+      {collapsible ? (
+        <ExpandableCard
+          title={title}
+          limit={collapsedRows}
+          scrollWhenExpanded
+          moreLabel={t("showAll")}
+          lessLabel={t("showLess")}
+          titleClassName={heading}
+          listClassName="flex flex-col"
+        >
+          {items}
+        </ExpandableCard>
+      ) : (
+        <>
+          <h3 className={`${heading} mb-3`}>{title}</h3>
+          <ol className="flex flex-col">{items}</ol>
+        </>
+      )}
     </div>
   );
 }
 
+const COLLAPSED_ROWS = 5;
+
+function statRows(entries: StatEntry[], unit: string) {
+  return entries.map((e, i) => (
+    <li key={e.id} className="flex items-center gap-3 py-2 border-t border-navy-700 first:border-t-0">
+      <span className="w-6 text-center font-display font-bold text-slate-500 text-sm tabular-nums">
+        {e.rank ?? i + 1}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm truncate">{e.name}</div>
+        {e.clubName && <div className="text-xs text-slate-500 truncate">{e.clubName}</div>}
+      </div>
+      <span className="font-display font-bold tabular-nums whitespace-nowrap">
+        {e.value}
+        <span className="text-slate-500 text-xs font-body font-normal ml-1">{unit}</span>
+      </span>
+    </li>
+  ));
+}
+
 function Rows({ entries, unit }: { entries: StatEntry[]; unit: string }) {
-  return (
-    <ol className="flex flex-col">
-      {entries.map((e, i) => (
-        <li
-          key={e.id}
-          className="flex items-center gap-3 py-2 border-t border-navy-700 first:border-t-0"
-        >
-          <span className="w-5 text-center font-display font-bold text-slate-500 text-sm tabular-nums">
-            {e.rank ?? i + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm truncate">{e.name}</div>
-            {e.clubName && <div className="text-xs text-slate-500 truncate">{e.clubName}</div>}
-          </div>
-          <span className="font-display font-bold tabular-nums whitespace-nowrap">
-            {e.value}
-            <span className="text-slate-500 text-xs font-body font-normal ml-1">{unit}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
+  return <ol className="flex flex-col">{statRows(entries, unit)}</ol>;
 }
 
 function Empty({ text }: { text: string }) {
