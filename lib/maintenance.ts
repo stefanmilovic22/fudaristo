@@ -23,6 +23,7 @@ import {
   THESPORTSDB_SEASON,
   thesportsdbBase,
   resolveClubId,
+  eventStatus,
   sleep,
   type TheSportsDbEvent,
 } from "./thesportsdb";
@@ -274,13 +275,12 @@ export async function refreshResults(
       continue;
     }
 
-    let status: "scheduled" | "finished" | "postponed" | "live" = "scheduled";
-    if (ev.strPostponed === "yes") status = "postponed";
-    else if (ev.strStatus === "FT") status = "finished";
-    else if (ev.strStatus && ev.strStatus !== "NS") status = "live";
-
     const homeScore = parseScore(ev.intHomeScore);
     const awayScore = parseScore(ev.intAwayScore);
+    let status: "scheduled" | "finished" | "postponed" | "live" = eventStatus(
+      ev,
+      homeScore !== null && awayScore !== null
+    );
 
     // Ne proglašavaj meč završenim ako rezultat nije stvarno stigao — bolje
     // ostaviti "live" i pokušati opet nego upisati lažno 0:0 koje bi scoring
@@ -458,9 +458,9 @@ export async function importFixtures(
     const homeScore = parseScore(ev.intHomeScore);
     const awayScore = parseScore(ev.intAwayScore);
 
-    let status: "scheduled" | "finished" | "postponed" = "scheduled";
-    if (ev.strPostponed === "yes") status = "postponed";
-    else if (ev.strStatus === "FT" && homeScore !== null && awayScore !== null) status = "finished";
+    // U kalendaru nema "live" — meč u toku ostaje zakazan dok se ne završi.
+    const evStatus = eventStatus(ev, homeScore !== null && awayScore !== null);
+    const status: "scheduled" | "finished" | "postponed" = evStatus === "live" ? "scheduled" : evStatus;
 
     // Prvo traži RUČNO uneti red (bez api_thesportsdb_id), i to SAMO po paru
     // klubova, ne i po kolu — svaki uređeni par se pojavljuje tačno jednom u

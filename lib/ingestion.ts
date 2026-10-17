@@ -36,6 +36,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseScore, parseUtcTimestamp } from "./api-parsing";
 import {
   resolveClubId,
+  eventStatus,
   sleep,
   thesportsdbBase,
   THESPORTSDB_LEAGUE_ID,
@@ -124,10 +125,10 @@ async function ensureGameweek(
 }
 
 function deriveStatus(ev: TheSportsDbEvent, homeScore: number | null, awayScore: number | null) {
-  if (ev.strPostponed === "yes") return "postponed" as const;
-  if (ev.strStatus === "FT" && homeScore !== null && awayScore !== null) return "finished" as const;
-  if (ev.strStatus && ev.strStatus !== "NS" && ev.strStatus !== "FT") return "live" as const;
-  return "scheduled" as const;
+  const status = eventStatus(ev, homeScore !== null && awayScore !== null);
+  // FT bez rezultata: ostaje kakav je bio (kao i ranije), ne "live".
+  if (status === "live" && ev.strStatus?.trim().toUpperCase() === "FT") return "scheduled" as const;
+  return status;
 }
 
 /**

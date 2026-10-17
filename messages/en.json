@@ -191,6 +191,8 @@
     "selectGameweek": "Gameweek",
     "singleGameweek": "One gameweek",
     "wholeSeason": "Whole season",
+    "currentGameweek": "Current gameweek",
+    "currentShort": "current",
     "gameweekOption": "GW {number}",
     "gameweekPlayed": "GW {number} · played"
   },

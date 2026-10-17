@@ -191,6 +191,8 @@
     "selectGameweek": "Αγωνιστική",
     "singleGameweek": "Μία αγωνιστική",
     "wholeSeason": "Όλη η σεζόν",
+    "currentGameweek": "Τρέχουσα αγωνιστική",
+    "currentShort": "τρέχουσα",
     "gameweekOption": "Αγων. {number}",
     "gameweekPlayed": "Αγων. {number} · έγινε"
   },

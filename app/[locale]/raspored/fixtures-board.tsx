@@ -38,13 +38,13 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
 
   // Podrazumevano otvori kolo koje je na redu — prvo čiji rok još nije prošao,
   // a ako je sezona gotova, poslednje odigrano.
-  const defaultNumber = useMemo(() => {
+  const currentNumber = useMemo(() => {
     const now = Date.now();
     const next = gameweeks.find((g) => new Date(g.deadlineAt).getTime() > now);
     return (next ?? gameweeks[gameweeks.length - 1])?.number ?? 1;
   }, [gameweeks]);
 
-  const [activeNumber, setActiveNumber] = useState(defaultNumber);
+  const [activeNumber, setActiveNumber] = useState(currentNumber);
   const [showAll, setShowAll] = useState(false);
 
   const shown = showAll ? gameweeks : gameweeks.filter((g) => g.number === activeNumber);
@@ -77,6 +77,7 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
                   {played
                     ? t("gameweekPlayed", { number: gw.number })
                     : t("gameweekOption", { number: gw.number })}
+                  {gw.number === currentNumber ? ` • ${t("currentShort")}` : ""}
                 </option>
               );
             })}
@@ -85,7 +86,7 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
         </label>
 
         <div className="hidden sm:flex items-center gap-3">
-          <div className="flex gap-1 overflow-x-auto py-1 -my-1">
+          <div className="flex gap-1 overflow-x-auto p-1 -m-1">
             {gameweeks.map((gw) => {
               const played = gw.matches.some((m) => m.status === "finished");
               return (
@@ -102,8 +103,12 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
                       : played
                         ? "bg-navy-700 text-slate-300 hover:text-chalk-50"
                         : "bg-navy-800 text-slate-400 hover:text-chalk-50"
-                  }`}
-                  title={t("gameweekOption", { number: gw.number })}
+                  } ${gw.number === currentNumber ? "ring-2 ring-gold-400" : ""}`}
+                  title={
+                    gw.number === currentNumber
+                      ? `${t("gameweekOption", { number: gw.number })} • ${t("currentShort")}`
+                      : t("gameweekOption", { number: gw.number })
+                  }
                 >
                   {gw.number}
                 </button>
@@ -126,9 +131,17 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
 
       <div className="flex flex-col gap-6">
         {shown.map((gw) => (
-          <section key={gw.id}>
-            <div className="flex items-baseline gap-3 mb-2">
-              <h3 className="font-display text-lg">{tCommon("gameweekN", { number: gw.number })}</h3>
+          <section
+            key={gw.id}
+            className={gw.number === currentNumber ? "rounded-2xl border border-gold-400/60 bg-gold-400/5 p-2 sm:p-3" : undefined}
+          >
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
+              <h3 className="font-display text-lg whitespace-nowrap">{tCommon("gameweekN", { number: gw.number })}</h3>
+              {gw.number === currentNumber && (
+                <span className="text-[10px] font-bold uppercase tracking-wide whitespace-nowrap text-navy-950 bg-gold-400 rounded px-1.5 py-0.5">
+                  {t("currentGameweek")}
+                </span>
+              )}
               <span className="text-slate-400 text-xs">
                 {tCommon("deadline")}{" "}
                 <LocalTime

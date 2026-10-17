@@ -191,6 +191,8 @@
     "selectGameweek": "Kolo",
     "singleGameweek": "Jedno kolo",
     "wholeSeason": "Cela sezona",
+    "currentGameweek": "Trenutno kolo",
+    "currentShort": "trenutno",
     "gameweekOption": "Kolo {number}",
     "gameweekPlayed": "Kolo {number} · odigrano"
   },

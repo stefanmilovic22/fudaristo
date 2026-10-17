@@ -47,6 +47,29 @@ export type TheSportsDbEvent = {
   strPostponed: string | null;
 };
 
+const POSTPONED_STATUSES = new Set(["PPD", "POST", "POSTP", "POSTPONED"]);
+const NOT_PLAYING_STATUSES = new Set(["", "NS", "NOT STARTED", "TBD", "CANC", "CANCELLED", "CANCELED", "ABD", "ABANDONED"]);
+const FINISHED_STATUSES = new Set(["FT", "AET", "PEN", "MATCH FINISHED"]);
+
+/**
+ * Status meča iz TheSportsDB događaja.
+ *
+ * Zašto ne samo `strPostponed`: za odložene mečeve izvor često ostavi
+ * strPostponed="no", a u strStatus upiše "PPD". Ranije je svaki status osim
+ * NS/FT tumačen kao "live", pa je odložen meč (npr. Atromitos – AEK) u
+ * rasporedu stajao kao "uživo".
+ */
+export function eventStatus(
+  ev: Pick<TheSportsDbEvent, "strStatus" | "strPostponed">,
+  hasScore: boolean
+): "scheduled" | "live" | "finished" | "postponed" {
+  const st = (ev.strStatus ?? "").trim().toUpperCase();
+  if (ev.strPostponed === "yes" || POSTPONED_STATUSES.has(st)) return "postponed";
+  if (FINISHED_STATUSES.has(st)) return hasScore ? "finished" : "live";
+  if (NOT_PLAYING_STATUSES.has(st)) return "scheduled";
+  return "live";
+}
+
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
