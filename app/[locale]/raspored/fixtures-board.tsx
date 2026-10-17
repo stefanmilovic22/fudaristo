@@ -36,12 +36,19 @@ export function FixturesBoard({ gameweeks }: { gameweeks: GameweekFixtures[] }) 
   const tCommon = useTranslations("common");
   const locale = useLocale();
 
-  // Podrazumevano otvori kolo koje je na redu — prvo čiji rok još nije prošao,
-  // a ako je sezona gotova, poslednje odigrano.
+  // Trenutno je prvo kolo koje nije završeno: ima bar jedan meč koji se još
+  // igra ili tek treba da se igra. Rok za sastav tu ne odlučuje — istekne čim
+  // krene prvi meč, a kolo traje do poslednje utakmice. Odloženi i otkazani
+  // mečevi ne blokiraju kolo (inače bi jedan odložen meč držao kolo večno).
+  // Kolo bez mečeva ide po roku; ako su sva kola završena, poslednje.
   const currentNumber = useMemo(() => {
     const now = Date.now();
-    const next = gameweeks.find((g) => new Date(g.deadlineAt).getTime() > now);
-    return (next ?? gameweeks[gameweeks.length - 1])?.number ?? 1;
+    const open = gameweeks.find((g) => {
+      const counting = g.matches.filter((m) => m.status !== "postponed" && m.status !== "cancelled");
+      if (counting.length === 0) return g.matches.length === 0 && new Date(g.deadlineAt).getTime() > now;
+      return counting.some((m) => m.status !== "finished");
+    });
+    return (open ?? gameweeks[gameweeks.length - 1])?.number ?? 1;
   }, [gameweeks]);
 
   const [activeNumber, setActiveNumber] = useState(currentNumber);
