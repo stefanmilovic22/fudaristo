@@ -329,6 +329,12 @@
     "captchaFailed": "The anti-bot check did not pass. Refresh the page and try again."
   },
   "publicTeam": {
+    "noSquadShort": "no squad",
+    "loading": "Loading…",
+    "backToMyTeam": "My team",
+    "prevGameweek": "Previous gameweek",
+    "nextGameweek": "Next gameweek",
+    "selectGameweek": "Select gameweek",
     "noFinalized": "No gameweek has been finalised yet. Squads become public only once a gameweek is scored — before the deadline another manager's team is secret.",
     "backToLeague": "Global league",
     "noSquad": "This team had no squad in gameweek {number}.",
@@ -437,6 +443,7 @@
     "rating": "Rating"
   },
   "team": {
+    "pointsHistory": "Points by gameweek",
     "otherPosition": "Different position",
     "missingAmount": "Short by {amount}",
     "formationSet": "Formation {formation}.",

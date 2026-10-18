@@ -70,6 +70,7 @@ export default async function MojTimPage({
     { data: chipRows },
     { data: gwWindow },
     preSeason,
+    { data: finalizedRows },
   ] = await Promise.all([
     supabase
       .from("users")
@@ -98,6 +99,7 @@ export default async function MojTimPage({
       ? supabase.from("gameweeks").select("joker_window").eq("id", targetGw.id).single()
       : Promise.resolve({ data: null }),
     targetGw ? isBuildingFirstSquad(supabase, user.id, targetGw.number) : Promise.resolve(false),
+    supabase.from("gameweeks").select("id").eq("status", "finalized").limit(1),
   ]);
 
   if (!targetGw) {
@@ -268,7 +270,17 @@ export default async function MojTimPage({
           </div>
           <h2 className="font-display text-lg sm:text-xl truncate">{profile?.team_name}</h2>
         </div>
-        {preSeason && <ResetSquadButton gameweekId={targetGw.id} />}
+        <div className="flex items-center gap-2">
+          {(finalizedRows?.length ?? 0) > 0 && (
+            <Link
+              href={`/tim/${user.id}`}
+              className="text-sm font-semibold text-gold-300 border border-navy-600 hover:border-gold-400/60 rounded-lg px-3 py-2 whitespace-nowrap transition-colors"
+            >
+              {t("pointsHistory")} →
+            </Link>
+          )}
+          {preSeason && <ResetSquadButton gameweekId={targetGw.id} />}
+        </div>
       </div>
       <div className="mt-3">
         <ChipsPanel

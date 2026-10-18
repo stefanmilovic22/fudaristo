@@ -329,6 +329,12 @@
     "captchaFailed": "Provera protiv botova nije prošla. Osveži stranicu i pokušaj ponovo."
   },
   "publicTeam": {
+    "noSquadShort": "bez sastava",
+    "loading": "Učitavam…",
+    "backToMyTeam": "Moj tim",
+    "prevGameweek": "Prethodno kolo",
+    "nextGameweek": "Sledeće kolo",
+    "selectGameweek": "Izaberi kolo",
     "noFinalized": "Nijedno kolo još nije zaključano. Sastavi se javno prikazuju tek kad kolo bude obračunato — pre roka je tuđi tim tajna.",
     "backToLeague": "Globalna liga",
     "noSquad": "Ovaj tim nije imao sastav u {number}. kolu.",
@@ -437,6 +443,7 @@
     "rating": "Ocena"
   },
   "team": {
+    "pointsHistory": "Poeni po kolima",
     "otherPosition": "Druga pozicija",
     "missingAmount": "Nedostaje {amount}",
     "formationSet": "Formacija {formation}.",

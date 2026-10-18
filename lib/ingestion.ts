@@ -292,7 +292,7 @@ async function recheckPostponed(
 
 /**
  * Kad su svi mečevi jednog kola gotovi (finished/cancelled), kolo prelazi u
- * data_pulled — spremno za admin pregled. Dok ima i jedan postponed ili
+ * data_pulled — spremno za admin pregled. Odložen (postponed) meč ne računa — dok ima
  * scheduled/live meč, kolo ostaje in_progress. Nikad ne vraća kolo nazad iz
  * admin_reviewed/finalized — to su koraci koje samo admin/scoring engine
  * pomera napred (Faza 6/7).
@@ -320,7 +320,11 @@ async function updateGameweekLifecycle(supabase: SupabaseClient, gameweekId: str
   const rows = fixtures ?? [];
   if (rows.length === 0) return;
 
-  const allDone = rows.every((f) => f.status === "finished" || f.status === "cancelled");
+  // Odložen meč ne drži kolo otvorenim (vidi lib/scoring.ts) — ali kolo u kom
+  // nijedan meč nije odigran/otkazan ostaje in_progress.
+  const counting = rows.filter((f) => f.status !== "postponed");
+  const allDone =
+    counting.length > 0 && counting.every((f) => f.status === "finished" || f.status === "cancelled");
   const nextStatus = allDone ? "data_pulled" : "in_progress";
   if (nextStatus !== gw.status) {
     await supabase.from("gameweeks").update({ status: nextStatus }).eq("id", gameweekId);

@@ -357,11 +357,9 @@ export async function runScoringForGameweek(
     .eq("id", gameweekId)
     .single();
   if (!gw) throw new Error("Kolo ne postoji.");
-  if (gw.status === "upcoming" || gw.status === "in_progress") {
-    throw new Error(
-      `Kolo ${gw.number} još nije spremno za obračun (status: ${gw.status}) — sačekaj da svi mečevi budu odigrani/otkazani.`
-    );
-  }
+  // Spremnost kola se ne čita iz statusa kola nego iz mečeva (niže): status
+  // menja samo ingestion, pa kolo u kom je jedan meč odložen ili su rezultati
+  // uneti ručno ostaje "upcoming"/"in_progress" iako je sve odigrano.
 
   // Isti dnevnik kao Faza 5 (ingestion_runs) — "kind" razlikuje unos, ostatak
   // kolona se prirodno preklapa (rounds_checked = [broj kola], fixtures_touched
@@ -392,9 +390,16 @@ export async function runScoringForGameweek(
       .eq("gameweek_id", gameweekId);
 
     const allFixtures = fixtures ?? [];
-    const notDone = allFixtures.filter((f) => f.status !== "finished" && f.status !== "cancelled");
+    // Odložen meč ne blokira kolo — bez termina je, a kad dobije novi termin
+    // ulazi u kolo u kom se igra (ingestion ga premešta) i tamo se boduje.
+    const notDone = allFixtures.filter(
+      (f) => f.status !== "finished" && f.status !== "cancelled" && f.status !== "postponed"
+    );
     if (notDone.length > 0) {
       throw new Error(`Kolo ${gw.number}: ${notDone.length} meč(eva) još nije odigrano ili otkazano.`);
+    }
+    if (allFixtures.length > 0 && allFixtures.every((f) => f.status === "postponed")) {
+      throw new Error(`Kolo ${gw.number}: svi mečevi su odloženi — nema šta da se obračuna.`);
     }
     const fixtureIds = allFixtures.map((f) => f.id);
 
@@ -434,7 +439,7 @@ export async function runScoringForGameweek(
       );
     }
 
-    if (gw.status === "data_pulled") {
+    if (gw.status === "upcoming" || gw.status === "in_progress" || gw.status === "data_pulled") {
       await supabase.from("gameweeks").update({ status: "admin_reviewed" }).eq("id", gameweekId);
     }
 
@@ -490,6 +495,20 @@ export async function runScoringForGameweek(
       gwPoints.set(c.playerId, (gwPoints.get(c.playerId) ?? 0) + c.points);
       gwMinutes.set(c.playerId, (gwMinutes.get(c.playerId) ?? 0) + c.minutes);
       gwClub.set(c.playerId, c.clubId); // isti klub u oba meča dupla kola, poslednji upis je ok
+    }
+
+    // --- 3b) Prenesi sastav korisnicima koji nisu otvorili aplikaciju --------
+    // Prenos sastava u novo kolo inače radi samo kad korisnik otvori /moj-tim.
+    // Ko je to propustio nema nijedan red u `squads` za kolo, pa bi dobio 0
+    // poena. Zato se pre čitanja sastava prenese poslednji raniji sastav
+    // svakome ko nema svoj (migracija 015). Bezbedno za ponovno pokretanje.
+    {
+      const { error } = await supabase.rpc("carry_over_all_squads", { p_gameweek_id: gameweekId });
+      if (error) {
+        errors.push(
+          `Prenos sastava neaktivnim korisnicima: ${error.message} — pokreni migrations/015-prenos-sastava-svima.sql`
+        );
+      }
     }
 
     // --- 4) Sve što treba po korisniku, u tri upita umesto tri po korisniku --

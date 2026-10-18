@@ -384,8 +384,13 @@ function FinalizeGameweekControl({
   reviewCounts: Map<string, { total: number; reviewed: number }>;
   fixtureReview: Map<string, { total: number; reviewed: number }>;
 }) {
+  // Odložen meč ne blokira obračun — dobiće novi termin i boduje se u kolu u
+  // kom se odigra. Bar jedan meč mora biti stvarno odigran ili otkazan.
+  const countingFixtures = gwFixtures.filter((f) => f.status !== "postponed");
+  const postponedCount = gwFixtures.length - countingFixtures.length;
   const allFixturesDone =
-    gwFixtures.length > 0 && gwFixtures.every((f) => f.status === "finished" || f.status === "cancelled");
+    countingFixtures.length > 0 &&
+    countingFixtures.every((f) => f.status === "finished" || f.status === "cancelled");
   const rc = reviewCounts.get(gw.id);
   const allReviewed = !!rc && rc.total > 0 && rc.reviewed === rc.total;
   const ready = allFixturesDone && allReviewed;
@@ -414,7 +419,10 @@ function FinalizeGameweekControl({
               onima koji su igrali, pa „Sačuvaj i potvrdi”.
             </>
           )}
-          {ready && "Spremno za obračun."}
+          {ready &&
+            (postponedCount > 0
+              ? `Spremno za obračun (${postponedCount} odloženi meč se ne računa u ovom kolu).`
+              : "Spremno za obračun.")}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">

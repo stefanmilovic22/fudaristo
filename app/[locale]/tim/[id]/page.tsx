@@ -13,6 +13,8 @@ import type { Position } from "@/lib/fantasy-rules";
 import { PublicSquadPitch, type PublicEntry } from "@/components/PublicSquadPitch";
 import type { BreakdownGroup } from "@/components/PlayerPointsBreakdownPopover";
 import { readableInk } from "@/lib/color";
+import { getCurrentUser } from "@/lib/supabase/current-user";
+import { GameweekPicker } from "@/components/GameweekPicker";
 
 /**
  * Javni pregled tuđeg tima. Middleware ovu rutu od početka tretira kao javnu
@@ -25,54 +27,102 @@ import { readableInk } from "@/lib/color";
  */
 export default async function TimPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; locale: string }>;
+  searchParams: Promise<{ kolo?: string }>;
 }) {
   const { id, locale } = await params;
+  const { kolo } = await searchParams;
   setRequestLocale(locale);
-  const t = await getTranslations("publicTeam");
-  const tPitch = await getTranslations("pitch");
-  const tScoring = await getTranslations("scoring");
-  const supabase = await createClient();
+  // Sve što ne zavisi jedno od drugog ide ISTOVREMENO. Ranije je ovo bilo
+  // osam upita jedan za drugim, pa je svaka promena kola čekala zbir svih
+  // odgovora baze.
+  const [t, tPitch, tScoring, supabase, viewer] = await Promise.all([
+    getTranslations("publicTeam"),
+    getTranslations("pitch"),
+    getTranslations("scoring"),
+    createClient(),
+    getCurrentUser(),
+  ]);
 
-  const { data: owner } = await supabase
-    .from("users")
-    .select("id, team_name, team_color, total_points, clubs(name)")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: owner }, { data: finalizedGws }, { data: allGwPoints }, { data: standing }] =
+    await Promise.all([
+      supabase
+        .from("users")
+        .select("id, team_name, team_color, total_points, clubs(name)")
+        .eq("id", id)
+        .maybeSingle(),
+      // Sva zaključana kola (najnovije prvo). Samo ZAKLJUČANA kola su javna:
+      // sastav za kolo čiji rok nije prošao ostaje tajna (napomena na vrhu).
+      supabase
+        .from("gameweeks")
+        .select("id, number")
+        .eq("status", "finalized")
+        .order("number", { ascending: false }),
+      // Poeni tima po zaključanim kolima — za izbor kola i za zaglavlje. Filter
+      // po statusu ide kroz vezu, da ne mora da se čeka lista kola.
+      supabase
+        .from("user_gameweek_points")
+        .select("gameweek_id, raw_points, transfer_cost, chip_type_used, total_points, gameweeks!inner(status)")
+        .eq("user_id", id)
+        .eq("gameweeks.status", "finalized"),
+      supabase.from("v_global_league_standings").select("rank").eq("user_id", id).maybeSingle(),
+    ]);
 
   if (!owner) notFound();
 
-  const { data: lastFinalized } = await supabase
-    .from("gameweeks")
-    .select("id, number")
-    .eq("status", "finalized")
-    .order("number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Bira se jedno kolo iz ?kolo=N, a bez toga ili uz nepoznat broj — poslednje.
+  const lastFinalized =
+    (finalizedGws ?? []).find((g) => String(g.number) === kolo) ?? (finalizedGws ?? [])[0] ?? null;
 
-  const { data: standing } = await supabase
-    .from("v_global_league_standings")
-    .select("rank")
-    .eq("user_id", id)
-    .maybeSingle();
+  const pointsByGameweekId = new Map<string, any>((allGwPoints ?? []).map((r: any) => [r.gameweek_id, r]));
+
+  const isOwnTeam = viewer?.id === id;
+  // Kolo u kom tim nije imao sastav nema red u user_gameweek_points (obračun
+  // piše samo za korisnike sa sastavom) — takvo kolo se u izboru isključuje.
+  const picker = lastFinalized ? (
+    <GameweekPicker
+      basePath={`/tim/${id}`}
+      current={lastFinalized.number}
+      items={(finalizedGws ?? [])
+        .map((g) => {
+          const pts = pointsByGameweekId.get(g.id);
+          return { number: g.number, points: (pts?.total_points ?? null) as number | null, hasSquad: Boolean(pts) };
+        })
+        .sort((a, b) => a.number - b.number)}
+    />
+  ) : null;
 
   if (!lastFinalized) {
     return (
-      <Shell owner={owner} rank={standing?.rank ?? null} gameweekNumber={null}>
+      <Shell owner={owner} rank={standing?.rank ?? null} gameweekNumber={null} isOwnTeam={isOwnTeam}>
         <p className="text-slate-400">{t("noFinalized")}</p>
       </Shell>
     );
   }
 
-  const { data: squadRows } = await supabase
-    .from("squads")
-    .select(
-      "player_id, is_starting, squad_order, is_captain, is_vice_captain, auto_subbed_in, " +
-        "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color, jersey_photo_url))"
-    )
-    .eq("user_id", id)
-    .eq("gameweek_id", lastFinalized.id);
+  // Sastav i statistika kola istovremeno. Statistika se vuče za CELO kolo (do
+  // par stotina redova) umesto za igrače iz sastava — tako ne mora da se čeka
+  // sastav da bi se znali njihovi id-jevi; višak se odbacuje ispod.
+  const [{ data: squadRows }, { data: gwStatRows }] = await Promise.all([
+    supabase
+      .from("squads")
+      .select(
+        "player_id, is_starting, squad_order, is_captain, is_vice_captain, auto_subbed_in, " +
+          "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color, jersey_photo_url))"
+      )
+      .eq("user_id", id)
+      .eq("gameweek_id", lastFinalized.id),
+    supabase
+      .from("player_gameweek_stats")
+      .select(
+        "player_id, fixture_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
+          "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points, " +
+          "sofascore_rating"
+      )
+      .eq("gameweek_id", lastFinalized.id),
+  ]);
 
   // Poeni po igraču za to kolo — duplo kolo se sabira, isto kao u scoring engine-u.
   // Sad se vuku i SIROVE vrednosti (minuti, golovi...), ne samo fantasy_points,
@@ -87,15 +137,8 @@ export default async function TimPage({
       (squadRows ?? []).map((r: any) => [r.player_id, (r.players?.position ?? "MID") as Position])
     );
 
-    const { data: statRows } = await supabase
-      .from("player_gameweek_stats")
-      .select(
-        "player_id, fixture_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
-          "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points, " +
-          "sofascore_rating"
-      )
-      .eq("gameweek_id", lastFinalized.id)
-      .in("player_id", playerIds);
+    const squadPlayerIds = new Set<string>(playerIds);
+    const statRows = ((gwStatRows ?? []) as any[]).filter((r) => squadPlayerIds.has(r.player_id));
 
     const rowsByPlayer = new Map<string, any[]>();
     for (const r of (statRows ?? []) as any[]) {
@@ -133,16 +176,18 @@ export default async function TimPage({
     }
   }
 
-  const { data: gwPoints } = await supabase
-    .from("user_gameweek_points")
-    .select("raw_points, transfer_cost, chip_type_used, total_points")
-    .eq("user_id", id)
-    .eq("gameweek_id", lastFinalized.id)
-    .maybeSingle();
+  const gwPoints = pointsByGameweekId.get(lastFinalized.id) ?? null;
 
   if (!squadRows || squadRows.length === 0) {
     return (
-      <Shell owner={owner} rank={standing?.rank ?? null} gameweekNumber={lastFinalized.number}>
+      <Shell
+        owner={owner}
+        rank={standing?.rank ?? null}
+        gameweekNumber={lastFinalized.number}
+        isOwnTeam={isOwnTeam}
+        picker={picker}
+        gameweekPoints={gwPoints?.total_points ?? null}
+      >
         <p className="text-slate-400">{t("noSquad", { number: lastFinalized.number })}</p>
       </Shell>
     );
@@ -235,6 +280,8 @@ export default async function TimPage({
       gameweekPoints={gwPoints?.total_points ?? null}
       chip={gwPoints?.chip_type_used ?? null}
       transferCost={gwPoints?.transfer_cost ?? 0}
+      isOwnTeam={isOwnTeam}
+      picker={picker}
     >
       <PublicSquadPitch
         rows={rows}
@@ -253,6 +300,8 @@ async function Shell({
   gameweekPoints,
   chip,
   transferCost,
+  isOwnTeam = false,
+  picker = null,
   children,
 }: {
   owner: any;
@@ -261,6 +310,8 @@ async function Shell({
   gameweekPoints?: number | null;
   chip?: string | null;
   transferCost?: number;
+  isOwnTeam?: boolean;
+  picker?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const t = await getTranslations("publicTeam");
@@ -275,9 +326,15 @@ async function Shell({
 
   return (
     <div>
-      <Link href="/liga" className="text-slate-400 text-sm hover:text-chalk-50">
-        ← {t("backToLeague")}
-      </Link>
+      {isOwnTeam ? (
+        <Link href="/moj-tim" className="text-slate-400 text-sm hover:text-chalk-50">
+          ← {t("backToMyTeam")}
+        </Link>
+      ) : (
+        <Link href="/liga" className="text-slate-400 text-sm hover:text-chalk-50">
+          ← {t("backToLeague")}
+        </Link>
+      )}
 
       <div className="flex items-center gap-4 mt-3 mb-6">
         <div
@@ -296,6 +353,8 @@ async function Shell({
           </p>
         </div>
       </div>
+
+      {picker && <div className="mb-3">{picker}</div>}
 
       {gameweekNumber !== null && (
         <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
