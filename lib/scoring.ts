@@ -42,6 +42,7 @@
  * inkrementalna izmena.
  */
 
+import { openFixtures } from "./gameweek-done";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { STARTING_XI_BOUNDS, type Position } from "./fantasy-rules";
 import { selectAllPages } from "./db-paging";
@@ -386,15 +387,15 @@ export async function runScoringForGameweek(
     // --- 0) Validacija spremnosti kola ---------------------------------------
     const { data: fixtures } = await supabase
       .from("fixtures")
-      .select("id, status")
+      .select("id, status, kickoff_at")
       .eq("gameweek_id", gameweekId);
 
     const allFixtures = fixtures ?? [];
     // Odložen meč ne blokira kolo — bez termina je, a kad dobije novi termin
     // ulazi u kolo u kom se igra (ingestion ga premešta) i tamo se boduje.
-    const notDone = allFixtures.filter(
-      (f) => f.status !== "finished" && f.status !== "cancelled" && f.status !== "postponed"
-    );
+    // Isto važi za meč koji je ostao "zakazan"/"uživo" iako je kasniji meč
+    // istog kola već završen (lib/gameweek-done.ts).
+    const notDone = openFixtures(allFixtures);
     if (notDone.length > 0) {
       throw new Error(`Kolo ${gw.number}: ${notDone.length} meč(eva) još nije odigrano ili otkazano.`);
     }

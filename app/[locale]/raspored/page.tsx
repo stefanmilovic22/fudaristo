@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
 import { FixturesBoard, type GameweekFixtures } from "./fixtures-board";
+import { staleFixtures } from "@/lib/gameweek-done";
 import { DataLoadError } from "@/components/DataLoadError";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
@@ -85,17 +86,21 @@ export default async function RasporedPage({ params }: { params: Promise<{ local
     );
   }
 
-  const byGameweek: GameweekFixtures[] = gameweeks.map((gw) => ({
-    id: gw.id,
-    number: gw.number,
-    status: gw.status,
-    deadlineAt: gw.deadline_at,
-    matches: (fixtures ?? [])
-      .filter((f: any) => f.gameweek_id === gw.id)
-      .map((f: any) => ({
+  const byGameweek: GameweekFixtures[] = gameweeks.map((gw) => {
+    const gwFixtures = (fixtures ?? []).filter((f: any) => f.gameweek_id === gw.id);
+    // Meč koji i dalje stoji kao "zakazan"/"uživo" a kasniji meč istog kola je
+    // već završen je u stvari odložen (lib/gameweek-done.ts) — izvor ga često
+    // vrati na "live". Prikazuje se kao odložen i ne drži kolo "trenutnim".
+    const stale = new Set<string>(staleFixtures(gwFixtures).map((f: any) => f.id));
+    return {
+      id: gw.id,
+      number: gw.number,
+      status: gw.status,
+      deadlineAt: gw.deadline_at,
+      matches: gwFixtures.map((f: any) => ({
         id: f.id,
         kickoffAt: f.kickoff_at,
-        status: f.status,
+        status: stale.has(f.id) ? "postponed" : f.status,
         homeScore: f.home_score,
         awayScore: f.away_score,
         home: {
@@ -109,7 +114,8 @@ export default async function RasporedPage({ params }: { params: Promise<{ local
           color: f.away?.primary_color ?? "#8494AC",
         },
       })),
-  }));
+    };
+  });
 
   return (
     <Shell>

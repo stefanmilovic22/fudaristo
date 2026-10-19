@@ -1,3 +1,4 @@
+import { openFixtures, staleFixtures } from "@/lib/gameweek-done";
 import { Link } from "@/i18n/navigation";
 import { LocalTime } from "@/components/LocalTime";
 import { getAdminAccess } from "@/lib/admin-guard";
@@ -386,11 +387,12 @@ function FinalizeGameweekControl({
 }) {
   // Odložen meč ne blokira obračun — dobiće novi termin i boduje se u kolu u
   // kom se odigra. Bar jedan meč mora biti stvarno odigran ili otkazan.
-  const countingFixtures = gwFixtures.filter((f) => f.status !== "postponed");
+  // Isto važi za meč koji stoji kao "zakazan"/"uživo" a kasniji meč istog kola
+  // je već završen (lib/gameweek-done.ts) — izvor ga često vrati na "live".
+  const stale = staleFixtures(gwFixtures);
+  const countingFixtures = gwFixtures.filter((f) => f.status !== "postponed" && !stale.includes(f));
   const postponedCount = gwFixtures.length - countingFixtures.length;
-  const allFixturesDone =
-    countingFixtures.length > 0 &&
-    countingFixtures.every((f) => f.status === "finished" || f.status === "cancelled");
+  const allFixturesDone = countingFixtures.length > 0 && openFixtures(gwFixtures).length === 0;
   const rc = reviewCounts.get(gw.id);
   const allReviewed = !!rc && rc.total > 0 && rc.reviewed === rc.total;
   const ready = allFixturesDone && allReviewed;

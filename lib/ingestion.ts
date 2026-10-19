@@ -34,6 +34,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseScore, parseUtcTimestamp } from "./api-parsing";
+import { openFixtures, staleFixtures } from "./gameweek-done";
 import {
   resolveClubId,
   eventStatus,
@@ -132,6 +133,31 @@ function deriveStatus(ev: TheSportsDbEvent, homeScore: number | null, awayScore:
 }
 
 /**
+ * Status iz izvora se ne upisuje slepo. Odložen meč izvor često i dalje vodi
+ * kao "u toku"/"zakazan" sa starim terminom, pa bi svaka sinhronizacija
+ * vratila ručno postavljeno "odloženo" na "uživo".
+ *
+ *  - "uživo" je moguće samo oko početka meča (do ~4h posle, najviše 30 min
+ *    pre); inače nije uživo — meč ostaje kakav je bio (odložen), ili zakazan.
+ *  - odložen meč se vraća na "zakazan" samo ako izvor daje NOV termin u
+ *    budućnosti; za stari (prošli) termin ostaje odložen.
+ */
+export function guardStatus(
+  previous: string | null,
+  derived: "scheduled" | "live" | "finished" | "postponed",
+  kickoffAt: string | null,
+  now = Date.now()
+): "scheduled" | "live" | "finished" | "postponed" {
+  const k = kickoffAt ? new Date(kickoffAt).getTime() : Number.NaN;
+  if (!Number.isFinite(k)) return derived;
+  if (derived === "live" && (now - k > 4 * 3600_000 || k - now > 30 * 60_000)) {
+    return previous === "postponed" ? "postponed" : "scheduled";
+  }
+  if (derived === "scheduled" && previous === "postponed" && k <= now) return "postponed";
+  return derived;
+}
+
+/**
  * FAZA A — potvrdi status/rezultat mečeva IZ KOLA KOJE VEĆ TRAŽIMO. Ne radi
  * nikakvo premeštanje između kola (videti napomenu na vrhu fajla zašto to
  * ovde nije moguće) — ako meč izađe kao postponed, samo se upiše taj status;
@@ -181,9 +207,9 @@ async function confirmRound(
 
     const homeScore = parseScore(ev.intHomeScore);
     const awayScore = parseScore(ev.intAwayScore);
-    const status = deriveStatus(ev, homeScore, awayScore);
     const kickoffAt =
       parseUtcTimestamp(ev.strTimestamp) ?? parseUtcTimestamp(`${ev.dateEvent} ${ev.strTime ?? "00:00"}`);
+    const status = guardStatus(fixture.status, deriveStatus(ev, homeScore, awayScore), kickoffAt);
 
     const patch: Record<string, unknown> = {
       status,
@@ -245,9 +271,9 @@ async function recheckPostponed(
 
       const homeScore = parseScore(ev.intHomeScore);
       const awayScore = parseScore(ev.intAwayScore);
-      const status = deriveStatus(ev, homeScore, awayScore);
       const kickoffAt =
         parseUtcTimestamp(ev.strTimestamp) ?? parseUtcTimestamp(`${ev.dateEvent} ${ev.strTime ?? "00:00"}`);
+      const status = guardStatus("postponed", deriveStatus(ev, homeScore, awayScore), kickoffAt);
 
       const currentRound = (f.gameweeks as unknown as { number: number } | null)?.number ?? null;
       const newRound = ev.intRound ? Number(ev.intRound) : null;
@@ -314,17 +340,31 @@ async function updateGameweekLifecycle(supabase: SupabaseClient, gameweekId: str
 
   const { data: fixtures } = await supabase
     .from("fixtures")
-    .select("status")
+    .select("id, status, kickoff_at")
     .eq("gameweek_id", gameweekId);
 
   const rows = fixtures ?? [];
   if (rows.length === 0) return;
 
+  // Meč koji je zaostao kao "zakazan"/"uživo" iako je kasniji meč istog kola
+  // već završen (lib/gameweek-done.ts) je u stvari odložen — upiši to, da se
+  // ne vrti kao "uživo" i da ga Faza B nađe kad dobije novi termin.
+  const stale = staleFixtures(rows);
+  if (stale.length > 0) {
+    await supabase
+      .from("fixtures")
+      .update({ status: "postponed" })
+      .in(
+        "id",
+        stale.map((f) => f.id)
+      );
+    for (const f of stale) f.status = "postponed";
+  }
+
   // Odložen meč ne drži kolo otvorenim (vidi lib/scoring.ts) — ali kolo u kom
   // nijedan meč nije odigran/otkazan ostaje in_progress.
   const counting = rows.filter((f) => f.status !== "postponed");
-  const allDone =
-    counting.length > 0 && counting.every((f) => f.status === "finished" || f.status === "cancelled");
+  const allDone = counting.length > 0 && openFixtures(rows).length === 0;
   const nextStatus = allDone ? "data_pulled" : "in_progress";
   if (nextStatus !== gw.status) {
     await supabase.from("gameweeks").update({ status: nextStatus }).eq("id", gameweekId);
