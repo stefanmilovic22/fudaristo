@@ -14,9 +14,9 @@ import { useTranslations } from "next-intl";
  * povuče pažnju na sebe otima je od igrača. Tribina je zato jednobojna sa
  * blagim šarom, bez sedišta u boji i bez natpisa.
  */
-export function Pitch({ children }: { children: React.ReactNode }) {
+export function Pitch({ children, compact = false }: { children: React.ReactNode; compact?: boolean }) {
   return (
-    <div className="relative rounded-xl overflow-hidden ring-1 ring-black/40 bg-[#0A0D12]">
+    <div className="relative rounded-xl overflow-hidden ring-1 ring-gold-400/50 bg-[#0A0D12]">
       {/* Tribina — okvir oko travnjaka */}
       <div
         aria-hidden
@@ -27,7 +27,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
         }}
       />
 
-      <Goal />
+      <Goal compact={compact} />
 
       {/* Travnjak. Gornji razmak nosi gol i reklame.
           Boja trave namerno NIJE u pitch-* tokenima iz tailwind.config.ts —
@@ -38,7 +38,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
           ton delili isti token, promena boje trave bi nehotice prefarbala i
           sve te brojeve — zato su boje trave ovde direktne heksadecimalne
           vrednosti, van deljene palete. */}
-      <div className="relative mx-1.5 mb-1.5 mt-[56px] xs:mx-2 xs:mb-2 xs:mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden ring-1 ring-gold-400/25">
+      <div className={`relative mx-1.5 mb-1.5 mt-[56px] xs:mx-2 xs:mb-2 xs:mt-[68px] sm:mx-3 sm:mb-3 sm:mt-[84px] rounded-lg overflow-hidden ring-1 ring-gold-400/25 ${compact ? "lg:mt-[52px]" : ""}`}>
         <GrassTexture />
 
         <svg
@@ -76,7 +76,7 @@ export function Pitch({ children }: { children: React.ReactNode }) {
 
         {/* pb je namerno velik: poslednji red (napad) nosi pločice sa imenom i
             poenima ISPOD dresa, a one su ranije izlazile iz okvira terena. */}
-        <div className="relative px-1 pt-4 pb-7 xs:px-2 sm:px-5 sm:pt-6 sm:pb-10">{children}</div>
+        <div className={`relative px-1 pt-4 pb-7 xs:px-2 sm:px-5 sm:pt-6 sm:pb-10 ${compact ? "lg:pt-2 lg:pb-5" : ""}`}>{children}</div>
       </div>
     </div>
   );
@@ -127,25 +127,54 @@ function GrassTexture() {
 }
 
 /**
+ * Reklamna traka iza gola, kao na FPL-u ("Fantasy [gol] Fantasy"): logo i naziv
+ * sa obe strane gola. Gol se crta preko trake (videti Goal ispod), pa su
+ * natpisi smešteni u spoljne četvrtine da ih mreža ne prekriva.
+ */
+function AdBoard() {
+  const side =
+    "absolute bottom-0 flex items-center justify-center gap-1 sm:gap-1.5 w-[23%] h-full";
+  const brand = (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/logo.png" alt="" className="h-[18px] w-[18px] sm:h-[24px] sm:w-[24px] object-contain" />
+      <span className="font-display font-bold uppercase tracking-wide text-[10px] sm:text-[13px] text-navy-950">
+        Fudaristo
+      </span>
+    </>
+  );
+  return (
+    <div
+      className="absolute bottom-0 inset-x-1.5 xs:inset-x-2 sm:inset-x-3 h-[26px] sm:h-[34px] rounded-t-md"
+      style={{ background: "linear-gradient(90deg, #8FDCFF 0%, #5AB4FF 45%, #3E86F0 100%)" }}
+    >
+      <div className={`${side} left-[2%]`}>{brand}</div>
+      <div className={`${side} right-[2%]`}>{brand}</div>
+    </div>
+  );
+}
+
+/**
  * Gol iza golmana.
  *
  * Crta se kao zaseban SVG sa fiksnim odnosom stranica, ne u onom sa linijama
  * terena — taj ima preserveAspectRatio="none" pa se rasteže sa brojem redova, a
  * razvučena mreža izgleda pokvareno.
  */
-function Goal() {
+function Goal({ compact = false }: { compact?: boolean }) {
   return (
-    <div aria-hidden className="absolute inset-x-0 top-0 h-[56px] xs:h-[68px] sm:h-[84px] pointer-events-none">
+    <div aria-hidden className={`absolute inset-x-0 top-0 h-[56px] xs:h-[68px] sm:h-[84px] pointer-events-none ${compact ? "lg:h-[52px]" : ""}`}>
+      <AdBoard />
       <svg
-        viewBox="0 0 120 40"
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[46%] max-w-[230px]"
+        viewBox="0 0 120 38"
+        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[46%] max-w-[230px] overflow-visible ${compact ? "lg:max-w-[150px]" : ""}`}
       >
         <defs>
           <pattern id="mreza" width="6" height="6" patternUnits="userSpaceOnUse">
-            <path d="M6 0H0V6" fill="none" stroke="rgba(255,255,255,0.34)" strokeWidth="0.7" />
+            <path d="M6 0H0V6" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.7" />
           </pattern>
         </defs>
-        <rect x="8" y="4" width="104" height="34" fill="rgba(10,13,18,0.45)" />
+        <rect x="8" y="4" width="104" height="34" fill="#0A0D12" fillOpacity="0.6" />
         <rect x="8" y="4" width="104" height="34" fill="url(#mreza)" />
         <path
           d="M8 38 V4 H112 V38"
@@ -186,23 +215,26 @@ export function Bench({
   goalkeeper,
   title,
   note,
+  dense = false,
 }: {
   children: React.ReactNode;
   goalkeeper?: React.ReactNode;
   title?: string;
   note?: string;
+  /** Na lg ekranu: manji razmaci i bez napomene ispod — klupa zauzima manje visine. */
+  dense?: boolean;
 }) {
   const t = useTranslations("pitch");
   return (
-    <div className="mt-3 rounded-xl overflow-hidden ring-1 ring-black/25">
-      <div className="flex items-baseline justify-between bg-pitch-700/40 border-b border-black/25 px-4 py-2">
-        <h3 className="font-display text-sm uppercase tracking-wider text-chalk-50">
+    <div className="mt-3 rounded-xl overflow-hidden ring-1 ring-gold-400/50">
+      <div className={`flex items-baseline justify-between bg-navy-700 border-b border-gold-400/30 px-4 py-2 ${dense ? "lg:py-1.5" : ""}`}>
+        <h3 className="font-display text-sm uppercase tracking-wider text-gold-300">
           {title ?? t("bench")}
         </h3>
         {note && <span className="text-[11px] text-slate-300">{note}</span>}
       </div>
 
-      <div className="bg-navy-800 px-2 py-3 sm:px-3 sm:py-4">
+      <div className={`bg-navy-800 px-2 py-3 sm:px-3 sm:py-4 ${dense ? "lg:py-2.5" : ""}`}>
         <div className="flex justify-center items-start gap-1 xs:gap-1.5 sm:gap-4 flex-wrap">
           {goalkeeper && (
             <>
@@ -215,7 +247,7 @@ export function Bench({
           )}
           {children}
         </div>
-        <p className="text-[11px] text-slate-500 text-center mt-3">{t("benchNote")}</p>
+        <p className={`text-[11px] text-slate-500 text-center mt-3 ${dense ? "lg:hidden" : ""}`}>{t("benchNote")}</p>
       </div>
     </div>
   );

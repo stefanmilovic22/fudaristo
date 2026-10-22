@@ -52,8 +52,8 @@ export function PublicSquadPitch({
 
   return (
     <>
-      <Pitch>
-        <div className="flex flex-col justify-between h-full gap-3 xs:gap-4 sm:gap-6 py-1 sm:py-2">
+      <Pitch compact>
+        <div className="flex flex-col justify-between h-full gap-3 xs:gap-4 sm:gap-6 lg:gap-2 py-1 sm:py-2">
           {rows.map((line, i) => (
             <div key={i} className="flex justify-center gap-2 sm:gap-4 flex-wrap">
               {line.map((e) => (
@@ -71,6 +71,7 @@ export function PublicSquadPitch({
       </Pitch>
 
       <Bench
+        dense
         goalkeeper={
           benchGk ? (
             <EntrySlot
@@ -132,6 +133,7 @@ function EntrySlot({
         isViceCaptain={entry.isViceCaptain}
         flag={entry.autoSubbedIn ? autoSubLabel : null}
         positionLabel={positionLabel}
+        isGoalkeeper={entry.position === "GK"}
         onClick={onToggle}
       />
       {open && (

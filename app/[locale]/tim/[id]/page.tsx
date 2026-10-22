@@ -14,7 +14,8 @@ import { PublicSquadPitch, type PublicEntry } from "@/components/PublicSquadPitc
 import type { BreakdownGroup } from "@/components/PlayerPointsBreakdownPopover";
 import { readableInk } from "@/lib/color";
 import { getCurrentUser } from "@/lib/supabase/current-user";
-import { GameweekPicker } from "@/components/GameweekPicker";
+import { GameweekNav } from "@/components/GameweekNav";
+import { TeamSideCards } from "@/components/TeamSideCards";
 
 /**
  * Javni pregled tuđeg tima. Middleware ovu rutu od početka tretira kao javnu
@@ -46,11 +47,11 @@ export default async function TimPage({
     getCurrentUser(),
   ]);
 
-  const [{ data: owner }, { data: finalizedGws }, { data: allGwPoints }, { data: standing }] =
+  const [{ data: owner }, { data: finalizedGws }, { data: allGwPoints }, { data: standing }, { count: managerCount }] =
     await Promise.all([
       supabase
         .from("users")
-        .select("id, team_name, team_color, total_points, clubs(name)")
+        .select("id, team_name, team_color, total_points, clubs(name, short_name, primary_color)")
         .eq("id", id)
         .maybeSingle(),
       // Sva zaključana kola (najnovije prvo). Samo ZAKLJUČANA kola su javna:
@@ -68,6 +69,7 @@ export default async function TimPage({
         .eq("user_id", id)
         .eq("gameweeks.status", "finalized"),
       supabase.from("v_global_league_standings").select("rank").eq("user_id", id).maybeSingle(),
+      supabase.from("v_global_league_standings").select("user_id", { count: "exact", head: true }),
     ]);
 
   if (!owner) notFound();
@@ -82,15 +84,33 @@ export default async function TimPage({
   // Kolo u kom tim nije imao sastav nema red u user_gameweek_points (obračun
   // piše samo za korisnike sa sastavom) — takvo kolo se u izboru isključuje.
   const picker = lastFinalized ? (
-    <GameweekPicker
+    <GameweekNav
       basePath={`/tim/${id}`}
       current={lastFinalized.number}
       items={(finalizedGws ?? [])
+        .map((g) => ({ number: g.number, hasSquad: Boolean(pointsByGameweekId.get(g.id)) }))
+        .sort((a, b) => a.number - b.number)}
+    />
+  ) : null;
+
+  // Leva kolona kartica (samo web) — vidi components/TeamSideCards.tsx.
+  const side = lastFinalized ? (
+    <TeamSideCards
+      basePath={`/tim/${id}`}
+      current={lastFinalized.number}
+      history={(finalizedGws ?? [])
         .map((g) => {
           const pts = pointsByGameweekId.get(g.id);
           return { number: g.number, points: (pts?.total_points ?? null) as number | null, hasSquad: Boolean(pts) };
         })
         .sort((a, b) => a.number - b.number)}
+      overallPoints={owner.total_points ?? 0}
+      rank={standing?.rank ?? null}
+      managers={managerCount ?? null}
+      gameweekPoints={pointsByGameweekId.get(lastFinalized.id)?.total_points ?? null}
+      teamName={owner.team_name ?? ""}
+      teamColor={owner.team_color ?? "#E8B33D"}
+      club={(owner as any).clubs ?? null}
     />
   ) : null;
 
@@ -187,6 +207,7 @@ export default async function TimPage({
         isOwnTeam={isOwnTeam}
         picker={picker}
         gameweekPoints={gwPoints?.total_points ?? null}
+      rawPoints={gwPoints?.raw_points ?? null}
       >
         <p className="text-slate-400">{t("noSquad", { number: lastFinalized.number })}</p>
       </Shell>
@@ -282,6 +303,7 @@ export default async function TimPage({
       transferCost={gwPoints?.transfer_cost ?? 0}
       isOwnTeam={isOwnTeam}
       picker={picker}
+      side={side}
     >
       <PublicSquadPitch
         rows={rows}
@@ -298,20 +320,24 @@ async function Shell({
   rank,
   gameweekNumber,
   gameweekPoints,
+  rawPoints,
   chip,
   transferCost,
   isOwnTeam = false,
   picker = null,
+  side = null,
   children,
 }: {
   owner: any;
   rank: number | null;
   gameweekNumber: number | null;
   gameweekPoints?: number | null;
+  rawPoints?: number | null;
   chip?: string | null;
   transferCost?: number;
   isOwnTeam?: boolean;
   picker?: React.ReactNode;
+  side?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const t = await getTranslations("publicTeam");
@@ -323,65 +349,93 @@ async function Shell({
     joker_1: "joker1Name",
     joker_2: "joker2Name",
   };
+  const chipName = chip ? tChips((CHIP_NAME_KEY[chip] ?? "tripleCaptainName") as never) : null;
+  const dash = "–";
 
   return (
-    <div>
-      {isOwnTeam ? (
-        <Link href="/moj-tim" className="text-slate-400 text-sm hover:text-chalk-50">
-          ← {t("backToMyTeam")}
-        </Link>
-      ) : (
-        <Link href="/liga" className="text-slate-400 text-sm hover:text-chalk-50">
-          ← {t("backToLeague")}
-        </Link>
-      )}
-
-      <div className="flex items-center gap-4 mt-3 mb-6">
-        <div
-          className="w-14 h-14 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-lg"
-          style={{ backgroundColor: owner.team_color ?? "#E8B33D", color: readableInk(owner.team_color ?? "#E8B33D") }}
-        >
-          {(owner.team_name ?? "??").slice(0, 2).toUpperCase()}
+    <div
+      className={`mx-auto max-w-[680px] ${
+        side ? "lg:max-w-[1020px] lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-7" : ""
+      }`}
+    >
+      <div className="lg:col-start-1 lg:row-start-1 flex items-start justify-between gap-3 mb-3 lg:flex-col-reverse lg:items-start lg:justify-end lg:gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-lg"
+            style={{ backgroundColor: owner.team_color ?? "#E8B33D", color: readableInk(owner.team_color ?? "#E8B33D") }}
+          >
+            {(owner.team_name ?? "??").slice(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-display text-xl sm:text-2xl truncate">{owner.team_name}</h2>
+            <p className="text-slate-400 text-sm">
+              {rank !== null
+                ? t("rankAndPoints", { rank, points: owner.total_points ?? 0 })
+                : t("points", { points: owner.total_points ?? 0 })}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h2 className="font-display text-2xl truncate">{owner.team_name}</h2>
-          <p className="text-slate-400 text-sm">
-            {rank !== null
-              ? t("rankAndPoints", { rank, points: owner.total_points ?? 0 })
-              : t("points", { points: owner.total_points ?? 0 })}
-            {owner.clubs?.name && <> · {t("supports", { club: owner.clubs.name })}</>}
-          </p>
-        </div>
+        {isOwnTeam ? (
+          <Link href="/moj-tim" className="shrink-0 text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
+            ← {t("backToMyTeam")}
+          </Link>
+        ) : (
+          <Link href="/liga" className="shrink-0 text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
+            ← {t("backToLeague")}
+          </Link>
+        )}
       </div>
 
-      {picker && <div className="mb-3">{picker}</div>}
-
-      {gameweekNumber !== null && (
-        <div className="flex flex-wrap items-center gap-3 mb-4 text-sm">
-          <span className="font-display">{t("squadFrom", { number: gameweekNumber })}</span>
-          {gameweekPoints !== null && gameweekPoints !== undefined && (
-            <span
-              className={`rounded-full px-3 py-1 ${
-                gameweekPoints > 0
-                  ? "bg-pitch-500/10 border border-pitch-400/40 text-pitch-400 font-semibold"
-                  : "bg-navy-800 border border-navy-600"
-              }`}
-            >
-              {t("points", { points: gameweekPoints })}
-            </span>
-          )}
-          {chip && (
-            <span className="bg-gold-400 text-navy-950 font-bold rounded-full px-3 py-1 text-xs">
-              {tChips((CHIP_NAME_KEY[chip] ?? "tripleCaptainName") as never)}
-            </span>
-          )}
-          {transferCost ? (
-            <span className="text-danger-400">{t("transferCost", { cost: transferCost })}</span>
-          ) : null}
+      {/* Leva kolona kartica — samo web (lg+). Unutrašnji sadržaj je apsolutno
+          pozicioniran, pa kolona NE utiče na visinu reda: visinu daje desna
+          strana (traka + teren + klupa), a istorija kola popunjava ostatak i
+          skroluje se. Tako leva kolona završava u ravni sa klupom. */}
+      {side && (
+        <div className="hidden lg:block relative lg:col-start-1 lg:row-start-2">
+          <div className="absolute inset-0 flex flex-col gap-3">{side}</div>
         </div>
       )}
 
-      {children}
+      <div className={side ? "lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0" : ""}>
+      {/* Traka kao na FPL-u: naslov kola sa strelicama, ispod brojevi — poeni
+          kola u sredini, veliki. Sve što je ranije bilo u padajućoj listi i
+          pločicama oko terena je ovde, u jednom redu. */}
+      {gameweekNumber !== null && (
+        <section className="bg-navy-800 border border-gold-400/50 rounded-xl px-2 sm:px-4 pt-2.5 pb-2.5 mb-3">
+          {picker}
+          {chipName && (
+            <div className="flex justify-center mt-2">
+              <span className="bg-gold-400 text-navy-950 font-bold rounded-full px-3 py-0.5 text-xs">{chipName}</span>
+            </div>
+          )}
+          <div className="grid grid-cols-5 items-center gap-1 mt-2 text-center">
+            <Stat value={rawPoints ?? dash} label={t("rawPoints")} />
+            <Stat value={transferCost ? transferCost : 0} label={t("transferCostLabel")} danger={Boolean(transferCost)} />
+            <div className="bg-gradient-to-br from-gold-400 to-[#3E86F0] rounded-lg py-1.5 px-1 text-navy-950">
+              <div className="font-display text-2xl sm:text-3xl font-bold leading-none tabular-nums">
+                {gameweekPoints ?? dash}
+              </div>
+              <div className="text-[10px] sm:text-xs font-semibold mt-1 leading-tight">{t("gwPointsLabel")}</div>
+            </div>
+            <Stat value={owner.total_points ?? 0} label={t("totalLabel")} />
+            <Stat value={rank ?? dash} label={t("rankLabel")} />
+          </div>
+        </section>
+      )}
+
+      <div>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ value, label, danger = false }: { value: number | string; label: string; danger?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <div className={`font-display text-xl sm:text-2xl font-bold tabular-nums ${danger ? "text-danger-400" : ""}`}>
+        {value}
+      </div>
+      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight mt-0.5">{label}</div>
     </div>
   );
 }
