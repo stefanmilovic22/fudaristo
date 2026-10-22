@@ -42,6 +42,7 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
 
   const rows = computeLeagueTable(data.clubs, data.fixtures);
   const playedAny = rows.some((r) => r.played > 0);
+  const roundsPlayed = Math.max(0, ...rows.map((r) => r.played));
 
   return (
     <div>
@@ -50,7 +51,11 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
 
       {!playedAny && <p className="text-slate-400 text-sm mb-4">{t("noMatches")}</p>}
 
-      <div className="max-w-[960px] bg-navy-800 border border-navy-700 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
+      <div className="max-w-[960px] bg-navy-800 border border-gold-400/50 rounded-xl overflow-hidden">
+        <div className="bg-navy-700 border-b border-gold-400/30 px-4 py-2.5 flex items-baseline justify-between gap-3">
+          <h3 className="font-display text-sm uppercase tracking-wider text-gold-300">{t("bandTitle")}</h3>
+          {playedAny && <span className="text-[11px] text-slate-300">{t("afterRound", { number: roundsPlayed })}</span>}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>

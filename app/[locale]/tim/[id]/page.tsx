@@ -16,6 +16,9 @@ import { readableInk } from "@/lib/color";
 import { getCurrentUser } from "@/lib/supabase/current-user";
 import { GameweekNav } from "@/components/GameweekNav";
 import { TeamSideCards } from "@/components/TeamSideCards";
+import { getGameweeksCached, getGameweekStatsCached, getManagerCountCached } from "@/lib/cached-data";
+import { ShareTeamButton } from "@/components/ShareTeamButton";
+import { EmptyState } from "@/components/EmptyState";
 
 /**
  * Javni pregled tuđeg tima. Middleware ovu rutu od početka tretira kao javnu
@@ -47,20 +50,22 @@ export default async function TimPage({
     getCurrentUser(),
   ]);
 
-  const [{ data: owner }, { data: finalizedGws }, { data: allGwPoints }, { data: standing }, { count: managerCount }] =
+  // Zaključana kola su javni podaci iz keša — poznata su unapred, pa se izbor
+  // kola, sastav i statistika čitaju ODJEDNOM sa ostalim (ranije u dva kruga).
+  const finalizedGws = (await getGameweeksCached())
+    .filter((g) => g.status === "finalized")
+    .sort((a, b) => b.number - a.number)
+    .map((g) => ({ id: g.id, number: g.number }));
+  // Bira se jedno kolo iz ?kolo=N, a bez toga ili uz nepoznat broj — poslednje.
+  const chosenGw = finalizedGws.find((g) => String(g.number) === kolo) ?? finalizedGws[0] ?? null;
+
+  const [{ data: owner }, { data: allGwPoints }, { data: standing }, managerCount, squadRes, gwStatRows] =
     await Promise.all([
       supabase
         .from("users")
         .select("id, team_name, team_color, total_points, clubs(name, short_name, primary_color)")
         .eq("id", id)
         .maybeSingle(),
-      // Sva zaključana kola (najnovije prvo). Samo ZAKLJUČANA kola su javna:
-      // sastav za kolo čiji rok nije prošao ostaje tajna (napomena na vrhu).
-      supabase
-        .from("gameweeks")
-        .select("id, number")
-        .eq("status", "finalized")
-        .order("number", { ascending: false }),
       // Poeni tima po zaključanim kolima — za izbor kola i za zaglavlje. Filter
       // po statusu ide kroz vezu, da ne mora da se čeka lista kola.
       supabase
@@ -69,14 +74,25 @@ export default async function TimPage({
         .eq("user_id", id)
         .eq("gameweeks.status", "finalized"),
       supabase.from("v_global_league_standings").select("rank").eq("user_id", id).maybeSingle(),
-      supabase.from("v_global_league_standings").select("user_id", { count: "exact", head: true }),
+      getManagerCountCached().catch(() => null),
+      chosenGw
+        ? supabase
+            .from("squads")
+            .select(
+              "player_id, is_starting, squad_order, is_captain, is_vice_captain, auto_subbed_in, " +
+                "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color, jersey_photo_url))"
+            )
+            .eq("user_id", id)
+            .eq("gameweek_id", chosenGw.id)
+        : Promise.resolve({ data: null }),
+      // Statistika za CELO kolo (do par stotina redova) iz keša — isti podaci za
+      // sve koji gledaju to kolo; višak se odbacuje ispod.
+      chosenGw ? getGameweekStatsCached(chosenGw.id).catch(() => [] as any[]) : Promise.resolve([] as any[]),
     ]);
 
   if (!owner) notFound();
 
-  // Bira se jedno kolo iz ?kolo=N, a bez toga ili uz nepoznat broj — poslednje.
-  const lastFinalized =
-    (finalizedGws ?? []).find((g) => String(g.number) === kolo) ?? (finalizedGws ?? [])[0] ?? null;
+  const lastFinalized = chosenGw;
 
   const pointsByGameweekId = new Map<string, any>((allGwPoints ?? []).map((r: any) => [r.gameweek_id, r]));
 
@@ -117,32 +133,12 @@ export default async function TimPage({
   if (!lastFinalized) {
     return (
       <Shell owner={owner} rank={standing?.rank ?? null} gameweekNumber={null} isOwnTeam={isOwnTeam}>
-        <p className="text-slate-400">{t("noFinalized")}</p>
+        <EmptyState icon="calendar" title={t("noFinalized")} />
       </Shell>
     );
   }
 
-  // Sastav i statistika kola istovremeno. Statistika se vuče za CELO kolo (do
-  // par stotina redova) umesto za igrače iz sastava — tako ne mora da se čeka
-  // sastav da bi se znali njihovi id-jevi; višak se odbacuje ispod.
-  const [{ data: squadRows }, { data: gwStatRows }] = await Promise.all([
-    supabase
-      .from("squads")
-      .select(
-        "player_id, is_starting, squad_order, is_captain, is_vice_captain, auto_subbed_in, " +
-          "players(id, first_name, last_name, position, price, club_id, clubs(name, short_name, primary_color, jersey_photo_url))"
-      )
-      .eq("user_id", id)
-      .eq("gameweek_id", lastFinalized.id),
-    supabase
-      .from("player_gameweek_stats")
-      .select(
-        "player_id, fixture_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
-          "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points, " +
-          "sofascore_rating"
-      )
-      .eq("gameweek_id", lastFinalized.id),
-  ]);
+  const squadRows = squadRes.data as any[] | null;
 
   // Poeni po igraču za to kolo — duplo kolo se sabira, isto kao u scoring engine-u.
   // Sad se vuku i SIROVE vrednosti (minuti, golovi...), ne samo fantasy_points,
@@ -209,7 +205,7 @@ export default async function TimPage({
         gameweekPoints={gwPoints?.total_points ?? null}
       rawPoints={gwPoints?.raw_points ?? null}
       >
-        <p className="text-slate-400">{t("noSquad", { number: lastFinalized.number })}</p>
+        <EmptyState icon="pitch" title={t("noSquad", { number: lastFinalized.number })} />
       </Shell>
     );
   }
@@ -304,6 +300,7 @@ export default async function TimPage({
       isOwnTeam={isOwnTeam}
       picker={picker}
       side={side}
+      canShare
     >
       <PublicSquadPitch
         rows={rows}
@@ -326,6 +323,7 @@ async function Shell({
   isOwnTeam = false,
   picker = null,
   side = null,
+  canShare = false,
   children,
 }: {
   owner: any;
@@ -338,6 +336,8 @@ async function Shell({
   isOwnTeam?: boolean;
   picker?: React.ReactNode;
   side?: React.ReactNode;
+  /** „Podeli tim" ima smisla samo kad postoji sastav iz zaključanog kola. */
+  canShare?: boolean;
   children: React.ReactNode;
 }) {
   const t = await getTranslations("publicTeam");
@@ -375,15 +375,24 @@ async function Shell({
             </p>
           </div>
         </div>
-        {isOwnTeam ? (
-          <Link href="/moj-tim" className="shrink-0 text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
-            ← {t("backToMyTeam")}
-          </Link>
-        ) : (
-          <Link href="/liga" className="shrink-0 text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
-            ← {t("backToLeague")}
-          </Link>
-        )}
+        <div className="shrink-0 flex flex-col items-end gap-2 lg:flex-row lg:items-center lg:gap-3">
+          {canShare && (
+            <ShareTeamButton
+              userId={owner.id}
+              teamName={owner.team_name ?? ""}
+              totalPoints={owner.total_points ?? 0}
+            />
+          )}
+          {isOwnTeam ? (
+            <Link href="/moj-tim" className="text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
+              ← {t("backToMyTeam")}
+            </Link>
+          ) : (
+            <Link href="/liga" className="text-slate-400 text-sm hover:text-chalk-50 whitespace-nowrap">
+              ← {t("backToLeague")}
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Leva kolona kartica — samo web (lg+). Unutrašnji sadržaj je apsolutno

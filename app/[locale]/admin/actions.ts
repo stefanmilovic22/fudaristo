@@ -30,6 +30,8 @@ import type { Position } from "@/lib/fantasy-rules";
 import { diffMatchEvents, eventsToPlayers, findPlayer, type EventDiffRow, type OurStatRow, type SquadPlayer } from "@/lib/sofascore-events";
 import { mapMissingStatus, parseInjuriesFile, type PlayerStatus } from "@/lib/sofascore-injuries";
 import { teamNamesMatch } from "@/lib/team-names";
+import { selectAllPages } from "@/lib/db-paging";
+import { countTransfers, suggestPrice } from "@/lib/price-rules";
 
 /**
  * Svaka admin izmena podataka poništava i keš javnih podataka (statistike,
@@ -1815,4 +1817,181 @@ export async function confirmSofascoreInjuriesAction(input: {
   revalidatePath("/admin");
   revalidatePath("/statistike");
   return { updated };
+}
+
+
+// ----------------------------------------------------------------------------
+// Cene igrača — ručna rekalkulacija (migracija 017)
+// ----------------------------------------------------------------------------
+
+export type PriceRow = {
+  playerId: string;
+  name: string;
+  clubShort: string;
+  clubColor: string;
+  price: number;
+  ins: number;
+  outs: number;
+  net: number;
+  /** 0 kad je red dodat ručno. */
+  delta: number;
+  newPrice: number;
+};
+
+export type PricePreview =
+  | { ok: true; since: string | null; gameweekId: string; gameweekNumber: number; rows: PriceRow[]; transfersCounted: number }
+  | { ok: false; error: string };
+
+const num = (v: unknown, fallback: number) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
+
+/** Kolo na koje se odnosi izmena: prvo sledeće sa rokom u budućnosti, inače poslednje. */
+async function priceTargetGameweek(supabase: ReturnType<typeof createServiceRoleClient>) {
+  const { data: next } = await supabase
+    .from("gameweeks")
+    .select("id, number")
+    .gt("deadline_at", new Date().toISOString())
+    .order("number", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (next) return next;
+  const { data: last } = await supabase
+    .from("gameweeks")
+    .select("id, number")
+    .order("number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return last;
+}
+
+/** Kolo za koje se upisuje izmena (koristi se kad je cena dodata ručno, bez predloga). */
+export async function priceTargetGameweekAction(): Promise<{ ok: true; gameweekId: string } | { ok: false; error: string }> {
+  await requireAdmin();
+  const gw = await priceTargetGameweek(createServiceRoleClient());
+  return gw ? { ok: true, gameweekId: gw.id } : { ok: false, error: "Nema nijednog kola u bazi." };
+}
+
+/**
+ * Predlog izmena cena: transferi od poslednje izmene (ili svi, ako je ovo
+ * prva) → ulazi/izlazi po igraču → predlog po pragu. Ništa se ne upisuje.
+ */
+export async function previewPriceChangesAction(threshold: number, step: number): Promise<PricePreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+  const th = Math.max(1, Math.round(num(threshold, 5)));
+  const st = Math.min(1, Math.max(0.1, Math.round(num(step, 0.1) * 10) / 10));
+
+  const gw = await priceTargetGameweek(supabase);
+  if (!gw) return { ok: false, error: "Nema nijednog kola u bazi." };
+
+  const { data: last } = await supabase
+    .from("player_price_history")
+    .select("changed_at")
+    .order("changed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const since: string | null = last?.changed_at ?? null;
+
+  let transfers: { player_in_id: string; player_out_id: string }[];
+  try {
+    transfers = await selectAllPages<{ player_in_id: string; player_out_id: string }>("transfers", (from, to) => {
+      let q = supabase.from("transfers").select("player_in_id, player_out_id, created_at, id");
+      if (since) q = q.gt("created_at", since);
+      return q.order("created_at", { ascending: true }).order("id", { ascending: true }).range(from, to);
+    });
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
+  const { ins, outs } = countTransfers(transfers);
+  const ids = [...new Set([...ins.keys(), ...outs.keys()])];
+  if (ids.length === 0) {
+    return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows: [], transfersCounted: transfers.length };
+  }
+
+  const { data: players, error } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, price, clubs(short_name, primary_color)")
+    .in("id", ids);
+  if (error) return { ok: false, error: error.message };
+
+  const rows: PriceRow[] = [];
+  for (const p of (players ?? []) as any[]) {
+    const i = ins.get(p.id) ?? 0;
+    const o = outs.get(p.id) ?? 0;
+    const sug = suggestPrice(Number(p.price), i - o, th, st);
+    if (!sug) continue;
+    rows.push({
+      playerId: p.id,
+      name: `${p.first_name} ${p.last_name}`.trim(),
+      clubShort: p.clubs?.short_name ?? "?",
+      clubColor: p.clubs?.primary_color ?? "#93ADCC",
+      price: Number(p.price),
+      ins: i,
+      outs: o,
+      net: i - o,
+      delta: sug.delta,
+      newPrice: sug.newPrice,
+    });
+  }
+  rows.sort((a, b) => b.net - a.net);
+  return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows, transfersCounted: transfers.length };
+}
+
+/** Pretraga igrača za ručnu izmenu cene (po imenu ili prezimenu). */
+export async function searchPlayersForPriceAction(query: string): Promise<PriceRow[]> {
+  await requireAdmin();
+  const q = String(query ?? "").trim().replace(/[%,()]/g, "");
+  if (q.length < 2) return [];
+  const supabase = createServiceRoleClient();
+  const { data } = await supabase
+    .from("players")
+    .select("id, first_name, last_name, price, clubs(short_name, primary_color)")
+    .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+    .eq("is_active", true)
+    .order("last_name")
+    .limit(8);
+  return ((data ?? []) as any[]).map((p) => ({
+    playerId: p.id,
+    name: `${p.first_name} ${p.last_name}`.trim(),
+    clubShort: p.clubs?.short_name ?? "?",
+    clubColor: p.clubs?.primary_color ?? "#93ADCC",
+    price: Number(p.price),
+    ins: 0,
+    outs: 0,
+    net: 0,
+    delta: 0,
+    newPrice: Number(p.price),
+  }));
+}
+
+export type ApplyPricesResult = { ok: true; applied: number } | { ok: false; error: string };
+
+/** Primena izabranih izmena — jedna transakcija u bazi (apply_price_changes). */
+export async function applyPriceChangesAction(
+  gameweekId: string,
+  changes: { playerId: string; newPrice: number; net: number }[]
+): Promise<ApplyPricesResult> {
+  await requireAdmin();
+  if (!Array.isArray(changes) || changes.length === 0) return { ok: false, error: "Nema izmena za primenu." };
+  const payload = changes.map((c) => ({
+    player_id: String(c.playerId),
+    new_price: Math.round(num(c.newPrice, NaN) * 10) / 10,
+    net_transfers: Math.round(num(c.net, 0)),
+  }));
+  if (payload.some((c) => !Number.isFinite(c.new_price))) return { ok: false, error: "Neispravna cena u jednom od redova." };
+
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase.rpc("apply_price_changes", { p_gameweek_id: gameweekId, p_changes: payload });
+  if (error) {
+    const missing = /apply_price_changes|function/i.test(error.message) && /not exist|find|schema cache/i.test(error.message);
+    return {
+      ok: false,
+      error: missing ? "Pokreni migrations/017-promene-cena.sql u Supabase SQL editoru." : error.message,
+    };
+  }
+  revalidatePath("/admin");
+  revalidatePath("/igraci");
+  revalidatePath("/igraci/cene");
+  revalidatePath("/moj-tim");
+  return { ok: true, applied: Number((data as any)?.applied ?? 0) };
 }

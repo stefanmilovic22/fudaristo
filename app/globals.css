@@ -22,7 +22,7 @@ body {
   }
 
   ::placeholder {
-    color: #64718a;
+    color: #7f8ea8;
   }
 
   /* iOS Safari automatski zumira stranicu kad se fokusira polje sa fontom
@@ -43,7 +43,48 @@ body {
   }
 }
 
+@layer base {
+  /* Vidljiv fokus za tastaturu na SVEMU što se može kliknuti. Samo
+     :focus-visible — miš i dodir ne dobijaju okvir. Elementi koji već imaju
+     svoj focus-visible stil (npr. dresovi) ga zadržavaju, jer su im klase jače. */
+  :where(a, button, summary, [role="button"], input, select, textarea):focus-visible {
+    outline: 2px solid #8ccbff;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Ko je u sistemu isključio animacije, ne dobija nijednu. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 @layer components {
+  /* „Pređi na sadržaj" — vidljiv tek kad dobije fokus (prvi Tab na stranici). */
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 200;
+    background: #5ab4ff;
+    color: #0d1326;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: top 120ms;
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
+
   /* Isti „čelični” obruč kao na logou: koristi se za dugmad i traku u zaglavlju. */
   .steel-frame {
     border: 1.5px solid transparent;

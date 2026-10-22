@@ -92,6 +92,59 @@ function Card({
   );
 }
 
+/**
+ * „Moje lige" na početnoj za prijavljene: globalna liga + do 3 privatne, svaka
+ * sa tvojim mestom. Ako nema privatnih, poziv da napraviš ili uđeš u jednu.
+ */
+export async function MyLeaguesCard({
+  leagues,
+  globalRank,
+  globalCount,
+}: {
+  leagues: { id: string; name: string; members: number; myRank: number | null }[];
+  globalRank: number | null;
+  globalCount: number | null;
+}) {
+  const t = await getTranslations("home");
+  const shown = leagues.slice(0, 3);
+  const row = (key: string, href: string, name: string, sub: string, rank: number | null) => (
+    <li key={key} className="border-t border-navy-700 first:border-t-0">
+      <Link href={href} className="flex items-center gap-3 py-2.5 hover:text-gold-300 transition-colors">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold truncate">{name}</span>
+          <span className="block text-xs text-slate-400">{sub}</span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span className="block font-display text-xl font-bold leading-none tabular-nums">{rank ?? "–"}</span>
+          <span className="block text-[10px] text-slate-400 mt-0.5">{t("leagueRankLabel")}</span>
+        </span>
+      </Link>
+    </li>
+  );
+  return (
+    <Card title={t("myLeagues")} href="/liga" linkLabel={t("allLeagues")}>
+      <ul className="flex flex-col">
+        {row(
+          "global",
+          "/liga",
+          t("globalLeague"),
+          globalCount !== null ? t("leagueMembers", { count: globalCount }) : "",
+          globalRank
+        )}
+        {shown.map((l) => row(l.id, `/liga/${l.id}`, l.name, t("leagueMembers", { count: l.members }), l.myRank))}
+      </ul>
+      {shown.length === 0 && (
+        <p className="text-sm text-slate-400 mt-1 border-t border-navy-700 pt-3">
+          {t("noPrivateLeagues")}{" "}
+          <Link href="/liga?tab=moje" className="text-gold-300 font-semibold hover:underline whitespace-nowrap">
+            {t("privateLeagueCta")} →
+          </Link>
+        </p>
+      )}
+    </Card>
+  );
+}
+
 function ClubDot({ short, color }: { short: string; color: string }) {
   return <ClubBadge short={short} color={color} size={22} />;
 }

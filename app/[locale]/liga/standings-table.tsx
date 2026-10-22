@@ -101,6 +101,7 @@ export function StandingsTable({
                   : t("colGameweekEmpty")}
               </th>
               <th className="text-right font-semibold py-2 pl-2 pr-3">{t("colTotal")}</th>
+              {currentUserId && <th className="w-16" aria-hidden />}
             </tr>
           </thead>
           <tbody>
@@ -149,6 +150,18 @@ export function StandingsTable({
                   <td className="py-2.5 pl-2 pr-3 text-right font-display font-bold tabular-nums">
                     {row.totalPoints}
                   </td>
+                  {currentUserId && (
+                    <td className="py-2.5 pr-3 text-right">
+                      {!isMe && (
+                        <Link
+                          href={`/poredi/${row.userId}`}
+                          className="text-xs font-semibold text-gold-300 border border-navy-600 hover:border-gold-400/60 rounded-md px-2 py-1 whitespace-nowrap transition-colors"
+                        >
+                          {t("compare")}
+                        </Link>
+                      )}
+                    </td>
+                  )}
                 </tr>
               );
             })}

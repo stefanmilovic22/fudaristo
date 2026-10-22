@@ -15,6 +15,7 @@ import { LocalTime } from "@/components/LocalTime";
 import { PlayerLine, PlayerLineHeader } from "@/components/PlayerLine";
 import { ExpandableCard } from "@/components/ExpandableCard";
 import { DataLoadError } from "@/components/DataLoadError";
+import { EmptyState } from "@/components/EmptyState";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; id: string }> }) {
   const { locale, id } = await params;
@@ -126,12 +127,12 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
         {/* Igrači po pozicijama */}
         <section className="flex flex-col gap-4 min-w-0">
-          {squad.length === 0 && <p className="text-slate-400 text-sm">{t("noPlayers")}</p>}
+          {squad.length === 0 && <EmptyState icon="users" title={t("noPlayers")} />}
           {POSITIONS.map((pos) => {
             const list = squad.filter((p) => p.position === pos).sort((a, b) => b.price - a.price);
             if (list.length === 0) return null;
             return (
-              <div key={pos} className="bg-navy-800 border border-navy-700 rounded-xl overflow-hidden">
+              <div key={pos} className="bg-navy-800 border border-gold-400/50 rounded-xl overflow-hidden">
                 <h3 className="font-display text-lg px-4 sm:px-5 pt-4">{tPos(pos)}</h3>
                 <PlayerLineHeader
                   hasJersey
@@ -141,12 +142,17 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
                 />
                 <ul className="divide-y divide-navy-700 mt-1">
                   {list.map((p) => (
-                    <li key={p.id} className="px-4 sm:px-5 py-2.5 text-sm">
-                      <PlayerLine
-                        player={p}
-                        statusLabel={statusLabel(p.status)}
-                        jersey={{ color: club.primary_color, photoUrl: jerseyPhoto }}
-                      />
+                    <li key={p.id}>
+                      <Link
+                        href={`/igraci/${p.id}`}
+                        className="block px-4 sm:px-5 py-2.5 text-sm hover:bg-navy-700/40 transition-colors"
+                      >
+                        <PlayerLine
+                          player={p}
+                          statusLabel={statusLabel(p.status)}
+                          jersey={{ color: club.primary_color, photoUrl: jerseyPhoto }}
+                        />
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -157,7 +163,7 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
 
         {/* Mečevi */}
         <aside className="flex flex-col gap-4">
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-4">
+          <div className="bg-navy-800 border border-gold-400/50 rounded-xl p-4">
             {nextMatches.length === 0 ? (
               <>
                 <h3 className="font-display text-lg mb-2">{t("upcoming")}</h3>
@@ -191,7 +197,7 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
             )}
           </div>
 
-          <div className="bg-navy-800 border border-navy-700 rounded-xl p-4">
+          <div className="bg-navy-800 border border-gold-400/50 rounded-xl p-4">
             <div className="flex items-center justify-between gap-3 mb-2">
               <h3 className="font-display text-lg">{t("results")}</h3>
               <FormDots results={row.form} labels={formLabels} />

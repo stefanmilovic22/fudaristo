@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import { TeamOfWeekBoard, type TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 import { InjuriesTab, type InjuriesData } from "./injuries-tab";
 import { ExpandableCard } from "@/components/ExpandableCard";
+import { Link } from "@/i18n/navigation";
+import { EmptyState } from "@/components/EmptyState";
 
 export type StatEntry = {
   id: string;
@@ -157,6 +159,7 @@ export function StatsBoard({ data, injuries }: { data: StatsData; injuries: Inju
           unit={t("unitPoints")}
           entries={data.clubs}
           empty={t("noClubPoints")}
+          hrefBase="/klubovi"
         />
       )}
       {tab === "ratings" && (
@@ -197,11 +200,13 @@ function FantasyByPosition({ entries }: { entries: StatEntry[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {groups.map((g) => (
-        <div key={g.pos} className="bg-navy-800 border border-navy-600 rounded-lg p-4">
-          <h3 className="font-display text-sm uppercase tracking-wide text-slate-400 mb-3">
-            {tPos(g.pos as "GK" | "DEF" | "MID" | "FWD")}
-          </h3>
-          <Rows entries={g.rows} unit={t("unitPoints")} />
+        <div key={g.pos} className="bg-navy-800 border border-gold-400/50 rounded-xl overflow-hidden">
+          <div className="bg-navy-700 border-b border-gold-400/30 px-4 py-2.5">
+            <h3 className="font-display text-sm uppercase tracking-wider text-gold-300">{tPos(g.pos as "GK" | "DEF" | "MID" | "FWD")}</h3>
+          </div>
+          <div className="px-4 py-1">
+            <Rows entries={g.rows} unit={t("unitPoints")} />
+          </div>
         </div>
       ))}
     </div>
@@ -215,6 +220,7 @@ function SingleList({
   empty,
   collapsible = false,
   collapsedRows = COLLAPSED_ROWS,
+  hrefBase = "/igraci",
 }: {
   title: string;
   unit: string;
@@ -224,15 +230,16 @@ function SingleList({
   collapsible?: boolean;
   /** Koliko redova se vidi pre otvaranja (podrazumevano 5; ocene prikazuju 10). */
   collapsedRows?: number;
+  hrefBase?: "/igraci" | "/klubovi";
 }) {
   const t = useTranslations("stats");
   if (entries.length === 0) return <Empty text={empty} />;
 
-  const items = statRows(entries, unit);
-  const heading = "font-display text-sm uppercase tracking-wide text-slate-400";
+  const items = statRows(entries, unit, hrefBase);
+  const heading = "font-display text-sm uppercase tracking-wider text-gold-300";
 
   return (
-    <div className="bg-navy-800 border border-navy-600 rounded-lg p-4 max-w-xl">
+    <div className="bg-navy-800 border border-gold-400/50 rounded-xl overflow-hidden max-w-xl">
       {collapsible ? (
         <ExpandableCard
           title={title}
@@ -241,14 +248,17 @@ function SingleList({
           moreLabel={t("showAll")}
           lessLabel={t("showLess")}
           titleClassName={heading}
-          listClassName="flex flex-col"
+          headerClassName="bg-navy-700 border-b border-gold-400/30 px-4 py-2.5"
+          listClassName="flex flex-col px-4 py-1"
         >
           {items}
         </ExpandableCard>
       ) : (
         <>
-          <h3 className={`${heading} mb-3`}>{title}</h3>
-          <ol className="flex flex-col">{items}</ol>
+          <div className="bg-navy-700 border-b border-gold-400/30 px-4 py-2.5">
+            <h3 className={heading}>{title}</h3>
+          </div>
+          <ol className="flex flex-col px-4 py-1">{items}</ol>
         </>
       )}
     </div>
@@ -257,14 +267,17 @@ function SingleList({
 
 const COLLAPSED_ROWS = 5;
 
-function statRows(entries: StatEntry[], unit: string) {
+/** `hrefBase`: gde vodi ime u redu — igrači na svoju stranicu, klubovi na stranicu kluba. */
+function statRows(entries: StatEntry[], unit: string, hrefBase: "/igraci" | "/klubovi" = "/igraci") {
   return entries.map((e, i) => (
     <li key={e.id} className="flex items-center gap-3 py-2 border-t border-navy-700 first:border-t-0">
       <span className="w-6 text-center font-display font-bold text-slate-500 text-sm tabular-nums">
         {e.rank ?? i + 1}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-sm truncate">{e.name}</div>
+        <Link href={`${hrefBase}/${e.id}`} className="block text-sm truncate hover:text-gold-300 hover:underline">
+          {e.name}
+        </Link>
         {e.clubName && <div className="text-xs text-slate-500 truncate">{e.clubName}</div>}
       </div>
       <span className="font-display font-bold tabular-nums whitespace-nowrap">
@@ -280,5 +293,5 @@ function Rows({ entries, unit }: { entries: StatEntry[]; unit: string }) {
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="text-slate-400 text-sm">{text}</p>;
+  return <EmptyState icon="chart" title={text} />;
 }

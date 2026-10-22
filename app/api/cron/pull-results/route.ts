@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { runResultsIngestion } from "@/lib/ingestion";
+import { pruneEvents, reportEvent } from "@/lib/monitor";
 
 // Vercel Hobby: cron sme najviše jednom dnevno po unosu, do 2 unosa po
 // projektu — vercel.json već koristi oba (08:00 i 23:00 UTC). Ograničenje
@@ -20,9 +21,33 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
-  const result = await runResultsIngestion(supabase, null);
+  let result;
+  try {
+    result = await runResultsIngestion(supabase, null);
+  } catch (e) {
+    // Alarm: cron je pukao. Bez ovoga bi se to primetilo tek kad neko vidi
+    // da rezultati kasne (vidi i panel „Zdravlje sistema" na /admin).
+    await reportEvent({
+      level: "error",
+      source: "cron:pull-results",
+      message: `Cron je pao: ${e instanceof Error ? e.message : String(e)}`,
+    });
+    return NextResponse.json({ error: "ingestion failed" }, { status: 500 });
+  }
   // Novi rezultati → odmah osveži keš javnih podataka (statistike, liga, raspored).
   revalidateTag("public-data", { expire: 0 });
+
+  // Delimičan neuspeh (npr. izvor ne odgovara) takođe diže alarm.
+  const errors = (result as { errors?: string[] }).errors ?? [];
+  if (errors.length > 0) {
+    await reportEvent({
+      level: "error",
+      source: "cron:pull-results",
+      message: `Cron je završio sa ${errors.length} greška(e): ${errors[0]}`,
+      details: { errors: errors.slice(0, 10) },
+    });
+  }
+  await pruneEvents();
 
   return NextResponse.json(result);
 }

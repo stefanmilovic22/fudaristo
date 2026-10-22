@@ -9,6 +9,8 @@ export type PlayerLineData = {
   status: string;
   total_points: number;
   avg_rating: number | null;
+  /** Promena cene u poslednjoj izmeni (+0.1 / −0.1); izostavljeno ako je nije bilo. */
+  priceDelta?: number;
 };
 
 /** Boja oznake statusa: povreda/suspenzija crveno, neizvesno zlatno. */
@@ -68,6 +70,15 @@ export function PlayerLine({
         )}
       </span>
       <span className="shrink-0 w-14 text-right tabular-nums text-slate-300 text-sm">
+        {player.priceDelta ? (
+          <span
+            className={`mr-0.5 text-[10px] ${player.priceDelta > 0 ? "text-pitch-400" : "text-danger-400"}`}
+            title={`${player.priceDelta > 0 ? "+" : ""}${player.priceDelta.toFixed(1)}`}
+            aria-label={`${player.priceDelta > 0 ? "+" : ""}${player.priceDelta.toFixed(1)}`}
+          >
+            {player.priceDelta > 0 ? "▲" : "▼"}
+          </span>
+        ) : null}
         {Number(player.price).toFixed(1)}M
       </span>
       <span className="shrink-0 w-9 text-right tabular-nums font-bold text-gold-300 text-sm">

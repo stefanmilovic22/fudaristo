@@ -160,7 +160,7 @@ export function TeamOfWeekBoard({
 
       {/* Pun spisak ispod terena — sa pozicijom, da se vidi ceo raspored bez
           oslanjanja samo na pločicu dresa. */}
-      <div className={`${split ? "mt-3 lg:mt-0" : "mt-3"} bg-navy-800 border border-navy-600 rounded-lg p-4`}>
+      <div className={`${split ? "mt-3 lg:mt-0" : "mt-3"} bg-navy-800 border border-gold-400/50 rounded-xl p-4`}>
         <ol className="flex flex-col">
           {rows.flat().map((p) => (
             <li

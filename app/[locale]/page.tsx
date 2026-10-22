@@ -7,10 +7,11 @@ import { DeadlineCountdown } from "@/components/DeadlineCountdown";
 import { getMostSelectedCached, getRoundMatchesCached, getTableDataCached } from "@/lib/cached-data";
 import { loadLeague } from "@/lib/league-data";
 import { loadStats } from "@/lib/stats-data";
-import { HeroPanel, NextMatchesCard, StatusStrip, SuperLeagueCard } from "./home-sections";
+import { HeroPanel, MyLeaguesCard, NextMatchesCard, StatusStrip, SuperLeagueCard } from "./home-sections";
 import { TeamOfWeekBoard } from "@/components/TeamOfWeekBoard";
 import { computeLeagueTable } from "@/lib/league-table";
 import { pickFeaturedMatch } from "@/lib/featured-match";
+import { loadMyLeagues } from "@/lib/leagues";
 
 /**
  * Poziv na akciju zavisi od toga dokle je korisnik stigao. Ranije je svima
@@ -29,52 +30,63 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     getCurrentUser(),
   ]);
 
-  // Rok sledećeg otvorenog kola — javan podatak, treba i neprijavljenom
-  // posetiocu za odbrojavanje na hero sekciji. Profil ide istovremeno.
-  const [targetGw, profileRes] = await Promise.all([
-    getTargetGameweek(supabase),
-    user
-      ? supabase.from("users").select("team_name, budget_remaining").eq("id", user.id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+  // SVE što može da krene odmah, kreće odmah — ranije je svaki korak čekao
+  // prethodni (rok → sastav → liga → statistika), pa je početna imala 6 krugova
+  // do baze umesto 3. Samo meč kola i broj sastava zavise od roka (koji je u kešu).
+  const profilePromise = user
+    ? supabase.from("users").select("team_name, budget_remaining").eq("id", user.id).maybeSingle()
+    : Promise.resolve({ data: null });
+  const leaguePromise = user ? loadLeague() : Promise.resolve(null);
+  const statsPromise = loadStats().catch((e) => {
+    console.error("[/] stats:", e);
+    return null;
+  });
+  const tablePromise = getTableDataCached().catch((e) => {
+    console.error("[/] table:", e);
+    return { clubs: [], fixtures: [] };
+  });
+  const mostSelectedPromise = getMostSelectedCached().catch((e) => {
+    console.error("[/] most selected:", e);
+    return { gameweekNumber: null as number | null, players: [] as any[] };
+  });
+  const myLeaguesPromise = user
+    ? loadMyLeagues(supabase, user.id).catch((e) => {
+        console.error("[/] my leagues:", e);
+        return [] as Awaited<ReturnType<typeof loadMyLeagues>>;
+      })
+    : Promise.resolve([] as Awaited<ReturnType<typeof loadMyLeagues>>);
 
-  let hasSquad = false;
-  const teamName: string | null = profileRes.data?.team_name ?? null;
+  // Rok sledećeg otvorenog kola — javan podatak, treba i neprijavljenom
+  // posetiocu za odbrojavanje na hero sekciji.
+  const targetGw = await getTargetGameweek(supabase);
 
   // Sastav se traži za kolo koje se trenutno uređuje — isto kolo koje
   // otvara /moj-tim, da poruka ovde i stranica tamo ne govore različito.
-  if (user && targetGw) {
-    const { count } = await supabase
-      .from("squads")
-      .select("player_id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("gameweek_id", targetGw.id);
-    hasSquad = (count ?? 0) > 0;
-  }
+  const [profileRes, squadCount, roundMatches, league, stats, tableData, mostSelected, myLeagues] =
+    await Promise.all([
+      profilePromise,
+      user && targetGw
+        ? supabase
+            .from("squads")
+            .select("player_id", { count: "exact", head: true })
+            .eq("user_id", user.id)
+            .eq("gameweek_id", targetGw.id)
+        : Promise.resolve({ count: 0 }),
+      targetGw
+        ? getRoundMatchesCached(targetGw.id).catch((e) => {
+            console.error("[/] round matches:", e);
+            return [] as any[];
+          })
+        : Promise.resolve([] as any[]),
+      leaguePromise,
+      statsPromise,
+      tablePromise,
+      mostSelectedPromise,
+      myLeaguesPromise,
+    ]);
 
-  // Javni podaci za kartice (keširani) — istovremeno. Liga se učitava samo za
-  // prijavljene: gost ne dobija prave podatke u HTML-u.
-  const [roundMatches, league, stats, tableData, mostSelected] = await Promise.all([
-    targetGw
-      ? getRoundMatchesCached(targetGw.id).catch((e) => {
-          console.error("[/] round matches:", e);
-          return [] as any[];
-        })
-      : Promise.resolve([] as any[]),
-    user ? loadLeague() : Promise.resolve(null),
-    loadStats().catch((e) => {
-      console.error("[/] stats:", e);
-      return null;
-    }),
-    getTableDataCached().catch((e) => {
-      console.error("[/] table:", e);
-      return { clubs: [], fixtures: [] };
-    }),
-    getMostSelectedCached().catch((e) => {
-      console.error("[/] most selected:", e);
-      return { gameweekNumber: null as number | null, players: [] as any[] };
-    }),
-  ]);
+  const hasSquad = (squadCount.count ?? 0) > 0;
+  const teamName: string | null = profileRes.data?.team_name ?? null;
   const tableRows = computeLeagueTable(tableData.clubs, tableData.fixtures);
   const featuredMatch = pickFeaturedMatch(
     roundMatches,
@@ -156,6 +168,16 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             budget: t("statBudget"),
           }}
         />
+      )}
+
+      {user && (
+        <section>
+          <MyLeaguesCard
+            leagues={myLeagues}
+            globalRank={myStanding ? Number((myStanding as any).rank) : null}
+            globalCount={leagueRows ? leagueRows.length : null}
+          />
+        </section>
       )}
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">

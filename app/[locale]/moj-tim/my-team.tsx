@@ -562,7 +562,7 @@ export function MyTeam({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 sm:gap-5">
       <div>
-        <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 px-3 sm:px-4 py-3 mb-3 sm:mb-4 flex flex-wrap items-baseline gap-x-4 sm:gap-x-6 gap-y-1 text-[13px] sm:text-sm">
+        <div className="bg-navy-800 rounded-xl border border-gold-400/50 px-3 sm:px-4 py-3 mb-3 sm:mb-4 flex flex-wrap items-baseline gap-x-4 sm:gap-x-6 gap-y-1 text-[13px] sm:text-sm">
           <span>
             <span className="text-slate-400">{t("gameweek")} </span>
             <span className="font-display text-lg">{gameweekNumber}</span>
@@ -655,7 +655,7 @@ export function MyTeam({
       <div className="flex flex-col gap-4">
         {activeSlot ? (
           <>
-            <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
+            <div className="bg-navy-800 rounded-xl border border-gold-400/50 p-4">
               <p className="text-sm text-slate-300">
                 {t.rich("selling", {
                   name: playerFullName(activeSlot.current),
@@ -701,7 +701,7 @@ export function MyTeam({
               izmene trebalo je skrolovati kroz ceo teren i listu igrača.
               Na širokom ekranu kolona ionako stoji, pa se vraća u normalan tok. */}
           <div className="sticky bottom-0 z-20 -mx-3 px-3 pb-3 pt-2 bg-navy-950/95 backdrop-blur border-t border-navy-700 lg:static lg:mx-0 lg:px-0 lg:pb-0 lg:pt-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
-          <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-3 sm:p-4">
+          <div className="bg-navy-800 rounded-xl border border-gold-400/50 p-3 sm:p-4">
           {problems.length > 0 && (
             <ul className="text-danger-400 text-xs bg-danger-400/10 rounded-lg px-3 py-2 mb-3 flex flex-col gap-1">
               {problems.slice(0, 4).map((p, i) => (
@@ -794,7 +794,7 @@ function PendingPanel({
   const tCommon = useTranslations("common");
   if (pending.length === 0) return null;
   return (
-    <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4">
+    <div className="bg-navy-800 rounded-xl border border-gold-400/50 p-4">
       <h3 className="font-display text-lg mb-3">{t("pendingTransfers")}</h3>
       <ul className="flex flex-col gap-2">
         {pending.map((row) => (
@@ -840,7 +840,7 @@ function PendingPanel({
 function HelpPanel({ swapping }: { swapping: boolean }) {
   const t = useTranslations("team");
   return (
-    <details className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 text-sm group">
+    <details className="bg-navy-800 rounded-xl border border-gold-400/50 p-4 text-sm group">
       <summary className="font-display text-base cursor-pointer select-none list-none flex items-center justify-between">
         {t("howToChange")}
         <span className="text-slate-400 text-xs group-open:rotate-180 transition-transform">▾</span>

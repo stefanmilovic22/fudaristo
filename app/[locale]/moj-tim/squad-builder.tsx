@@ -458,7 +458,7 @@ export function SquadBuilder({
               izmene trebalo je skrolovati kroz ceo teren i listu igrača.
               Na širokom ekranu kolona ionako stoji, pa se vraća u normalan tok. */}
           <div className="shrink-0 sticky bottom-0 z-20 -mx-3 px-3 pb-3 pt-2 bg-navy-950/95 backdrop-blur border-t border-navy-700 lg:static lg:mx-0 lg:px-0 lg:pb-0 lg:pt-0 lg:bg-transparent lg:backdrop-blur-none lg:border-0">
-          <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-3 sm:p-4">
+          <div className="bg-navy-800 rounded-xl border border-gold-400/50 p-3 sm:p-4">
           {allErrors.length > 0 && (
             <details className="mb-3 group">
               {/* Sažeto po pravilu: kad je tim prazan grešaka je pet i panel
@@ -519,7 +519,7 @@ function StatusBar({
   const pct = budgetAvailable > 0 ? Math.min(100, Math.max(0, (used / budgetAvailable) * 100)) : 0;
 
   return (
-    <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 px-4 py-3 mb-4">
+    <div className="bg-navy-800 rounded-xl border border-gold-400/50 px-4 py-3 mb-4">
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-sm">
         <span>
           <span className="text-slate-400">{t("playersLabel")} </span>
@@ -754,7 +754,7 @@ function LineupStep({
 function SwapHelp({ swapPlayer }: { swapPlayer: SelectablePlayer | null }) {
   const t = useTranslations("builder");
   return (
-    <div className="bg-navy-800 rounded-xl ring-1 ring-black/25 p-4 text-sm">
+    <div className="bg-navy-800 rounded-xl border border-gold-400/50 p-4 text-sm">
       <h3 className="font-display text-lg mb-2">{t("lineupTitle")}</h3>
       {swapPlayer ? (
         <p className="text-slate-300">

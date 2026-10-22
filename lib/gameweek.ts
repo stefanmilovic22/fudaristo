@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getGameweeksCached } from "@/lib/cached-data";
 
 export type TargetGameweek = {
   id: string;
@@ -16,17 +17,16 @@ export type TargetGameweek = {
  * sastava. Ovde je i dalje samo: NAJBLIŽE otvoreno kolo je "target".
  */
 export async function getTargetGameweek(
-  supabase: SupabaseClient
+  // Zadržano radi starih poziva; kola su javni podaci pa se čitaju iz keša.
+  _supabase?: SupabaseClient
 ): Promise<TargetGameweek | null> {
-  const { data } = await supabase
-    .from("gameweeks")
-    .select("id, number, deadline_at")
-    .gt("deadline_at", new Date().toISOString())
-    .order("deadline_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  return data ?? null;
+  const gameweeks = await getGameweeksCached();
+  const now = Date.now();
+  const upcoming = gameweeks
+    .filter((g) => g.deadline_at && new Date(g.deadline_at).getTime() > now)
+    .sort((a, b) => new Date(a.deadline_at!).getTime() - new Date(b.deadline_at!).getTime());
+  const next = upcoming[0];
+  return next ? { id: next.id, number: next.number, deadline_at: next.deadline_at! } : null;
 }
 
 /**
@@ -50,12 +50,8 @@ export async function isBuildingFirstSquad(
   userId: string,
   targetGameweekNumber: number
 ): Promise<boolean> {
-  const { data: earlierGameweeks } = await supabase
-    .from("gameweeks")
-    .select("id")
-    .lt("number", targetGameweekNumber);
-
-  const earlierIds = (earlierGameweeks ?? []).map((g) => g.id);
+  // Ranija kola dolaze iz keša, pa je ovo jedan upit (ranije dva uzastopna).
+  const earlierIds = (await getGameweeksCached()).filter((g) => g.number < targetGameweekNumber).map((g) => g.id);
   if (earlierIds.length === 0) return true; // nema ranijih kola uopšte u bazi
 
   const { count } = await supabase

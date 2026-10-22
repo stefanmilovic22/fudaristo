@@ -1,5 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { getActivePlayersCached, getAvgRatingsCached, getUpcomingFixturesCached } from "@/lib/cached-data";
+import { getActivePlayersCached, getAvgRatingsCached, getTableDataCached, getUpcomingFixturesCached } from "@/lib/cached-data";
+import { computeDifficulty } from "@/lib/fdr";
+import { POSITIONS } from "@/lib/fantasy-rules";
+import { getLastPriceChanges } from "@/lib/price-changes";
+import { Link } from "@/i18n/navigation";
 import { DataLoadError } from "@/components/DataLoadError";
 import { PlayersBoard, type BoardClub } from "./players-board";
 
@@ -18,11 +22,16 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
   let players: any[];
   let ratings: { player_id: string; avg_rating: number }[] = [];
   let upcoming: any[] = [];
+  let tableData: { clubs: any[]; fixtures: any[] } = { clubs: [], fixtures: [] };
+  let priceChanges: Awaited<ReturnType<typeof getLastPriceChanges>> = { changedAt: null, gameweekNumber: null, rows: [] };
   try {
-    [players, ratings, upcoming] = await Promise.all([
+    [players, ratings, upcoming, priceChanges, tableData] = await Promise.all([
       getActivePlayersCached(),
       getAvgRatingsCached().catch(() => []),
       getUpcomingFixturesCached().catch(() => []),
+      // Pre pokretanja migracije 017 / pre prve izmene nema istorije — strelica se ne prikazuje.
+      getLastPriceChanges().catch(() => ({ changedAt: null, gameweekNumber: null, rows: [] })),
+      getTableDataCached().catch(() => ({ clubs: [] as any[], fixtures: [] as any[] })),
     ]);
   } catch (e) {
     console.error("[/igraci]", e);
@@ -34,20 +43,22 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
     );
   }
 
+  const deltaByPlayer = new Map(priceChanges.rows.map((r) => [r.playerId, Math.round((r.newPrice - r.oldPrice) * 10) / 10]));
   const ratingByPlayer = new Map(ratings.map((r) => [r.player_id, Number(r.avg_rating)]));
 
   // Naredna 3 meča po klubu, isti oblik kao u prozorčiću igrača na /moj-tim.
-  const upcomingByClub: Record<string, { label: string; kickoffAt: string }[]> = {};
-  const push = (clubId: string, label: string, kickoffAt: string) => {
+  const difficulty = computeDifficulty(tableData.clubs, tableData.fixtures);
+  const upcomingByClub: Record<string, { label: string; kickoffAt: string; difficulty?: number }[]> = {};
+  const push = (clubId: string, label: string, kickoffAt: string, opponentId: string) => {
     const list = (upcomingByClub[clubId] ??= []);
-    if (list.length < 3) list.push({ label, kickoffAt });
+    if (list.length < 3) list.push({ label, kickoffAt, difficulty: difficulty.get(opponentId) });
   };
   for (const f of upcoming) {
-    push(f.home_club_id, `${f.away?.short_name ?? "?"} (H)`, f.kickoff_at);
-    push(f.away_club_id, `${f.home?.short_name ?? "?"} (A)`, f.kickoff_at);
+    push(f.home_club_id, `${f.away?.short_name ?? "?"} (H)`, f.kickoff_at, f.away_club_id);
+    push(f.away_club_id, `${f.home?.short_name ?? "?"} (A)`, f.kickoff_at, f.home_club_id);
   }
 
-  // Grupisanje po klubu: klubovi po imenu, igrači unutar kluba po ceni.
+  // Grupisanje po klubu: klubovi po imenu, igrači unutar kluba po poziciji pa ceni.
   const byClub = new Map<string, BoardClub>();
   for (const p of players) {
     const key = p.club_id as string;
@@ -70,15 +81,25 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
       status: p.status,
       total_points: p.total_points ?? 0,
       avg_rating: ratingByPlayer.get(p.id) ?? null,
+      priceDelta: deltaByPlayer.get(p.id),
     });
   }
   const clubs = [...byClub.values()].sort((a, b) => a.name.localeCompare(b.name));
-  for (const c of clubs) c.players.sort((a, b) => b.price - a.price);
+  // Isti redosled kao na stranici kluba: golmani, odbrana, sredina, napad —
+  // unutar pozicije od najskupljeg.
+  for (const c of clubs) {
+    c.players.sort((a, b) => POSITIONS.indexOf(a.position) - POSITIONS.indexOf(b.position) || b.price - a.price);
+  }
 
   return (
     <div>
       <h2 className="font-display text-2xl mb-1">{t("title")}</h2>
-      <p className="text-slate-400 text-sm mb-5">{t("lead")}</p>
+      <p className="text-slate-400 text-sm mb-5">
+        {t("lead")}{" "}
+        <Link href="/igraci/cene" className="text-gold-300 font-semibold hover:underline whitespace-nowrap">
+          {t("priceChangesLink")} →
+        </Link>
+      </p>
       <PlayersBoard clubs={clubs} upcomingByClub={upcomingByClub} />
     </div>
   );

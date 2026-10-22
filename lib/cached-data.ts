@@ -213,3 +213,60 @@ export const getDataUpdateCached = unstable_cache(
   ["data-update-v1"],
   { revalidate: TTL, tags: TAGS }
 );
+
+export type GameweekRow = { id: string; number: number; status: string; deadline_at: string | null };
+
+/**
+ * Sva kola (ima ih desetak-tridesetak) — služi da se „naredno kolo" i „poslednje
+ * zaključano kolo" odrede bez upita ka bazi pri svakom otvaranju stranice.
+ * Posle zaključavanja kola / izmene roka admin akcije poništavaju keš.
+ */
+export const getGameweeksCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    return throwIfError(
+      await supabase.from("gameweeks").select("id, number, status, deadline_at").order("number", { ascending: true }),
+      "gameweeks"
+    ) as GameweekRow[];
+  },
+  ["gameweeks-v1"],
+  { revalidate: TTL, tags: TAGS }
+);
+
+/** Broj menadžera u globalnoj ligi — ista vrednost za sve, ne treba je tražiti za svakog posetioca. */
+export const getManagerCountCached = unstable_cache(
+  async () => {
+    const supabase = createPublicClient();
+    const { count, error } = await supabase
+      .from("v_global_league_standings")
+      .select("user_id", { count: "exact", head: true });
+    if (error) throw new Error(`v_global_league_standings: ${error.message}`);
+    return count ?? 0;
+  },
+  ["manager-count-v1"],
+  { revalidate: TTL, tags: TAGS }
+);
+
+/**
+ * Statistika svih igrača za jedno kolo (sirove vrednosti + fantasy poeni) —
+ * za javni pregled tima, poređenje i sliku za deljenje. Isto je za sve koji
+ * gledaju to kolo, pa se čita jednom na minut umesto pri svakoj poseti.
+ */
+export const getGameweekStatsCached = unstable_cache(
+  async (gameweekId: string) => {
+    const supabase = createPublicClient();
+    return throwIfError(
+      await supabase
+        .from("player_gameweek_stats")
+        .select(
+          "player_id, fixture_id, minutes_played, goals, assists, clean_sheet, goals_conceded, saves, " +
+            "penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals, bonus_points, fantasy_points, " +
+            "sofascore_rating"
+        )
+        .eq("gameweek_id", gameweekId),
+      "player_gameweek_stats"
+    ) as any[];
+  },
+  ["gw-stats-v1"],
+  { revalidate: TTL, tags: TAGS }
+);

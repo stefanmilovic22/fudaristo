@@ -48,15 +48,25 @@ const config: Config = {
         slate: {
           300: "#B7C3D6",
           400: "#93ADCC",
-          500: "#64718A",
+          // Svetlije nego pre (#64718A, kontrast 3.4:1): sitan tekst na navy pozadini
+          // mora da ima bar 4.5:1 (WCAG AA) — ovo daje ~5:1 na navy-800.
+          500: "#8392AB",
           600: "#4A5F82",
         },
         danger: {
           400: "#E2574C",
         },
       },
+      keyframes: {
+        "fade-in": { from: { opacity: "0", transform: "translateY(4px)" }, to: { opacity: "1", transform: "none" } },
+        "pop-in": { "0%": { opacity: "0", transform: "scale(0.88)" }, "70%": { transform: "scale(1.04)" }, "100%": { opacity: "1", transform: "none" } },
+      },
+      animation: {
+        "fade-in": "fade-in 180ms ease-out both",
+        "pop-in": "pop-in 260ms ease-out both",
+      },
       fontFamily: {
-        display: ["var(--font-oswald)", "sans-serif"],
+        display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-inter)", "sans-serif"],
       },
     },

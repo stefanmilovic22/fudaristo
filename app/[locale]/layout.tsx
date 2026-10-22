@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Oswald, Inter } from "next/font/google";
+import { Fira_Sans_Extra_Condensed, Inter } from "next/font/google";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
@@ -11,17 +12,18 @@ import { ensureProfile } from "@/lib/ensure-profile";
 import { UserMenu } from "@/components/UserMenu";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { MainNav } from "@/components/MainNav";
+import { NavProgress } from "@/components/NavProgress";
 import { Link } from "@/i18n/navigation";
 import { routing, LOCALE_META, type Locale } from "@/i18n/routing";
+import { getSiteUrl } from "@/lib/site-url";
 
-// ⚠️ Oswald NEMA grčke glifove (podržava latin, latin-ext, cyrillic,
-// cyrillic-ext, vietnamese). Grčki naslovi zato padaju na sistemski font.
-// Vidi napomenu u handover-u — ako smeta, treba zameniti display font onim
-// koji pokriva sva tri pisma.
-const oswald = Oswald({
-  subsets: ["latin", "cyrillic"],
+// Naslovni font pokriva SVA tri pisma sajta — latinicu (uklj. latin-ext za
+// č ć š đ ž), ćirilicu i grčki. Ranije je to bio Oswald koji nema grčka slova,
+// pa su grčki naslovi padali na sistemski font i izgledali drugačije.
+const display = Fira_Sans_Extra_Condensed({
+  subsets: ["latin", "latin-ext", "cyrillic", "greek"],
   weight: ["500", "600", "700"],
-  variable: "--font-oswald",
+  variable: "--font-display",
 });
 
 const inter = Inter({
@@ -61,7 +63,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "meta" });
-  return { title: t("title"), description: t("description") };
+  // Podrazumevani pregled linka za ceo sajt; stranice sa svojom slikom (tim,
+  // pozivnica u ligu — app/[locale]/p/) ga zamenjuju. Isti naslov/opis, da
+  // WhatsApp ne prikaže prazan pregled.
+  const image = `/api/og/site?lang=${locale}`;
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    title: t("title"),
+    description: t("description"),
+    openGraph: {
+      type: "website",
+      siteName: "Fudaristo",
+      title: t("title"),
+      description: t("description"),
+      images: [{ url: image, width: 1200, height: 630, alt: "Fudaristo" }],
+    },
+    twitter: { card: "summary_large_image", title: t("title"), description: t("description"), images: [image] },
+    icons: { apple: "/icons/apple-touch-icon.png" },
+    appleWebApp: { capable: true, title: "Fudaristo", statusBarStyle: "black" },
+  };
 }
 
 export default async function LocaleLayout({
@@ -98,10 +118,16 @@ export default async function LocaleLayout({
   return (
     <html
       lang={LOCALE_META[locale as Locale].htmlLang}
-      className={`${oswald.variable} ${inter.variable}`}
+      className={`${display.variable} ${inter.variable}`}
     >
       <body className="font-body">
         <NextIntlClientProvider>
+          <Suspense fallback={null}>
+            <NavProgress />
+          </Suspense>
+          <a href="#main" className="skip-link">
+            {t("skipToContent")}
+          </a>
           {/* Pozadina zaglavlja ide preko cele širine ekrana; sadržaj u njemu je
               na srpskom i grčkom širi (tabovi su duži), a ispod ostaje 1280px. */}
           <header className="sticky top-0 z-40 bg-gradient-to-r from-navy-950 via-navy-800 to-[#1C3A6E] border-b border-navy-700">
@@ -152,7 +178,7 @@ export default async function LocaleLayout({
           </header>
 
           <div className="max-w-[1280px] mx-auto min-h-screen flex flex-col">
-            <main className="flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-7 py-4 sm:py-6">{children}</main>
+            <main id="main" tabIndex={-1} className="flex-1 w-full max-w-[1280px] mx-auto px-3 sm:px-7 py-4 sm:py-6 outline-none">{children}</main>
           </div>
         </NextIntlClientProvider>
       </body>

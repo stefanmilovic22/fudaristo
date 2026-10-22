@@ -5,17 +5,23 @@ import { createPortal } from "react-dom";
 import { useLocale, useTranslations } from "next-intl";
 import { playerFullName, type Position } from "@/lib/fantasy-rules";
 import { LocalTime } from "@/components/LocalTime";
+import { FdrChip } from "@/components/FdrChip";
+import { Link } from "@/i18n/navigation";
 
 export type UpcomingFixture = {
   /** Već formatirano, npr. "PAOK (H)" — isti oblik kao opponentByClub. */
   label: string;
   kickoffAt: string;
+  /** Težina meča 1 (lako) – 5 (teško), po mestu protivnika u tabeli (lib/fdr.ts). */
+  difficulty?: number;
 };
 
 export type PlayerInfoPopoverProps = {
   /** Element pored kog se prozorčić pozicionira (dres na terenu ili klupi). */
   anchorRef: RefObject<HTMLElement | null>;
   player: {
+    /** Kad postoji, prozorčić nudi link na stranicu igrača. */
+    id?: string;
     first_name: string;
     last_name: string;
     club_name: string;
@@ -133,13 +139,21 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose }: Play
             key={i}
             className="flex items-center justify-between text-xs py-1 border-t border-white/5 first:border-t-0"
           >
-            <span className="truncate">{f.label}</span>
+            <FdrChip label={f.label} difficulty={f.difficulty} className="px-2 py-1 text-[11px]" />
             <span className="text-slate-400 tabular-nums shrink-0 ml-2">
               <LocalTime iso={f.kickoffAt} options={{ day: "numeric", month: "numeric" }} />
             </span>
           </div>
         ))}
       </div>
+      {player.id && (
+        <Link
+          href={`/igraci/${player.id}`}
+          className="block mt-2.5 pt-2 border-t border-white/10 text-gold-300 text-xs font-semibold hover:underline"
+        >
+          {t("details")} →
+        </Link>
+      )}
 
       {/* Strelica koja pokazuje ka dresu ispod. */}
       <div

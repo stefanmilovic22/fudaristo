@@ -90,9 +90,9 @@ export function PlayersBoard({
             key={club.id}
             // Dok se traži/filtrira, sve grupe sa rezultatima su otvorene.
             open={filtering || undefined}
-            className="group bg-navy-800 border border-navy-700 rounded-xl overflow-hidden"
+            className="group bg-navy-800 border border-gold-400/50 rounded-xl overflow-hidden"
           >
-            <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden hover:bg-navy-700/40">
+            <summary className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden bg-navy-700/60 hover:bg-navy-700">
               <ClubBadge short={club.short} color={club.color} size={32} />
               <span className="font-display text-lg flex-1 min-w-0 truncate">{club.name}</span>
               <span className="text-xs text-slate-400 shrink-0">{tPicker("count", { count: players.length })}</span>
@@ -144,6 +144,7 @@ export function PlayersBoard({
         <PlayerInfoPopover
           anchorRef={anchor}
           player={{
+            id: selected.player.id,
             first_name: selected.player.first_name,
             last_name: selected.player.last_name,
             club_name: selected.club.name,

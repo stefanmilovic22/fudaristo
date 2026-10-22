@@ -8,7 +8,7 @@ const intlMiddleware = createIntlMiddleware(routing);
 // Zaštićene rute — zahtevaju login. Liga i tim/[id] su zaključani po zahtevu
 // vlasnika (izmena u odnosu na GDD sekciju 9); statistike i raspored su i
 // dalje javni.
-const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin", "/liga", "/tim"];
+const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin", "/liga", "/tim", "/poredi"];
 
 /**
  * Skida prefiks jezika sa putanje pre provere zaštite.
@@ -28,6 +28,30 @@ function stripLocale(pathname: string) {
 function isProtectedPath(pathname: string) {
   const bare = stripLocale(pathname);
   return PROTECTED_PREFIXES.some((prefix) => bare === prefix || bare.startsWith(prefix + "/"));
+}
+
+// Roboti koji prave preglede linkova (WhatsApp, Viber, Facebook, Telegram…) ne
+// mogu da se prijave, pa bi na zaštićenim adresama /tim/[id] i
+// /liga/pridruzi/[kod] videli samo prijavu. Njima se te dve adrese prepisuju na
+// /p/… stranice koje daju samo naslov, opis i sliku (bez sastava).
+const PREVIEW_BOT_RE =
+  /facebookexternalhit|facebot|whatsapp|twitterbot|telegrambot|slackbot|linkedinbot|discordbot|viber|skypeuripreview|pinterest|embedly|redditbot|applebot|vkshare/i;
+
+function previewRewrite(request: NextRequest) {
+  if (!PREVIEW_BOT_RE.test(request.headers.get("user-agent") ?? "")) return null;
+  const { pathname } = request.nextUrl;
+  const segments = pathname.split("/");
+  const locale =
+    segments.length > 1 && (routing.locales as readonly string[]).includes(segments[1])
+      ? segments[1]
+      : routing.defaultLocale;
+  const bare = stripLocale(pathname);
+
+  const team = /^\/tim\/([0-9a-f-]{36})\/?$/i.exec(bare);
+  if (team) return NextResponse.rewrite(new URL(`/${locale}/p/tim/${team[1]}`, request.url));
+  const league = /^\/liga\/pridruzi\/([A-Za-z0-9]{1,12})\/?$/.exec(bare);
+  if (league) return NextResponse.rewrite(new URL(`/${locale}/p/liga/${league[1]}`, request.url));
+  return null;
 }
 
 function redirectToLogin(request: NextRequest) {
@@ -53,6 +77,9 @@ function redirectToLogin(request: NextRequest) {
  * osvežene kolačiće — korisnik bi se povremeno odjavljivao bez razloga.
  */
 export async function middleware(request: NextRequest) {
+  const preview = previewRewrite(request);
+  if (preview) return preview;
+
   const response = intlMiddleware(request);
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -110,6 +137,6 @@ export const config = {
   matcher: [
     // Sve osim statike, API ruta i /auth/potvrda (link iz mejla — ne sme da
     // dobije prefiks jezika, jer je adresa upisana u Supabase podešavanjima).
-    "/((?!api|auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|auth|_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

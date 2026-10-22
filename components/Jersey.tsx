@@ -207,7 +207,8 @@ export function Jersey({
   // --- Puna veličina: dres + ime + klub zajedno u jednom okviru. ------------
   return (
     <div
-      className={`relative w-[64px] sm:w-[82px] flex flex-col items-center transition-opacity ${
+      // animate-pop-in: dres se „useli" kad se pojavi (novi igrač u sastavu).
+      className={`relative w-[64px] sm:w-[82px] flex flex-col items-center transition-opacity animate-pop-in ${
         dimmed ? "opacity-35" : ""
       }`}
     >
