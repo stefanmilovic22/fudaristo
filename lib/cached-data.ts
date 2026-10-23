@@ -270,3 +270,23 @@ export const getGameweekStatsCached = unstable_cache(
   ["gw-stats-v1"],
   { revalidate: TTL, tags: TAGS }
 );
+
+/** Mečevi za više kola odjednom (planer transfera) — javni podatak, ključ je spisak kola. */
+export const getFixturesForGameweeksCached = unstable_cache(
+  async (gameweekIds: string[]) => {
+    if (gameweekIds.length === 0) return [] as any[];
+    const supabase = createPublicClient();
+    return throwIfError(
+      await supabase
+        .from("fixtures")
+        .select(
+          "gameweek_id, home_club_id, away_club_id, status, home:home_club_id(short_name), away:away_club_id(short_name)"
+        )
+        .in("gameweek_id", gameweekIds)
+        .neq("status", "cancelled"),
+      "fixtures(planner)"
+    ) as any[];
+  },
+  ["planner-fixtures-v1"],
+  { revalidate: TTL, tags: TAGS }
+);

@@ -69,8 +69,9 @@ export function SofascoreInjuriesPuller() {
       result.rows.forEach((r, i) => {
         p[i] = r.playerId ?? "";
         s[i] = r.proposedStatus;
-        // Tačno ime = štiklirano; samo-prezime ili bez uparivanja = admin potvrđuje.
-        c[i] = r.exact && Boolean(r.playerId);
+        // Tačno ime = štiklirano; samo-prezime, bez uparivanja ili povratak zbog
+        // praznog spiska kluba = admin potvrđuje ručno.
+        c[i] = r.exact && Boolean(r.playerId) && !r.uncertain;
       });
       setPlayers(p);
       setStatuses(s);
@@ -213,6 +214,11 @@ export function SofascoreInjuriesPuller() {
                         <td className="py-1 pr-2 whitespace-nowrap text-slate-300">{r.team}</td>
                         <td className="py-1 px-1 whitespace-nowrap">
                           {r.sofaName ?? <span className="text-slate-500">(nema ga na spisku)</span>}
+                          {r.uncertain && (
+                            <span className="ml-1.5 text-gold-300" title="Spisak ovog kluba u fajlu je prazan">
+                              prazan spisak — proveri
+                            </span>
+                          )}
                         </td>
                         <td className="py-1 px-1">
                           <select

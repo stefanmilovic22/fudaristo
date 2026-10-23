@@ -29,6 +29,7 @@ import { parseSofascoreIncidents, parseSofascoreLineups, parseSofascoreLineupsOb
 import type { Position } from "@/lib/fantasy-rules";
 import { diffMatchEvents, eventsToPlayers, findPlayer, type EventDiffRow, type OurStatRow, type SquadPlayer } from "@/lib/sofascore-events";
 import { mapMissingStatus, parseInjuriesFile, type PlayerStatus } from "@/lib/sofascore-injuries";
+import { buildInjuriesPreview, type InjuriesPreview } from "@/lib/injuries-preview";
 import { teamNamesMatch } from "@/lib/team-names";
 import { selectAllPages } from "@/lib/db-paging";
 import { countTransfers, suggestPrice } from "@/lib/price-rules";
@@ -1670,28 +1671,7 @@ export async function confirmSofascoreKickoffsAction(input: {
 
 const PLAYER_STATUSES: PlayerStatus[] = ["available", "injured", "suspended", "doubtful", "unavailable"];
 
-export type InjuryRow = {
-  team: string;
-  /** Ime kod SofaScore-a; null = igrač koji se vraća na "dostupan" (nema ga na novom spisku). */
-  sofaName: string | null;
-  playerId: string | null;
-  /** Upareno tačnim imenom (true) ili samo po prezimenu (false). */
-  exact: boolean;
-  currentStatus: string;
-  proposedStatus: PlayerStatus;
-  note: string | null;
-  until: string | null;
-  /** Naše ime igrača za prikaz. */
-  playerName: string | null;
-};
-
-export type InjuriesPreview = {
-  round: number | null;
-  fetchedAt: string | null;
-  rows: InjuryRow[];
-  squadPlayers: { id: string; name: string; club: string }[];
-  warnings: string[];
-};
+export type { InjuryRow, InjuriesPreview } from "@/lib/injuries-preview";
 
 export async function previewSofascoreInjuriesAction(jsonText: string): Promise<InjuriesPreview> {
   await requireAdmin();
@@ -1714,63 +1694,7 @@ export async function previewSofascoreInjuriesAction(jsonText: string): Promise<
   const clubList = (clubs ?? []) as { id: string; name: string }[];
   const playerList = (players ?? []) as any[];
 
-  const warnings: string[] = [];
-  const rows: InjuryRow[] = [];
-  const squadPlayers: InjuriesPreview["squadPlayers"] = [];
-
-  for (const t of file.teams) {
-    const club = clubList.find((c) => teamNamesMatch(c.name, t.team));
-    if (!club) {
-      warnings.push(`Klub „${t.team}” nije nađen u našoj bazi — preskačem.`);
-      continue;
-    }
-    const squad: (SquadPlayer & { raw: any })[] = playerList
-      .filter((p) => p.club_id === club.id)
-      .map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`.trim(), clubId: club.id, raw: p }));
-    for (const p of squad) squadPlayers.push({ id: p.id, name: p.name, club: club.name });
-
-    const handled = new Set<string>();
-    for (const m of t.missing) {
-      const found = findPlayer(m.name, squad);
-      const raw = squad.find((s) => s.id === found?.player.id)?.raw;
-      if (found) handled.add(found.player.id);
-      const proposed = mapMissingStatus(m.type, m.reason, m.description);
-      const sameUntil = (raw?.status_until ?? null) === m.until || (!raw?.status_until && !m.until);
-      // Bez promene (isti status, napomena i datum) — nema šta da se prikaže.
-      if (raw && raw.status === proposed && (raw.status_note ?? null) === (m.description ?? null) && sameUntil) continue;
-      rows.push({
-        team: club.name,
-        sofaName: m.name,
-        playerId: found?.player.id ?? null,
-        exact: found?.exact ?? false,
-        currentStatus: raw?.status ?? "available",
-        proposedStatus: proposed,
-        note: m.description,
-        until: m.until,
-        playerName: found?.player.name ?? null,
-      });
-    }
-
-    // Označeni, a nema ih na novom spisku → vraćaju se.
-    for (const p of squad) {
-      if (handled.has(p.id)) continue;
-      if (p.raw.status && p.raw.status !== "available") {
-        rows.push({
-          team: club.name,
-          sofaName: null,
-          playerId: p.id,
-          exact: true,
-          currentStatus: p.raw.status,
-          proposedStatus: "available",
-          note: null,
-          until: null,
-          playerName: p.name,
-        });
-      }
-    }
-  }
-
-  return { round: file.round, fetchedAt: file.fetchedAt, rows, squadPlayers, warnings };
+  return buildInjuriesPreview(file, clubList, playerList);
 }
 
 export async function confirmSofascoreInjuriesAction(input: {

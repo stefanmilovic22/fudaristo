@@ -25,6 +25,14 @@ const RICH: Record<string, Record<string, unknown>> = {
 
 /** Vrednosti za obične zamenike, po ključu. */
 const VALUES: Record<string, Record<string, unknown>> = {
+  "planner.tileTransfers": { count: 2 },
+  "planner.gwTab": { number: 9 },
+  "planner.gwShort": { number: 9 },
+  "planner.planFor": { number: 9 },
+  "planner.pointsLost": { points: 4 },
+  "planner.rulesNote": { max: 5, cost: 4 },
+  "planner.pickReplacement": { name: "Pelkas" },
+  "planner.budgetForSwap": { amount: "6.5M" },
   "home.leagueMembers": { count: 14 },
   "table.afterRound": { number: 7 },
   "compare.rankPoints": { rank: 12, points: 412 },

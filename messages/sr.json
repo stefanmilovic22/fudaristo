@@ -27,7 +27,8 @@
     "sectionFootball": "Fudbal",
     "sectionInfo": "Info",
     "sectionMedia": "Media",
-    "skipToContent": "Pređi na sadržaj"
+    "skipToContent": "Pređi na sadržaj",
+    "planner": "Planer transfera"
   },
   "home": {
     "featuredMatch": "Meč kola {number}",
@@ -988,7 +989,8 @@
     "busy": "Pravim sliku…",
     "text": "Moj tim „{team}“ na Fudaristu — {points} poena!",
     "error": "Slika trenutno ne može da se napravi. Pokušaj ponovo.",
-    "textCurrent": "Moj tim „{team}“ za naredno kolo na Fudaristu!"
+    "textCurrent": "Moj tim „{team}“ za naredno kolo na Fudaristu!",
+    "busyShort": "Slika…"
   },
   "compare": {
     "title": "Poređenje timova",
@@ -1045,5 +1047,54 @@
   "empty": {
     "noGwTitle": "Nema otvorenog kola",
     "noGwBody": "Trenutno nijedno kolo nema rok koji tek dolazi, pa nema šta da se sastavlja. Svrati opet kad se otvori sledeće kolo."
+  },
+  "planner": {
+    "title": "Planer transfera",
+    "subtitle": "Isprobaj transfere 3 kola unapred: slobodni transferi, cena, kasa i raspored mečeva. Ovo je samo simulacija — transfere i dalje potvrđuješ na Moj klub.",
+    "squadTitle": "Tvoj sastav",
+    "deadline": "Rok:",
+    "gwTab": "Kolo {number}",
+    "gwShort": "K{number}",
+    "freeTransfers": "Slobodni transferi",
+    "planned": "Planirano",
+    "cost": "Cena (poeni)",
+    "budgetAfter": "Kasa posle",
+    "colPlayer": "Igrač",
+    "colPrice": "Cena",
+    "replace": "Zameni",
+    "undo": "Poništi",
+    "planFor": "Plan za {number}. kolo",
+    "noTransfers": "Još nema planiranih transfera za ovo kolo. Klikni „Zameni\" pored igrača.",
+    "free": "besplatno",
+    "total": "Ukupno",
+    "pointsLost": "−{points} poena",
+    "noPenalty": "bez penala",
+    "allGameweeks": "Sva tri kola",
+    "clearPlan": "Očisti plan",
+    "fdrNote": "Boje pokazuju težinu meča po mestu protivnika u tabeli (1 lako – 5 teško):",
+    "rulesNote": "Svako kolo dobijaš 1 slobodan transfer (gomilaju se do {max}); svaki transfer preko slobodnih košta {cost} poena. Igrač se prodaje po ceni po kojoj je kupljen. Čipovi nisu uračunati.",
+    "savedNote": "Plan se čuva samo u ovom pregledaču.",
+    "pickReplacement": "Izbor zamene za {name}",
+    "replacing": "Zamena za",
+    "budgetForSwap": "možeš da potrošiš {amount}",
+    "close": "Zatvori",
+    "openTeam": "Moj klub",
+    "openPlanner": "Planer transfera",
+    "noGwTitle": "Nema otvorenog kola",
+    "noGwBody": "Trenutno nijedno kolo nema rok koji tek dolazi, pa nema šta da se planira.",
+    "unavailableTitle": "Planer još nije dostupan",
+    "unavailableBody": "Planer radi kad imaš sastavljen tim i posle prvog roka. Do tada su transferi besplatni i neograničeni — sastavi tim na Moj klub.",
+    "new": "NOVO",
+    "tipText": "Novo: planer transfera — isprobaj 3 kola unapred pre nego što potvrdiš.",
+    "tipOpen": "Otvori",
+    "promoBody": "Isprobaj transfere 3 kola unapred — slobodni transferi, cena u poenima, kasa i težina narednih mečeva. Samo simulacija, ništa se ne čuva dok ne potvrdiš.",
+    "promoCta": "Otvori planer",
+    "promoLockedBody": "Otključava se posle prvog roka — do tada su transferi besplatni i neograničeni.",
+    "tileTransfers": "{count, plural, one {# transfer} few {# transfera} other {# transfera}}"
+  },
+  "actions": {
+    "pointsShort": "Poeni",
+    "plannerShort": "Planer",
+    "shareShort": "Podeli"
   }
 }

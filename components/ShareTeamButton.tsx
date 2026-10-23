@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { teamPath } from "@/lib/share";
+import { ACTION_ICON, actionClass } from "@/components/action-styles";
+import { ShareIcon } from "@/components/icons";
 
 /**
  * „Podeli tim": traži sliku postave sa servera (/api/tim/[id]/slika) i na
@@ -24,6 +26,7 @@ export function ShareTeamButton({
   className?: string;
 }) {
   const t = useTranslations("shareTeam");
+  const tActions = useTranslations("actions");
   const locale = useLocale();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -64,14 +67,11 @@ export function ShareTeamButton({
   }
 
   return (
-    <span className="inline-flex flex-col items-start">
-      <button
-        type="button"
-        onClick={share}
-        disabled={busy}
-        className={`text-sm font-semibold text-gold-300 border border-navy-600 hover:border-gold-400/60 rounded-lg px-3 py-2 whitespace-nowrap transition-colors disabled:opacity-60 ${className}`}
-      >
-        {busy ? t("busy") : `${t("button")} ↗`}
+    <span className="flex flex-col items-stretch sm:items-start">
+      <button type="button" onClick={share} disabled={busy} className={`${actionClass("primary")} ${className}`}>
+        <ShareIcon className={ACTION_ICON} />
+        <span className="sm:hidden">{busy ? t("busyShort") : tActions("shareShort")}</span>
+        <span className="hidden sm:inline">{busy ? t("busy") : t("button")}</span>
       </button>
       {failed && <span role="alert" className="text-danger-400 text-xs mt-1 max-w-[220px]">{t("error")}</span>}
     </span>

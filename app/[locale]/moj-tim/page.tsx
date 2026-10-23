@@ -19,6 +19,10 @@ import { ChipsPanel, type ChipState, type ChipType } from "./chips-panel";
 import { ResetSquadButton } from "@/components/ResetSquadButton";
 import { ShareTeamButton } from "@/components/ShareTeamButton";
 import { WelcomeGuide } from "@/components/WelcomeGuide";
+import { ActionLink } from "@/components/ActionLink";
+import { ChartIcon, SwapIcon } from "@/components/icons";
+import { NewBadge } from "@/components/NewBadge";
+import { PlannerTip } from "@/components/PlannerTip";
 import { EmptyState } from "@/components/EmptyState";
 import type { SelectablePlayer } from "@/lib/fantasy-rules";
 import { LocalTime } from "@/components/LocalTime";
@@ -42,9 +46,11 @@ export default async function MojTimPage({
   const { locale } = await params;
   setRequestLocale(locale);
   // Prevodi, klijent i sesija su nezavisni — istovremeno.
-  const [t, tSettings, supabase, user] = await Promise.all([
+  const [t, tSettings, tPlanner, tActions, supabase, user] = await Promise.all([
     getTranslations("team"),
     getTranslations("settings"),
+    getTranslations("planner"),
+    getTranslations("actions"),
     createClient(),
     getCurrentUser(),
   ]);
@@ -290,7 +296,7 @@ export default async function MojTimPage({
           kartice — po uzoru na FPL-ov "Pick Team" vrh, koji ime tima i
           identitet drži u jednoj tankoj traci da ostane mesta za teren. */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 sm:flex-1">
           <div
             className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center font-display font-bold text-sm"
             style={{ backgroundColor: profile?.team_color ?? "#E8B33D", color: readableInk(profile?.team_color ?? "#E8B33D") }}
@@ -299,14 +305,26 @@ export default async function MojTimPage({
           </div>
           <h2 className="font-display text-lg sm:text-xl truncate">{profile?.team_name}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Na telefonu tri jednaka dugmeta u jednom redu (ikonica iznad oznake),
+            od sm naviše u redu sa punim oznakama — vidi components/action-styles.ts. */}
+        <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:flex sm:items-center sm:gap-2">
           {(finalizedRows?.length ?? 0) > 0 && (
-            <Link
+            <ActionLink
               href={`/tim/${user.id}`}
-              className="text-sm font-semibold text-gold-300 border border-navy-600 hover:border-gold-400/60 rounded-lg px-3 py-2 whitespace-nowrap transition-colors"
-            >
-              {t("pointsHistory")} →
-            </Link>
+              icon={ChartIcon}
+              label={t("pointsHistory")}
+              shortLabel={tActions("pointsShort")}
+            />
+          )}
+          {squad.length > 0 && !preSeason && (
+            <ActionLink
+              href="/planer"
+              icon={SwapIcon}
+              variant="plan"
+              label={tPlanner("openPlanner")}
+              shortLabel={tActions("plannerShort")}
+              badge={<NewBadge />}
+            />
           )}
           {squad.length > 0 && (
             <ShareTeamButton
@@ -319,6 +337,11 @@ export default async function MojTimPage({
           {preSeason && <ResetSquadButton gameweekId={targetGw.id} />}
         </div>
       </div>
+      {squad.length > 0 && !preSeason && (
+        <div className="mt-3">
+          <PlannerTip />
+        </div>
+      )}
       <div className="mt-3">
         <ChipsPanel
           gameweekId={targetGw.id}

@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { SOCIAL_LINKS, type SocialKey } from "@/lib/site";
+import { NewBadge } from "@/components/NewBadge";
 
 /**
  * Glavna navigacija — bočni meni na telefonu, traka sa tabovima od 1024px.
@@ -46,6 +47,11 @@ const ICONS = {
   stats: (p: IconProps) => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
       <path d="M5 20V10M12 20V4M19 20v-6" strokeLinecap="round" />
+    </svg>
+  ),
+  planner: (p: IconProps) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
+      <path d="M4 8h13l-3-3M20 16H7l3 3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   rules: (p: IconProps) => (
@@ -150,6 +156,7 @@ const EXTRA_SECTIONS: { title: "sectionFootball" | "sectionInfo"; links: { key: 
     links: [
       { key: "clubs", href: "/klubovi" },
       { key: "players", href: "/igraci" },
+      { key: "planner", href: "/planer" },
     ],
   },
   {
@@ -302,6 +309,7 @@ export function MainNav({ isAdmin }: { isAdmin: boolean }) {
       >
         <Icon className={`w-5 h-5 shrink-0 ${active || key === "admin" ? "text-gold-300" : "text-slate-400"}`} />
         {t(key)}
+        {key === "planner" && <NewBadge className="ml-auto" />}
         {active && <span aria-hidden className="ml-auto w-1.5 h-1.5 rounded-full bg-gold-300" />}
       </Link>
     );

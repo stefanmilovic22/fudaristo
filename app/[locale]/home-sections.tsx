@@ -4,6 +4,9 @@ import type { TeamOfWeekData } from "@/components/TeamOfWeekBoard";
 import type { TableRow } from "@/lib/league-table";
 import { ClubBadge } from "@/components/ClubBadge";
 import { LocalTime } from "@/components/LocalTime";
+import { FDR_CLASS } from "@/components/FdrChip";
+import { NewBadge } from "@/components/NewBadge";
+import { SwapIcon } from "@/components/icons";
 
 const KICKOFF_FMT = { weekday: "short", hour: "2-digit", minute: "2-digit" } as const;
 import { ZONE_RANK_CLASS, zoneFor } from "@/lib/league-zones";
@@ -142,6 +145,73 @@ export async function MyLeaguesCard({
         </p>
       )}
     </Card>
+  );
+}
+
+/**
+ * Kartica „Planer transfera" na početnoj (prijavljeni). `locked` = pre prvog
+ * roka: planer još ne radi, pa je kartica tiša i bez dugmeta. Vizual desno je
+ * ilustracija izgleda planera (tri kola, zamene, cena) — ne pravi podaci.
+ */
+export async function PlannerPromo({ locked, firstGameweek }: { locked: boolean; firstGameweek: number }) {
+  const t = await getTranslations("planner");
+  const tiles = [
+    { gw: firstGameweek, count: 1, cost: 0, chips: [1, 2] },
+    { gw: firstGameweek + 1, count: 1, cost: 0, chips: [3, 1] },
+    { gw: firstGameweek + 2, count: 2, cost: 4, chips: [5, 2] },
+  ];
+  return (
+    <section
+      className={`rounded-2xl border border-gold-400/45 bg-navy-800 bg-[radial-gradient(700px_220px_at_100%_0,rgba(90,180,255,0.20),transparent)] px-5 sm:px-7 py-5 sm:py-6 flex flex-wrap items-center justify-between gap-6 ${
+        locked ? "opacity-85" : ""
+      }`}
+    >
+      <div className="min-w-0 flex-1 basis-[300px]">
+        <h2 className="font-display text-xl sm:text-2xl flex items-center gap-3">
+          <span className="shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-gold-400 to-[#3E86F0] text-navy-950 grid place-items-center">
+            <SwapIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+          </span>
+          {t("title")}
+          {!locked && <NewBadge />}
+        </h2>
+        <p className="text-sm text-slate-300 mt-2 max-w-md leading-relaxed">
+          {locked ? t("promoLockedBody") : t("promoBody")}
+        </p>
+        {!locked && (
+          <Link
+            href="/planer"
+            className="inline-flex items-center gap-2 mt-4 bg-gold-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gold-300 transition-colors"
+          >
+            {t("promoCta")} →
+          </Link>
+        )}
+      </div>
+      {!locked && (
+        <div className="hidden md:flex gap-2.5" aria-hidden>
+          {tiles.map((x, i) => (
+            <div
+              key={x.gw}
+              className={`w-[128px] rounded-xl border px-3 py-2.5 bg-navy-950/60 ${
+                i === 0 ? "border-gold-400" : "border-navy-600"
+              }`}
+            >
+              <div className="text-[11px] font-display font-bold tracking-wider uppercase text-slate-400">
+                {t("gwTab", { number: x.gw })}
+              </div>
+              <div className="text-xs text-slate-200 mt-2">{t("tileTransfers", { count: x.count })}</div>
+              <div className="flex gap-1 mt-2">
+                {x.chips.map((d, j) => (
+                  <span key={j} className={`h-4 w-9 rounded-md ${FDR_CLASS[d]}`} />
+                ))}
+              </div>
+              <div className={`mt-2 text-xs font-bold ${x.cost > 0 ? "text-danger-400" : "text-pitch-400"}`}>
+                {x.cost > 0 ? t("pointsLost", { points: x.cost }) : t("free")}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

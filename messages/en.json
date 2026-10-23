@@ -27,7 +27,8 @@
     "sectionFootball": "Football",
     "sectionInfo": "Info",
     "sectionMedia": "Media",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "planner": "Transfer planner"
   },
   "home": {
     "featuredMatch": "Match of gameweek {number}",
@@ -988,7 +989,8 @@
     "busy": "Creating image…",
     "text": "My team “{team}” on Fudaristo — {points} points!",
     "error": "The image can't be created right now. Please try again.",
-    "textCurrent": "My team “{team}” for the next gameweek on Fudaristo!"
+    "textCurrent": "My team “{team}” for the next gameweek on Fudaristo!",
+    "busyShort": "Image…"
   },
   "compare": {
     "title": "Team comparison",
@@ -1045,5 +1047,54 @@
   "empty": {
     "noGwTitle": "No open gameweek",
     "noGwBody": "No gameweek has an upcoming deadline right now, so there is nothing to pick. Check back when the next gameweek opens."
+  },
+  "planner": {
+    "title": "Transfer planner",
+    "subtitle": "Try out transfers up to 3 gameweeks ahead: free transfers, cost, budget and the fixtures. This is only a simulation — you still confirm real transfers on My team.",
+    "squadTitle": "Your squad",
+    "deadline": "Deadline:",
+    "gwTab": "GW {number}",
+    "gwShort": "GW{number}",
+    "freeTransfers": "Free transfers",
+    "planned": "Planned",
+    "cost": "Cost (points)",
+    "budgetAfter": "Budget after",
+    "colPlayer": "Player",
+    "colPrice": "Price",
+    "replace": "Replace",
+    "undo": "Undo",
+    "planFor": "Plan for gameweek {number}",
+    "noTransfers": "No transfers planned for this gameweek yet. Click “Replace” next to a player.",
+    "free": "free",
+    "total": "Total",
+    "pointsLost": "−{points} points",
+    "noPenalty": "no penalty",
+    "allGameweeks": "All three gameweeks",
+    "clearPlan": "Clear plan",
+    "fdrNote": "Colours show fixture difficulty by the opponent’s league position (1 easy – 5 hard):",
+    "rulesNote": "You get 1 free transfer each gameweek (they bank up to {max}); every transfer beyond your free ones costs {cost} points. A player is sold at the price he was bought for. Chips are not counted.",
+    "savedNote": "The plan is saved in this browser only.",
+    "pickReplacement": "Pick a replacement for {name}",
+    "replacing": "Replacing",
+    "budgetForSwap": "you can spend {amount}",
+    "close": "Close",
+    "openTeam": "My team",
+    "openPlanner": "Transfer planner",
+    "noGwTitle": "No open gameweek",
+    "noGwBody": "No gameweek has an upcoming deadline right now, so there is nothing to plan.",
+    "unavailableTitle": "The planner is not available yet",
+    "unavailableBody": "The planner works once you have a squad and your first deadline has passed. Until then transfers are free and unlimited — build your team on My team.",
+    "new": "NEW",
+    "tipText": "New: the transfer planner — try 3 gameweeks ahead before you confirm.",
+    "tipOpen": "Open",
+    "promoBody": "Try transfers 3 gameweeks ahead — free transfers, cost in points, budget and upcoming fixture difficulty. Only a simulation, nothing is saved until you confirm.",
+    "promoCta": "Open planner",
+    "promoLockedBody": "Unlocks after the first deadline — until then transfers are free and unlimited.",
+    "tileTransfers": "{count, plural, one {# transfer} other {# transfers}}"
+  },
+  "actions": {
+    "pointsShort": "Points",
+    "plannerShort": "Planner",
+    "shareShort": "Share"
   }
 }

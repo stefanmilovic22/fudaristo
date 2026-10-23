@@ -8,7 +8,7 @@ const intlMiddleware = createIntlMiddleware(routing);
 // Zaštićene rute — zahtevaju login. Liga i tim/[id] su zaključani po zahtevu
 // vlasnika (izmena u odnosu na GDD sekciju 9); statistike i raspored su i
 // dalje javni.
-const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin", "/liga", "/tim", "/poredi"];
+const PROTECTED_PREFIXES = ["/moj-tim", "/transferi", "/admin", "/liga", "/tim", "/poredi", "/planer"];
 
 /**
  * Skida prefiks jezika sa putanje pre provere zaštite.
