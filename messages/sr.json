@@ -1082,15 +1082,19 @@
     "openPlanner": "Planer transfera",
     "noGwTitle": "Nema otvorenog kola",
     "noGwBody": "Trenutno nijedno kolo nema rok koji tek dolazi, pa nema šta da se planira.",
-    "unavailableTitle": "Planer još nije dostupan",
-    "unavailableBody": "Planer radi kad imaš sastavljen tim i posle prvog roka. Do tada su transferi besplatni i neograničeni — sastavi tim na Moj klub.",
+    "unavailableTitle": "Prvo sastavi tim",
+    "unavailableBody": "Planer radi kad imaš sastavljen tim. Sastavi tim na Moj klub, pa se vrati ovde.",
     "new": "NOVO",
     "tipText": "Novo: planer transfera — isprobaj 3 kola unapred pre nego što potvrdiš.",
     "tipOpen": "Otvori",
     "promoBody": "Isprobaj transfere 3 kola unapred — slobodni transferi, cena u poenima, kasa i težina narednih mečeva. Samo simulacija, ništa se ne čuva dok ne potvrdiš.",
     "promoCta": "Otvori planer",
-    "promoLockedBody": "Otključava se posle prvog roka — do tada su transferi besplatni i neograničeni.",
-    "tileTransfers": "{count, plural, one {# transfer} few {# transfera} other {# transfera}}"
+    "promoLockedBody": "Dostupno čim sastaviš tim — onda možeš da isprobaš transfere za naredna kola.",
+    "tileTransfers": "{count, plural, one {# transfer} few {# transfera} other {# transfera}}",
+    "preSeasonNote": "Do prvog roka su transferi besplatni i neograničeni, pa se u prvom kolu ništa ne naplaćuje. Za sledeća kola važe obična pravila.",
+    "promoGuestBody": "Novo u Fudaristu: isprobaj transfere 3 kola unapred — slobodni transferi, cena u poenima, kasa i težina narednih mečeva. Dostupno uz besplatan nalog.",
+    "promoGuestCta": "Napravi nalog i isprobaj",
+    "promoGuestLogin": "Već imaš nalog? Prijavi se"
   },
   "actions": {
     "pointsShort": "Poeni",

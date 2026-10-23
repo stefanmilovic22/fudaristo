@@ -149,11 +149,21 @@ export async function MyLeaguesCard({
 }
 
 /**
- * Kartica „Planer transfera" na početnoj (prijavljeni). `locked` = pre prvog
- * roka: planer još ne radi, pa je kartica tiša i bez dugmeta. Vizual desno je
- * ilustracija izgleda planera (tri kola, zamene, cena) — ne pravi podaci.
+ * Kartica „Planer transfera" na početnoj. Za prijavljene sa sastavom otvara
+ * planer; bez sastava (`locked`) je tiša i bez dugmeta; neprijavljenima (`guest`)
+ * je reklama sa pozivom da naprave nalog. Vizual desno je ilustracija izgleda
+ * planera (tri kola, zamene, cena) — ne pravi podaci.
  */
-export async function PlannerPromo({ locked, firstGameweek }: { locked: boolean; firstGameweek: number }) {
+export async function PlannerPromo({
+  variant,
+  firstGameweek,
+}: {
+  /** member: otvara planer · locked: prijavljen bez sastava · guest: reklama za neprijavljene */
+  variant: "member" | "locked" | "guest";
+  firstGameweek: number;
+}) {
+  const locked = variant === "locked";
+  const guest = variant === "guest";
   const t = await getTranslations("planner");
   const tiles = [
     { gw: firstGameweek, count: 1, cost: 0, chips: [1, 2] },
@@ -175,15 +185,22 @@ export async function PlannerPromo({ locked, firstGameweek }: { locked: boolean;
           {!locked && <NewBadge />}
         </h2>
         <p className="text-sm text-slate-300 mt-2 max-w-md leading-relaxed">
-          {locked ? t("promoLockedBody") : t("promoBody")}
+          {locked ? t("promoLockedBody") : guest ? t("promoGuestBody") : t("promoBody")}
         </p>
         {!locked && (
-          <Link
-            href="/planer"
-            className="inline-flex items-center gap-2 mt-4 bg-gold-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gold-300 transition-colors"
-          >
-            {t("promoCta")} →
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
+            <Link
+              href={guest ? "/register" : "/planer"}
+              className="inline-flex items-center gap-2 bg-gold-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gold-300 transition-colors"
+            >
+              {guest ? t("promoGuestCta") : t("promoCta")} →
+            </Link>
+            {guest && (
+              <Link href="/login" className="text-sm font-semibold text-gold-300 hover:underline">
+                {t("promoGuestLogin")}
+              </Link>
+            )}
+          </div>
         )}
       </div>
       {!locked && (

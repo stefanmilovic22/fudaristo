@@ -85,8 +85,9 @@ export default async function PlanerPage({ params }: { params: Promise<{ locale:
     squadRows = s2.data as any[] | null;
   }
 
-  // Pre prvog roka transferi su neograničeni i besplatni — nema šta da se planira.
-  if (isFirst || !squadRows || squadRows.length === 0 || !profile) {
+  // Bez sastava nema šta da se planira. Pre prvog roka planer radi, ali je prvo
+  // kolo bez penala (transferi su tada neograničeni i besplatni).
+  if (!squadRows || squadRows.length === 0 || !profile) {
     return unavailable(t("unavailableTitle"), t("unavailableBody"));
   }
 
@@ -162,6 +163,7 @@ export default async function PlanerPage({ params }: { params: Promise<{ locale:
       freeNow={Number(profile.free_transfers ?? 0)}
       players={selectable}
       fixtures={fixtures}
+      preSeason={isFirst}
     />
   );
 }

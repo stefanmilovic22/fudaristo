@@ -316,7 +316,7 @@ export default async function MojTimPage({
               shortLabel={tActions("pointsShort")}
             />
           )}
-          {squad.length > 0 && !preSeason && (
+          {squad.length > 0 && (
             <ActionLink
               href="/planer"
               icon={SwapIcon}
@@ -337,7 +337,7 @@ export default async function MojTimPage({
           {preSeason && <ResetSquadButton gameweekId={targetGw.id} />}
         </div>
       </div>
-      {squad.length > 0 && !preSeason && (
+      {squad.length > 0 && (
         <div className="mt-3">
           <PlannerTip />
         </div>

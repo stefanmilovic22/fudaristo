@@ -38,6 +38,7 @@ export function Planner({
   freeNow,
   players,
   fixtures,
+  preSeason = false,
 }: {
   userId: string;
   /** Menja se kad se promeni ciljno kolo — stari plan tada više ne važi. */
@@ -48,6 +49,8 @@ export function Planner({
   freeNow: number;
   players: SelectablePlayer[];
   fixtures: PlannerFixtures;
+  /** Još nije prošao prvi rok: prvo kolo je bez penala i bez troška slobodnih transfera. */
+  preSeason?: boolean;
 }) {
   const t = useTranslations("planner");
   const tPos = useTranslations("positions");
@@ -73,7 +76,7 @@ export function Planner({
   const storageKey = `${STORAGE_PREFIX}:${userId}:${planKey}`;
 
   const simulate = (p: Plan) =>
-    simulatePlan({ squad, budget, freeNow, plan: p, players: allById, gwCount });
+    simulatePlan({ squad, budget, freeNow, plan: p, players: allById, gwCount, preSeason });
 
   // Kad korisnik otvori planer, „NOVO" oznake po sajtu nestaju.
   useEffect(() => {
@@ -110,7 +113,7 @@ export function Planner({
     }
   }
 
-  const result = useMemo(() => simulate(plan), [plan, squad, budget, freeNow, allById, gwCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  const result = useMemo(() => simulate(plan), [plan, squad, budget, freeNow, allById, gwCount, preSeason]); // eslint-disable-line react-hooks/exhaustive-deps
   const gw = result.gws[tab];
 
   const totalCost = result.gws.reduce((s, g) => s + g.cost, 0);
@@ -300,7 +303,7 @@ export function Planner({
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 px-3 sm:px-4 py-3 text-xs text-slate-400">
-            <Stat label={t("freeTransfers")} value={String(gw.freeAvailable)} accent />
+            <Stat label={t("freeTransfers")} value={Number.isFinite(gw.freeAvailable) ? String(gw.freeAvailable) : "∞"} accent />
             <Stat label={t("planned")} value={String(gw.used)} />
             <Stat label={t("cost")} value={gw.cost > 0 ? `−${gw.cost}` : "0"} danger={gw.cost > 0} />
             <Stat label={t("budgetAfter")} value={formatEUR(gw.budgetAfter)} />
@@ -404,6 +407,7 @@ export function Planner({
               <FdrChip label="5" difficulty={5} className="px-1.5 py-0.5 text-[10px]" />
             </p>
             <p>{t("rulesNote", { max: FREE_TRANSFERS_MAX, cost: EXTRA_TRANSFER_COST })}</p>
+            {preSeason && <p className="text-gold-300">{t("preSeasonNote")}</p>}
             <p>{t("savedNote")}</p>
           </section>
         </aside>

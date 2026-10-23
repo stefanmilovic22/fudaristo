@@ -2,7 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/current-user";
-import { getTargetGameweek, isBuildingFirstSquad } from "@/lib/gameweek";
+import { getTargetGameweek } from "@/lib/gameweek";
 import { DeadlineCountdown } from "@/components/DeadlineCountdown";
 import { getMostSelectedCached, getRoundMatchesCached, getTableDataCached } from "@/lib/cached-data";
 import { loadLeague } from "@/lib/league-data";
@@ -62,7 +62,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   // Sastav se traži za kolo koje se trenutno uređuje — isto kolo koje
   // otvara /moj-tim, da poruka ovde i stranica tamo ne govore različito.
-  const [profileRes, squadCount, firstSquad, roundMatches, league, stats, tableData, mostSelected, myLeagues] =
+  const [profileRes, squadCount, roundMatches, league, stats, tableData, mostSelected, myLeagues] =
     await Promise.all([
       profilePromise,
       user && targetGw
@@ -72,8 +72,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             .eq("user_id", user.id)
             .eq("gameweek_id", targetGw.id)
         : Promise.resolve({ count: 0 }),
-      // Planer transfera radi tek posle prvog roka — dotle je kartica tiša varijanta.
-      user && targetGw ? isBuildingFirstSquad(supabase, user.id, targetGw.number).catch(() => true) : Promise.resolve(true),
       targetGw
         ? getRoundMatchesCached(targetGw.id).catch((e) => {
             console.error("[/] round matches:", e);
@@ -172,9 +170,11 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         />
       )}
 
-      {user && targetGw && (firstSquad || hasSquad) && (
-        <PlannerPromo locked={firstSquad} firstGameweek={targetGw.number} />
-      )}
+      {/* Prijavljeni vide planer, neprijavljeni reklamu za njega (ista kartica). */}
+      <PlannerPromo
+        variant={!user ? "guest" : hasSquad ? "member" : "locked"}
+        firstGameweek={targetGw?.number ?? 1}
+      />
 
       {user && (
         <section>

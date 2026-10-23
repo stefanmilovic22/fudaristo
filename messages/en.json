@@ -1082,15 +1082,19 @@
     "openPlanner": "Transfer planner",
     "noGwTitle": "No open gameweek",
     "noGwBody": "No gameweek has an upcoming deadline right now, so there is nothing to plan.",
-    "unavailableTitle": "The planner is not available yet",
-    "unavailableBody": "The planner works once you have a squad and your first deadline has passed. Until then transfers are free and unlimited — build your team on My team.",
+    "unavailableTitle": "Build your squad first",
+    "unavailableBody": "The planner works once you have a squad. Build your team on My team, then come back.",
     "new": "NEW",
     "tipText": "New: the transfer planner — try 3 gameweeks ahead before you confirm.",
     "tipOpen": "Open",
     "promoBody": "Try transfers 3 gameweeks ahead — free transfers, cost in points, budget and upcoming fixture difficulty. Only a simulation, nothing is saved until you confirm.",
     "promoCta": "Open planner",
-    "promoLockedBody": "Unlocks after the first deadline — until then transfers are free and unlimited.",
-    "tileTransfers": "{count, plural, one {# transfer} other {# transfers}}"
+    "promoLockedBody": "Available as soon as you have a squad — then you can try out transfers for the coming gameweeks.",
+    "tileTransfers": "{count, plural, one {# transfer} other {# transfers}}",
+    "preSeasonNote": "Until the first deadline transfers are free and unlimited, so nothing is charged in the first gameweek. The usual rules apply from the next ones.",
+    "promoGuestBody": "New on Fudaristo: try transfers 3 gameweeks ahead — free transfers, cost in points, budget and upcoming fixture difficulty. Available with a free account.",
+    "promoGuestCta": "Create an account and try it",
+    "promoGuestLogin": "Already have an account? Log in"
   },
   "actions": {
     "pointsShort": "Points",

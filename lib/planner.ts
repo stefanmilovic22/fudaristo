@@ -40,6 +40,13 @@ export function simulatePlan(input: {
   plan: Plan;
   players: Map<string, SelectablePlayer>;
   gwCount: number;
+  /**
+   * Korisnik još nije prošao prvi rok: transferi u PRVOM planiranom kolu su
+   * neograničeni i besplatni (ne troše slobodne). Sledeće kolo dobija običnih
+   * „ostatak + 1" — isto kao u bazi (make_transfer ne dira free_transfers dok
+   * traje prvo građenje tima).
+   */
+  preSeason?: boolean;
 }): { gws: GwResult[]; plan: Plan } {
   const { players, gwCount } = input;
   let squad = input.squad;
@@ -75,19 +82,20 @@ export function simulatePlan(input: {
     }
 
     const used = transfers.length;
+    const unlimited = Boolean(input.preSeason) && k === 0;
     gws.push({
       startSquad,
       endSquad: squad,
       transfers,
-      freeAvailable: free,
+      freeAvailable: unlimited ? Infinity : free,
       used,
-      cost: EXTRA_TRANSFER_COST * Math.max(0, used - free),
+      cost: unlimited ? 0 : EXTRA_TRANSFER_COST * Math.max(0, used - free),
       budgetBefore,
       budgetAfter: budget,
     });
     kept.push(keptHere);
     // Sledeće kolo: ostatak + 1 novi, najviše 5.
-    free = Math.min(FREE_TRANSFERS_MAX, Math.max(0, free - used) + 1);
+    free = Math.min(FREE_TRANSFERS_MAX, Math.max(0, unlimited ? free : free - used) + 1);
   }
   return { gws, plan: kept };
 }

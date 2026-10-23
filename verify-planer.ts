@@ -71,5 +71,14 @@ const sameGw: Plan = [[{ outId: own[1].id, inId: buyDef.id }, { outId: buyDef.id
 r = run(sameGw, 2, 1);
 check("nema lanca kupi-pa-prodaj u istom kolu", r.gws[0].used === 1 && r.plan[0].length === 1);
 
+console.log("Pre prvog roka");
+r = simulatePlan({ squad, budget: 5, freeNow: 1, preSeason: true, players: all, gwCount: 3,
+  plan: [[{ outId: own[1].id, inId: buyDef.id }, { outId: own[2].id, inId: buyDef2.id }, { outId: own[3].id, inId: buyMid.id }], [], []] });
+check("3 transfera u prvom kolu su besplatni", r.gws[0].used === 3 && r.gws[0].cost === 0 && r.gws[0].freeAvailable === Infinity, r.gws[0]);
+check("sledeće kolo: ostatak (1) + 1 = 2, ništa potrošeno", r.gws[1].freeAvailable === 2, r.gws[1].freeAvailable);
+r = simulatePlan({ squad, budget: 5, freeNow: 1, preSeason: true, players: all, gwCount: 3,
+  plan: [[], [{ outId: own[1].id, inId: buyDef.id }, { outId: own[2].id, inId: buyDef2.id }, { outId: own[3].id, inId: buyMid.id }], []] });
+check("u drugom kolu važe obična pravila (2 slobodna, 3 transfera = −4)", r.gws[1].cost === 4, r.gws[1]);
+
 console.log(failures === 0 ? "\nSve provere prolaze." : `\n${failures} provera NE prolazi.`);
 process.exit(failures === 0 ? 0 : 1);
