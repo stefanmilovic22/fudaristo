@@ -25,6 +25,7 @@ const RICH: Record<string, Record<string, unknown>> = {
 
 /** Vrednosti za obične zamenike, po ključu. */
 const VALUES: Record<string, Record<string, unknown>> = {
+  "tv.countriesCount": { count: 95 },
   "planner.tileTransfers": { count: 2 },
   "planner.gwTab": { number: 9 },
   "planner.gwShort": { number: 9 },

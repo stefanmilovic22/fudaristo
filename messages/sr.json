@@ -28,7 +28,9 @@
     "sectionInfo": "Info",
     "sectionMedia": "Media",
     "skipToContent": "Pređi na sadržaj",
-    "planner": "Planer transfera"
+    "planner": "Planer transfera",
+    "priceChanges": "Promene cena",
+    "tv": "TV prenosi"
   },
   "home": {
     "featuredMatch": "Meč kola {number}",
@@ -93,7 +95,12 @@
     "leagueRankLabel": "mesto",
     "leagueMembers": "{count, plural, one {# član} few {# člana} other {# članova}}",
     "noPrivateLeagues": "Još nisi ni u jednoj privatnoj ligi.",
-    "privateLeagueCta": "Napravi ili uđi u ligu"
+    "privateLeagueCta": "Napravi ili uđi u ligu",
+    "priceMoversTitle": "Ko raste, ko pada",
+    "priceMoversRisers": "Rastu",
+    "priceMoversFallers": "Padaju",
+    "priceMoversAll": "Sve promene",
+    "priceMoversNone": "Nema promene"
   },
   "auth": {
     "loginTitle": "Prijava",
@@ -1101,5 +1108,24 @@
     "pointsShort": "Poeni",
     "plannerShort": "Planer",
     "shareShort": "Podeli"
+  },
+  "tv": {
+    "title": "TV prenosi",
+    "subtitle": "Super liga Grčke 2026/27 — gde se prenosi, po zemljama",
+    "countriesCount": "{count, plural, one {# zemlja} few {# zemlje} other {# zemalja}}",
+    "search": "Traži zemlju ili kanal",
+    "noMatch": "Nema rezultata za tu pretragu.",
+    "home": "domaći emiteri",
+    "regions": {
+      "balkan": "Balkan i jugoistočna Evropa",
+      "europe": "Ostatak Evrope",
+      "americas": "Severna i Južna Amerika",
+      "africa": "Afrika",
+      "asiaOceania": "Azija, Bliski istok i Okeanija"
+    },
+    "disclaimer": "Spisak je preliminaran pregled emitera i platformi. Prava prenosa za sezonu 2026/2027, teritorijalna dostupnost i broj utakmica koje se prenose moraju se potvrditi kod zvaničnih emitera.",
+    "missing": "Nedostaje tvoja zemlja ili je podatak netačan?",
+    "contact": "Javi nam",
+    "empty": "Spisak emitera još nije unet."
   }
 }

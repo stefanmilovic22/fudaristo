@@ -28,7 +28,9 @@
     "sectionInfo": "Info",
     "sectionMedia": "Media",
     "skipToContent": "Skip to content",
-    "planner": "Transfer planner"
+    "planner": "Transfer planner",
+    "priceChanges": "Price changes",
+    "tv": "TV broadcasters"
   },
   "home": {
     "featuredMatch": "Match of gameweek {number}",
@@ -93,7 +95,12 @@
     "leagueRankLabel": "rank",
     "leagueMembers": "{count, plural, one {# member} other {# members}}",
     "noPrivateLeagues": "You are not in any private league yet.",
-    "privateLeagueCta": "Create or join a league"
+    "privateLeagueCta": "Create or join a league",
+    "priceMoversTitle": "Risers and fallers",
+    "priceMoversRisers": "Rising",
+    "priceMoversFallers": "Falling",
+    "priceMoversAll": "All changes",
+    "priceMoversNone": "No change"
   },
   "auth": {
     "loginTitle": "Log in",
@@ -1101,5 +1108,24 @@
     "pointsShort": "Points",
     "plannerShort": "Planner",
     "shareShort": "Share"
+  },
+  "tv": {
+    "title": "TV broadcasters",
+    "subtitle": "Greek Super League 2026/27 — where it is shown, by country",
+    "countriesCount": "{count, plural, one {# country} other {# countries}}",
+    "search": "Search country or channel",
+    "noMatch": "No results for that search.",
+    "home": "home broadcasters",
+    "regions": {
+      "balkan": "Balkans and South-East Europe",
+      "europe": "Rest of Europe",
+      "americas": "North and South America",
+      "africa": "Africa",
+      "asiaOceania": "Asia, Middle East and Oceania"
+    },
+    "disclaimer": "This is a preliminary overview of broadcasters and platforms. Broadcast rights for the 2026/2027 season, territorial availability and the number of matches shown must be confirmed with the official broadcasters.",
+    "missing": "Is your country missing or something wrong?",
+    "contact": "Tell us",
+    "empty": "The broadcaster list has not been added yet."
   }
 }

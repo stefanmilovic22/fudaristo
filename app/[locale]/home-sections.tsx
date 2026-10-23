@@ -7,6 +7,7 @@ import { LocalTime } from "@/components/LocalTime";
 import { FDR_CLASS } from "@/components/FdrChip";
 import { NewBadge } from "@/components/NewBadge";
 import { SwapIcon } from "@/components/icons";
+import type { PriceChangeRow } from "@/lib/price-changes";
 
 const KICKOFF_FMT = { weekday: "short", hour: "2-digit", minute: "2-digit" } as const;
 import { ZONE_RANK_CLASS, zoneFor } from "@/lib/league-zones";
@@ -224,6 +225,63 @@ export async function PlannerPromo({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * „Ko raste, ko pada": tri najveća porasta i pada cene iz poslednje izmene
+ * (ručna rekalkulacija iz admina). Ne prikazuje se dok nijedna izmena nije
+ * primenjena. Vodi na punu listu /igraci/cene.
+ */
+export async function PriceMoversCard({ rows }: { rows: PriceChangeRow[] }) {
+  const t = await getTranslations("home");
+  const risers = rows.filter((r) => r.newPrice > r.oldPrice).sort((a, b) => b.net - a.net).slice(0, 3);
+  const fallers = rows.filter((r) => r.newPrice < r.oldPrice).sort((a, b) => a.net - b.net).slice(0, 3);
+  if (risers.length === 0 && fallers.length === 0) return null;
+
+  const column = (title: string, list: PriceChangeRow[], up: boolean) => (
+    <div className="min-w-0">
+      <div className={`text-[11px] uppercase tracking-widest font-bold mb-1 ${up ? "text-pitch-400" : "text-danger-400"}`}>
+        {up ? "▲" : "▼"} {title}
+      </div>
+      {list.length === 0 ? (
+        <p className="text-sm text-slate-500 py-2">{t("priceMoversNone")}</p>
+      ) : (
+        <ul>
+          {list.map((r) => (
+            <li key={r.playerId} className="flex items-center gap-2.5 py-2 border-t border-navy-700 first:border-t-0 text-sm">
+              <span
+                className="w-1.5 h-7 rounded-full shrink-0"
+                style={{ backgroundColor: r.clubColor }}
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1">
+                <Link href={`/igraci/${r.playerId}`} className="block font-semibold truncate hover:text-gold-300 hover:underline">
+                  {r.name}
+                </Link>
+                <span className="block text-[11px] text-slate-400">{r.clubShort}</span>
+              </span>
+              <span className="shrink-0 text-right tabular-nums">
+                <span className="block font-bold">{r.newPrice.toFixed(1)}M</span>
+                <span className={`block text-[11px] font-semibold ${up ? "text-pitch-400" : "text-danger-400"}`}>
+                  {up ? "+" : "−"}
+                  {Math.abs(r.newPrice - r.oldPrice).toFixed(1)}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  return (
+    <Card title={t("priceMoversTitle")} href="/igraci/cene" linkLabel={t("priceMoversAll")}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+        {column(t("priceMoversRisers"), risers, true)}
+        {column(t("priceMoversFallers"), fallers, false)}
+      </div>
+    </Card>
   );
 }
 

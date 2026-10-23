@@ -7,7 +7,8 @@ import { DeadlineCountdown } from "@/components/DeadlineCountdown";
 import { getMostSelectedCached, getRoundMatchesCached, getTableDataCached } from "@/lib/cached-data";
 import { loadLeague } from "@/lib/league-data";
 import { loadStats } from "@/lib/stats-data";
-import { HeroPanel, MyLeaguesCard, NextMatchesCard, PlannerPromo, StatusStrip, SuperLeagueCard } from "./home-sections";
+import { HeroPanel, MyLeaguesCard, NextMatchesCard, PlannerPromo, PriceMoversCard, StatusStrip, SuperLeagueCard } from "./home-sections";
+import { getLastPriceChanges } from "@/lib/price-changes";
 import { TeamOfWeekBoard } from "@/components/TeamOfWeekBoard";
 import { computeLeagueTable } from "@/lib/league-table";
 import { pickFeaturedMatch } from "@/lib/featured-match";
@@ -62,7 +63,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   // Sastav se traži za kolo koje se trenutno uređuje — isto kolo koje
   // otvara /moj-tim, da poruka ovde i stranica tamo ne govore različito.
-  const [profileRes, squadCount, roundMatches, league, stats, tableData, mostSelected, myLeagues] =
+  const [profileRes, squadCount, roundMatches, league, stats, tableData, mostSelected, myLeagues, priceChanges] =
     await Promise.all([
       profilePromise,
       user && targetGw
@@ -83,6 +84,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       tablePromise,
       mostSelectedPromise,
       myLeaguesPromise,
+      getLastPriceChanges().catch((e) => {
+        console.error("[/] price changes:", e);
+        return null;
+      }),
     ]);
 
   const hasSquad = (squadCount.count ?? 0) > 0;
@@ -175,6 +180,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         variant={!user ? "guest" : hasSquad ? "member" : "locked"}
         firstGameweek={targetGw?.number ?? 1}
       />
+
+      {priceChanges && priceChanges.rows.length > 0 && (
+        <section>
+          <PriceMoversCard rows={priceChanges.rows} />
+        </section>
+      )}
 
       {user && (
         <section>

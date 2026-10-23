@@ -3,7 +3,8 @@ import { getActivePlayersCached, getAvgRatingsCached, getTableDataCached, getUpc
 import { computeDifficulty } from "@/lib/fdr";
 import { POSITIONS } from "@/lib/fantasy-rules";
 import { getLastPriceChanges } from "@/lib/price-changes";
-import { Link } from "@/i18n/navigation";
+import { ActionLink } from "@/components/ActionLink";
+import { PriceIcon } from "@/components/icons";
 import { DataLoadError } from "@/components/DataLoadError";
 import { PlayersBoard, type BoardClub } from "./players-board";
 
@@ -93,13 +94,13 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
 
   return (
     <div>
-      <h2 className="font-display text-2xl mb-1">{t("title")}</h2>
-      <p className="text-slate-400 text-sm mb-5">
-        {t("lead")}{" "}
-        <Link href="/igraci/cene" className="text-gold-300 font-semibold hover:underline whitespace-nowrap">
-          {t("priceChangesLink")} →
-        </Link>
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+        <div className="min-w-0 flex-1 basis-[260px]">
+          <h2 className="font-display text-2xl mb-1">{t("title")}</h2>
+          <p className="text-slate-400 text-sm">{t("lead")}</p>
+        </div>
+        <ActionLink href="/igraci/cene" icon={PriceIcon} label={t("priceChangesLink")} shortLabel={t("priceChangesLink")} variant="plan" inline />
+      </div>
       <PlayersBoard clubs={clubs} upcomingByClub={upcomingByClub} />
     </div>
   );

@@ -18,5 +18,8 @@ const VARIANT: Record<ActionVariant, string> = {
   primary: "bg-gold-400 border-gold-400 text-navy-950 font-bold hover:bg-gold-300 hover:border-gold-300",
 };
 
-export const actionClass = (variant: ActionVariant) => `${BASE} ${VARIANT[variant]}`;
+/** `inline`: uvek ikonica levo od oznake (npr. u zaglavlju stranice), i na telefonu. */
+export const actionClass = (variant: ActionVariant, inline = false) =>
+  `${inline ? BASE.replace("flex-col sm:flex-row", "flex-row").replace("px-1 py-2 sm:px-3.5 text-[11px] sm:text-[13px]", "px-3.5 py-2 text-[13px]") : BASE} ${VARIANT[variant]}`;
 export const ACTION_ICON = "w-5 h-5 sm:w-4 sm:h-4 shrink-0";
+export const ACTION_ICON_INLINE = "w-4 h-4 shrink-0";
