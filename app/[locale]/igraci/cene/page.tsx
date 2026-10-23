@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { getLastPriceChanges, type PriceChangeRow } from "@/lib/price-changes";
+import { byMove, getLastPriceChanges, type PriceChangeRow } from "@/lib/price-changes";
 import { DataLoadError } from "@/components/DataLoadError";
 import { ClubBadge } from "@/components/ClubBadge";
 import { LocalTime } from "@/components/LocalTime";
@@ -33,8 +33,10 @@ export default async function PromeneCenaPage({ params }: { params: Promise<{ lo
     );
   }
 
-  const risers = data.rows.filter((r) => r.newPrice > r.oldPrice).sort((a, b) => b.net - a.net);
-  const fallers = data.rows.filter((r) => r.newPrice < r.oldPrice).sort((a, b) => a.net - b.net);
+  const risers = data.rows.filter((r) => r.newPrice > r.oldPrice).sort(byMove);
+  const fallers = data.rows.filter((r) => r.newPrice < r.oldPrice).sort(byMove);
+  // Izmene po oceni nemaju transfere (net = 0) — tada se umesto „Neto“ prikazuje veličina promene.
+  const showNet = data.rows.some((r) => r.net !== 0);
 
   return (
     <div>
@@ -55,8 +57,8 @@ export default async function PromeneCenaPage({ params }: { params: Promise<{ lo
           <p className="text-slate-500 text-xs mb-5">{t("priceChangesNote")}</p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Card title={`▲ ${t("risers")}`} tone="up" rows={risers} empty={t("priceChangesEmpty")} />
-            <Card title={`▼ ${t("fallers")}`} tone="down" rows={fallers} empty={t("priceChangesEmpty")} />
+            <Card title={`▲ ${t("risers")}`} tone="up" rows={risers} showNet={showNet} empty={t("priceChangesEmpty")} />
+            <Card title={`▼ ${t("fallers")}`} tone="down" rows={fallers} showNet={showNet} empty={t("priceChangesEmpty")} />
           </div>
         </>
       )}
@@ -68,11 +70,13 @@ async function Card({
   title,
   tone,
   rows,
+  showNet,
   empty,
 }: {
   title: string;
   tone: "up" | "down";
   rows: PriceChangeRow[];
+  showNet: boolean;
   empty: string;
 }) {
   const t = await getTranslations("players");
@@ -91,7 +95,7 @@ async function Card({
               <th className="text-left font-semibold py-2 pl-4 pr-2">{t("colPlayer")}</th>
               <th className="text-right font-semibold py-2 px-2">{t("colWas")}</th>
               <th className="text-right font-semibold py-2 px-2">{t("colNow")}</th>
-              <th className="text-right font-semibold py-2 pl-2 pr-4">{t("colNet")}</th>
+              <th className="text-right font-semibold py-2 pl-2 pr-4">{showNet ? t("colNet") : t("colChange")}</th>
             </tr>
           </thead>
           <tbody>
@@ -108,8 +112,17 @@ async function Card({
                   {tone === "up" ? "▲" : "▼"} {r.newPrice.toFixed(1)}
                 </td>
                 <td className="py-2.5 pl-2 pr-4 text-right tabular-nums text-slate-400">
-                  {r.net > 0 ? "+" : ""}
-                  {r.net}
+                  {showNet ? (
+                    <>
+                      {r.net > 0 ? "+" : ""}
+                      {r.net}
+                    </>
+                  ) : (
+                    <>
+                      {r.newPrice > r.oldPrice ? "+" : "−"}
+                      {Math.abs(r.newPrice - r.oldPrice).toFixed(1)}
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

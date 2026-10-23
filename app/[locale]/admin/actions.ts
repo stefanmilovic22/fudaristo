@@ -32,7 +32,15 @@ import { mapMissingStatus, parseInjuriesFile, type PlayerStatus } from "@/lib/so
 import { buildInjuriesPreview, type InjuriesPreview } from "@/lib/injuries-preview";
 import { teamNamesMatch } from "@/lib/team-names";
 import { selectAllPages } from "@/lib/db-paging";
-import { countTransfers, suggestPrice } from "@/lib/price-rules";
+import {
+  countTransfers,
+  suggestPrice,
+  suggestPriceByRating,
+  DEFAULT_MIN_MINUTES,
+  DEFAULT_RATING_T1,
+  DEFAULT_RATING_T2,
+  DEFAULT_MIN_MATCHES,
+} from "@/lib/price-rules";
 
 /**
  * Svaka admin izmena podataka poništava i keš javnih podataka (statistike,
@@ -1760,6 +1768,8 @@ export type PriceRow = {
   /** 0 kad je red dodat ručno. */
   delta: number;
   newPrice: number;
+  /** Samo za predlog po oceni. */
+  rating?: { recentAvg: number; baseline: number; ratingDelta: number; matches: number; recentGw: string; baselineGw: string };
 };
 
 export type PricePreview =
@@ -1859,6 +1869,134 @@ export async function previewPriceChangesAction(threshold: number, step: number)
   }
   rows.sort((a, b) => b.net - a.net);
   return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows, transfersCounted: transfers.length };
+}
+
+/**
+ * Predlog izmena cena po oceni (SofaScore): mečevi od poslednje izmene cena sa
+ * ≥ `minMinutes` minuta → prosečna ocena naspram lične osnove (ranije ocene, ili
+ * prosek lige ako ih je premalo) → ±0.1 / ±0.2. Ako cene još nisu menjane,
+ * „nedavno“ je poslednje kolo sa statistikom. Ništa se ne upisuje.
+ */
+export async function previewRatingPriceChangesAction(
+  minMinutes: number,
+  t1: number,
+  t2: number,
+  minMatches: number,
+  baselineMode: "prev" | "avg" = "prev"
+): Promise<PricePreview> {
+  await requireAdmin();
+  const supabase = createServiceRoleClient();
+  const mm = Math.min(120, Math.max(1, Math.round(num(minMinutes, DEFAULT_MIN_MINUTES))));
+  const a = Math.max(0.1, num(t1, DEFAULT_RATING_T1));
+  const b = Math.max(a, num(t2, DEFAULT_RATING_T2));
+  const mc = Math.min(10, Math.max(1, Math.round(num(minMatches, DEFAULT_MIN_MATCHES))));
+
+  const gw = await priceTargetGameweek(supabase);
+  if (!gw) return { ok: false, error: "Nema nijednog kola u bazi." };
+
+  const { data: last } = await supabase
+    .from("player_price_history")
+    .select("changed_at")
+    .order("changed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const since: string | null = last?.changed_at ?? null;
+
+  type StatRow = { player_id: string; sofascore_rating: number; fixtures: { kickoff_at: string } | null; gameweeks: { number: number } | null };
+  let stats: StatRow[];
+  try {
+    stats = await selectAllPages<StatRow>("player_gameweek_stats", (from, to) =>
+      supabase
+        .from("player_gameweek_stats")
+        .select("id, player_id, sofascore_rating, fixtures(kickoff_at), gameweeks(number)")
+        .not("sofascore_rating", "is", null)
+        .gte("minutes_played", mm)
+        .order("id", { ascending: true })
+        .range(from, to) as any
+    );
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+  stats = stats.filter((s) => s.fixtures?.kickoff_at && Number.isFinite(Number(s.sofascore_rating)));
+  if (stats.length === 0) {
+    return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows: [], transfersCounted: 0 };
+  }
+
+  // Šta je „nedavno“: posle poslednje izmene cena, a bez ikakve izmene — poslednje kolo sa statistikom.
+  const lastGw = Math.max(...stats.map((s) => s.gameweeks?.number ?? 0));
+  const isRecent = (s: StatRow) =>
+    since ? new Date(s.fixtures!.kickoff_at).getTime() > new Date(since).getTime() : (s.gameweeks?.number ?? 0) === lastGw;
+
+  const leagueMean = stats.reduce((acc, s) => acc + Number(s.sofascore_rating), 0) / stats.length;
+  const byPlayer = new Map<string, { recent: number[]; recentGws: Set<number>; prior: { at: number; r: number; gw: number }[] }>();
+  for (const s of stats) {
+    const e = byPlayer.get(s.player_id) ?? { recent: [], recentGws: new Set<number>(), prior: [] };
+    const gwn = s.gameweeks?.number ?? 0;
+    if (isRecent(s)) {
+      e.recent.push(Number(s.sofascore_rating));
+      e.recentGws.add(gwn);
+    } else e.prior.push({ at: new Date(s.fixtures!.kickoff_at).getTime(), r: Number(s.sofascore_rating), gw: gwn });
+    byPlayer.set(s.player_id, e);
+  }
+
+  const candidates = [...byPlayer.entries()].filter(([, e]) => e.recent.length >= mc).map(([id]) => id);
+  if (candidates.length === 0) {
+    return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows: [], transfersCounted: 0 };
+  }
+
+  const players: any[] = [];
+  for (let i = 0; i < candidates.length; i += 200) {
+    const { data, error } = await supabase
+      .from("players")
+      .select("id, first_name, last_name, price, clubs(short_name, primary_color)")
+      .in("id", candidates.slice(i, i + 200));
+    if (error) return { ok: false, error: error.message };
+    players.push(...(data ?? []));
+  }
+
+  const rows: PriceRow[] = [];
+  for (const p of players) {
+    const e = byPlayer.get(p.id)!;
+    const priorSorted = e.prior.sort((x, y) => y.at - x.at);
+    // „prev“: osnova = ocene iz poslednjeg ranijeg kola u kom je igrač igrao ≥ min. minuta (npr. 8. kolo naspram 7.).
+    const prevGw = priorSorted[0]?.gw;
+    const priorUsed = baselineMode === "prev" ? priorSorted.filter((x) => x.gw === prevGw) : priorSorted;
+    const sug = suggestPriceByRating({
+      price: Number(p.price),
+      recent: e.recent,
+      prior: priorUsed.map((x) => x.r),
+      leagueMean,
+      t1: a,
+      t2: b,
+      minMatches: mc,
+      minPrior: baselineMode === "prev" ? 1 : undefined,
+    });
+    const gwLabel = (set: number[]) => (set.length === 0 ? "—" : set.length === 1 ? `${set[0]}` : `${Math.min(...set)}–${Math.max(...set)}`);
+    const usedGws = [...new Set(priorUsed.slice(0, 8).map((x) => x.gw))];
+    if (!sug) continue;
+    rows.push({
+      playerId: p.id,
+      name: `${p.first_name} ${p.last_name}`.trim(),
+      clubShort: p.clubs?.short_name ?? "?",
+      clubColor: p.clubs?.primary_color ?? "#93ADCC",
+      price: Number(p.price),
+      ins: 0,
+      outs: 0,
+      net: 0,
+      delta: sug.delta,
+      newPrice: sug.newPrice,
+      rating: {
+        recentAvg: sug.recentAvg,
+        baseline: sug.baseline,
+        ratingDelta: sug.ratingDelta,
+        matches: sug.matches,
+        recentGw: gwLabel([...e.recentGws]),
+        baselineGw: priorUsed.length >= (baselineMode === "prev" ? 1 : 3) ? gwLabel(usedGws) : "liga",
+      },
+    });
+  }
+  rows.sort((x, y) => Math.abs(y.rating!.ratingDelta) - Math.abs(x.rating!.ratingDelta));
+  return { ok: true, since, gameweekId: gw.id, gameweekNumber: gw.number, rows, transfersCounted: candidates.length };
 }
 
 /** Pretraga igrača za ručnu izmenu cene (po imenu ili prezimenu). */

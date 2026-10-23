@@ -4,11 +4,19 @@ import { useState, useTransition } from "react";
 import {
   applyPriceChangesAction,
   previewPriceChangesAction,
+  previewRatingPriceChangesAction,
   priceTargetGameweekAction,
   searchPlayersForPriceAction,
   type PriceRow,
 } from "./actions";
-import { DEFAULT_STEP, DEFAULT_THRESHOLD } from "@/lib/price-rules";
+import {
+  DEFAULT_MIN_MATCHES,
+  DEFAULT_MIN_MINUTES,
+  DEFAULT_RATING_T1,
+  DEFAULT_RATING_T2,
+  DEFAULT_STEP,
+  DEFAULT_THRESHOLD,
+} from "@/lib/price-rules";
 import { ClubBadge } from "@/components/ClubBadge";
 
 type EditRow = PriceRow & { checked: boolean; input: string };
@@ -16,12 +24,21 @@ type EditRow = PriceRow & { checked: boolean; input: string };
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString("sr-RS", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
 
+type Mode = "rating" | "transfers";
+
 /**
- * Admin: ručna rekalkulacija cena. „Izračunaj predlog“ (transferi od poslednje
- * izmene → neto → predlog po pragu) pa pregled sa izmenljivim cenama i tek onda
- * „Primeni“ — ništa se ne upisuje bez potvrde. Isti obrazac kao ostali uvozi.
+ * Admin: rekalkulacija cena na klik. Dva načina: po oceni (SofaScore, mečevi
+ * ≥ min. minuta, ±0.1/0.2) ili po neto transferima. „Izračunaj predlog“ daje
+ * pregled sa izmenljivim cenama i tek „Primeni“ upisuje — ništa se ne menja bez
+ * potvrde. Isti obrazac kao ostali uvozi.
  */
 export function PriceChangesPanel() {
+  const [mode, setMode] = useState<Mode>("rating");
+  const [minMinutes, setMinMinutes] = useState(String(DEFAULT_MIN_MINUTES));
+  const [t1, setT1] = useState(String(DEFAULT_RATING_T1));
+  const [t2, setT2] = useState(String(DEFAULT_RATING_T2));
+  const [minMatches, setMinMatches] = useState(String(DEFAULT_MIN_MATCHES));
+  const [baselineMode, setBaselineMode] = useState<"prev" | "avg">("prev");
   const [threshold, setThreshold] = useState(String(DEFAULT_THRESHOLD));
   const [step, setStep] = useState(String(DEFAULT_STEP));
   const [rows, setRows] = useState<EditRow[] | null>(null);
@@ -36,7 +53,16 @@ export function PriceChangesPanel() {
   function calculate() {
     setMessage(null);
     startTransition(async () => {
-      const res = await previewPriceChangesAction(Number(threshold), Number(step));
+      const res =
+        mode === "rating"
+          ? await previewRatingPriceChangesAction(
+              Number(minMinutes),
+              Number(t1.replace(",", ".")),
+              Number(t2.replace(",", ".")),
+              Number(minMatches),
+              baselineMode
+            )
+          : await previewPriceChangesAction(Number(threshold), Number(step));
       if (!res.ok) {
         setMessage({ kind: "err", text: res.error });
         return;
@@ -46,7 +72,10 @@ export function PriceChangesPanel() {
       if (res.rows.length === 0) {
         setMessage({
           kind: "ok",
-          text: `Nijedan igrač ne prelazi prag (obrađeno transfera: ${res.transfersCounted}). Možeš da dodaš igrača ručno.`,
+          text:
+            mode === "rating"
+              ? `Nijedan igrač ne prelazi prag ocene (igrača u obračunu: ${res.transfersCounted}). Možeš da dodaš igrača ručno.`
+              : `Nijedan igrač ne prelazi prag (obrađeno transfera: ${res.transfersCounted}). Možeš da dodaš igrača ručno.`,
         });
       }
     });
@@ -75,6 +104,7 @@ export function PriceChangesPanel() {
   const valid = (r: EditRow) => Number.isFinite(parsed(r)) && parsed(r) >= 1 && parsed(r) <= 20;
   const selected = (rows ?? []).filter((r) => r.checked && valid(r) && parsed(r) !== r.price);
   const invalid = (rows ?? []).some((r) => r.checked && !valid(r));
+  const rated = mode === "rating";
 
   function apply() {
     if (!rows || selected.length === 0) return;
@@ -111,21 +141,75 @@ export function PriceChangesPanel() {
   return (
     <section className="bg-navy-800 border border-navy-600 rounded-lg p-5">
       <h3 className="font-display text-lg mb-1">Cene igrača</h3>
+      <div className="inline-flex rounded-lg border border-navy-600 overflow-hidden mb-3 text-sm">
+        {(["rating", "transfers"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => {
+              setMode(m);
+              setRows(null);
+              setMeta(null);
+              setMessage(null);
+            }}
+            className={`px-3.5 py-1.5 font-semibold transition-colors ${mode === m ? "bg-gold-400 text-navy-950" : "bg-navy-900 text-slate-300 hover:bg-navy-700"}`}
+          >
+            {m === "rating" ? "Po oceni" : "Po transferima"}
+          </button>
+        ))}
+      </div>
+
       <p className="text-slate-400 text-sm mb-4">
-        Rekalkulacija je ručna. Predlog se računa iz neto transfera (ulasci − izlasci) od poslednje izmene
-        cena{meta?.since ? ` (${fmtDate(meta.since)})` : ""}. Igrač koji je već u timu ostaje po kupovnoj ceni, pa
-        promena utiče samo na nove kupovine.
+        {mode === "rating"
+          ? "Računa se automatski iz SofaScore ocena mečeva odigranih od poslednje izmene cena"
+          : "Predlog se računa iz neto transfera (ulasci − izlasci) od poslednje izmene cena"}
+        {meta?.since ? ` (${fmtDate(meta.since)})` : ""}. Igrač koji je već u timu ostaje po kupovnoj ceni, pa promena
+        utiče samo na nove kupovine.
       </p>
 
       <div className="flex flex-wrap items-end gap-3 mb-4">
-        <label className="text-xs text-slate-400">
-          Prag neto transfera
-          <input value={threshold} onChange={(e) => setThreshold(e.target.value)} inputMode="numeric" className={`${input} block w-24 mt-1`} />
-        </label>
-        <label className="text-xs text-slate-400">
-          Korak (M)
-          <input value={step} onChange={(e) => setStep(e.target.value)} inputMode="decimal" className={`${input} block w-24 mt-1`} />
-        </label>
+        {mode === "rating" ? (
+          <>
+            <label className="text-xs text-slate-400">
+              Min. minuta
+              <input value={minMinutes} onChange={(e) => setMinMinutes(e.target.value)} inputMode="numeric" className={`${input} block w-24 mt-1`} />
+            </label>
+            <label className="text-xs text-slate-400">
+              Pomak za ±0.1
+              <input value={t1} onChange={(e) => setT1(e.target.value)} inputMode="decimal" className={`${input} block w-24 mt-1`} />
+            </label>
+            <label className="text-xs text-slate-400">
+              Pomak za ±0.2
+              <input value={t2} onChange={(e) => setT2(e.target.value)} inputMode="decimal" className={`${input} block w-24 mt-1`} />
+            </label>
+            <label className="text-xs text-slate-400">
+              Poredi sa
+              <select
+                value={baselineMode}
+                onChange={(e) => setBaselineMode(e.target.value as "prev" | "avg")}
+                className={`${input} block mt-1`}
+              >
+                <option value="prev">Prethodnim kolom</option>
+                <option value="avg">Prosekom ranijih mečeva</option>
+              </select>
+            </label>
+            <label className="text-xs text-slate-400">
+              Min. mečeva
+              <input value={minMatches} onChange={(e) => setMinMatches(e.target.value)} inputMode="numeric" className={`${input} block w-24 mt-1`} />
+            </label>
+          </>
+        ) : (
+          <>
+            <label className="text-xs text-slate-400">
+              Prag neto transfera
+              <input value={threshold} onChange={(e) => setThreshold(e.target.value)} inputMode="numeric" className={`${input} block w-24 mt-1`} />
+            </label>
+            <label className="text-xs text-slate-400">
+              Korak (M)
+              <input value={step} onChange={(e) => setStep(e.target.value)} inputMode="decimal" className={`${input} block w-24 mt-1`} />
+            </label>
+          </>
+        )}
         <button
           type="button"
           onClick={calculate}
@@ -135,7 +219,9 @@ export function PriceChangesPanel() {
           {pending ? "Radim…" : "Izračunaj predlog"}
         </button>
         <p className="text-xs text-slate-500 basis-full sm:basis-auto sm:ml-2 max-w-md">
-          Igrač sa neto ≥ +prag dobija +korak, sa neto ≤ −prag dobija −korak. Predlog ne izlazi iz opsega 4.0–15.0.
+          {mode === "rating"
+            ? "Ocena iz mečeva odigranih od poslednje izmene cena (≥ min. minuta) poredi se sa ocenom iz prethodnog kola u kom je igrač igrao (npr. 8. naspram 7.) ili sa prosekom do 8 ranijih mečeva; ako nema ranijih mečeva, poredi se sa prosekom lige. Pomak ≥ prvog praga = ±0.1, ≥ drugog = ±0.2 (najviše). Opseg 4.0–15.0."
+            : "Igrač sa neto ≥ +prag dobija +korak, sa neto ≤ −prag dobija −korak. Predlog ne izlazi iz opsega 4.0–15.0."}
         </p>
       </div>
 
@@ -147,15 +233,26 @@ export function PriceChangesPanel() {
 
       {rows && rows.length > 0 && (
         <div className="overflow-x-auto -mx-1 px-1 mb-3">
-          <table className="w-full text-sm border-collapse min-w-[560px]">
+          <table className="w-full text-sm border-collapse min-w-[620px]">
             <thead>
               <tr className="text-slate-400 text-xs uppercase tracking-wide">
                 <th className="w-8" />
                 <th className="text-left font-semibold py-2 pr-2">Igrač</th>
                 <th className="text-right font-semibold py-2 px-2">Cena</th>
-                <th className="text-right font-semibold py-2 px-2">U</th>
-                <th className="text-right font-semibold py-2 px-2">Iz</th>
-                <th className="text-right font-semibold py-2 px-2">Neto</th>
+                {rated ? (
+                  <>
+                    <th className="text-right font-semibold py-2 px-2">Mečeva</th>
+                    <th className="text-right font-semibold py-2 px-2">Ocena</th>
+                    <th className="text-right font-semibold py-2 px-2">Osnova</th>
+                    <th className="text-right font-semibold py-2 px-2">Pomak</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="text-right font-semibold py-2 px-2">U</th>
+                    <th className="text-right font-semibold py-2 px-2">Iz</th>
+                    <th className="text-right font-semibold py-2 px-2">Neto</th>
+                  </>
+                )}
                 <th className="text-right font-semibold py-2 pl-2">Nova cena</th>
               </tr>
             </thead>
@@ -178,12 +275,35 @@ export function PriceChangesPanel() {
                     </span>
                   </td>
                   <td className="py-2 px-2 text-right tabular-nums">{r.price.toFixed(1)}</td>
-                  <td className="py-2 px-2 text-right tabular-nums text-slate-400">{r.ins}</td>
-                  <td className="py-2 px-2 text-right tabular-nums text-slate-400">{r.outs}</td>
-                  <td className={`py-2 px-2 text-right tabular-nums font-semibold ${r.net > 0 ? "text-pitch-400" : r.net < 0 ? "text-danger-400" : "text-slate-400"}`}>
-                    {r.net > 0 ? "+" : ""}
-                    {r.net}
-                  </td>
+                  {rated ? (
+                    <>
+                      <td className="py-2 px-2 text-right tabular-nums text-slate-400">{r.rating?.matches ?? "—"}</td>
+                      <td className="py-2 px-2 text-right tabular-nums">
+                        {r.rating ? r.rating.recentAvg.toFixed(2) : "—"}
+                        {r.rating && <span className="block text-[10px] text-slate-500">{r.rating.recentGw}. kolo</span>}
+                      </td>
+                      <td className="py-2 px-2 text-right tabular-nums text-slate-400">
+                        {r.rating ? r.rating.baseline.toFixed(2) : "—"}
+                        {r.rating && (
+                          <span className="block text-[10px] text-slate-500">
+                            {r.rating.baselineGw === "liga" ? "prosek lige" : `${r.rating.baselineGw}. kolo`}
+                          </span>
+                        )}
+                      </td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${!r.rating ? "text-slate-400" : r.rating.ratingDelta > 0 ? "text-pitch-400" : "text-danger-400"}`}>
+                        {r.rating ? `${r.rating.ratingDelta > 0 ? "+" : ""}${r.rating.ratingDelta.toFixed(2)}` : "—"}
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="py-2 px-2 text-right tabular-nums text-slate-400">{r.ins}</td>
+                      <td className="py-2 px-2 text-right tabular-nums text-slate-400">{r.outs}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${r.net > 0 ? "text-pitch-400" : r.net < 0 ? "text-danger-400" : "text-slate-400"}`}>
+                        {r.net > 0 ? "+" : ""}
+                        {r.net}
+                      </td>
+                    </>
+                  )}
                   <td className="py-2 pl-2 text-right">
                     <input
                       value={r.input}

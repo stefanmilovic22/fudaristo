@@ -11,6 +11,10 @@ export type PriceChangeRow = {
   net: number;
 };
 
+/** Najveća promena cene prvo, pa veći neto transfera (po apsolutnoj vrednosti). */
+export const byMove = (a: PriceChangeRow, b: PriceChangeRow) =>
+  Math.abs(b.newPrice - b.oldPrice) - Math.abs(a.newPrice - a.oldPrice) || Math.abs(b.net) - Math.abs(a.net);
+
 export type LastPriceChanges = {
   changedAt: string | null;
   gameweekNumber: number | null;

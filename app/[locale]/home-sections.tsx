@@ -7,7 +7,7 @@ import { LocalTime } from "@/components/LocalTime";
 import { FDR_CLASS } from "@/components/FdrChip";
 import { NewBadge } from "@/components/NewBadge";
 import { SwapIcon } from "@/components/icons";
-import type { PriceChangeRow } from "@/lib/price-changes";
+import { byMove, type PriceChangeRow } from "@/lib/price-changes";
 
 const KICKOFF_FMT = { weekday: "short", hour: "2-digit", minute: "2-digit" } as const;
 import { ZONE_RANK_CLASS, zoneFor } from "@/lib/league-zones";
@@ -235,8 +235,8 @@ export async function PlannerPromo({
  */
 export async function PriceMoversCard({ rows }: { rows: PriceChangeRow[] }) {
   const t = await getTranslations("home");
-  const risers = rows.filter((r) => r.newPrice > r.oldPrice).sort((a, b) => b.net - a.net).slice(0, 3);
-  const fallers = rows.filter((r) => r.newPrice < r.oldPrice).sort((a, b) => a.net - b.net).slice(0, 3);
+  const risers = rows.filter((r) => r.newPrice > r.oldPrice).sort(byMove).slice(0, 3);
+  const fallers = rows.filter((r) => r.newPrice < r.oldPrice).sort(byMove).slice(0, 3);
   if (risers.length === 0 && fallers.length === 0) return null;
 
   const column = (title: string, list: PriceChangeRow[], up: boolean) => (
