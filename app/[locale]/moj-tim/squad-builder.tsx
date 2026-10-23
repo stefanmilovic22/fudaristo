@@ -1,5 +1,6 @@
 "use client";
 
+import { refreshOwnershipAction } from "./actions";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -310,6 +311,9 @@ export function SquadBuilder({
       setSaving(false);
       return;
     }
+
+    // Sastav je snimljen: kartica „Najtraženiji igrači" se osvežava odmah.
+    void refreshOwnershipAction();
 
     // Ovde NEMA pune navigacije: SquadBuilder se već prikazuje na /moj-tim,
     // pa je push na istu putanju bio bez efekta. Refresh je taj koji ponovo

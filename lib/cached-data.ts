@@ -138,31 +138,62 @@ export const getTableDataCached = unstable_cache(
 );
 
 /**
- * Najtraženiji igrači: procenat sastava koji sadrži igrača, za najnovije kolo
- * koje ima sastave (v_player_ownership, migracija 012). Vraća do 3 igrača.
- * Kratak keš (5 min): menja se dok korisnici sastavljaju timove.
+ * Najtraženiji igrači: procenat SVIH menadžera čiji sastav sadrži igrača, za
+ * naredno kolo. Svaki menadžer se računa jednom — njegovim sastavom za naredno
+ * kolo ako ga je već menjao/otvorio, inače poslednjim ranijim (to je tačno ono
+ * što bi mu carry_over_squad prepisao). Izvor: v_player_ownership_current
+ * (migracija 019). Vraća do 3 igrača.
+ *
+ * Do migracije 019 (ili dok pogled ne vrati ništa) koristi se stari izvor,
+ * v_player_ownership (012): najnovije kolo koje ima ikakve sastave — taj broji
+ * samo one koji su već otvorili „Moj klub", pa je na početku kola nepouzdan.
+ *
+ * Keš 5 min, ali se poništava odmah posle snimanja sastava (tag „ownership",
+ * videti app/[locale]/moj-tim/actions.ts) — inače bi promena izgledala kao da
+ * se nije desila.
  */
+async function topFromView(
+  supabase: ReturnType<typeof createPublicClient>,
+  view: "v_player_ownership_current" | "v_player_ownership",
+  gameweekFilter?: string
+) {
+  let q = supabase.from(view).select("gameweek_id, gameweek_number, player_id, pct, picks");
+  if (gameweekFilter) q = q.eq("gameweek_id", gameweekFilter);
+  const { data, error } = await q
+    .order("pct", { ascending: false })
+    .order("picks", { ascending: false })
+    .order("player_id", { ascending: true })
+    .limit(3);
+  if (error) throw new Error(`${view}: ${error.message}`);
+  return (data ?? []) as any[];
+}
+
 export const getMostSelectedCached = unstable_cache(
   async () => {
     const supabase = createPublicClient();
-    const { data: latest, error: latestError } = await supabase
-      .from("v_player_ownership")
-      .select("gameweek_id, gameweek_number")
-      .order("gameweek_number", { ascending: false })
-      .limit(1);
-    if (latestError) throw new Error(`v_player_ownership: ${latestError.message}`);
-    const gw = latest?.[0];
-    if (!gw) return { gameweekNumber: null as number | null, players: [] as any[] };
 
-    const { data: top, error: topError } = await supabase
-      .from("v_player_ownership")
-      .select("player_id, pct, picks")
-      .eq("gameweek_id", gw.gameweek_id)
-      .order("pct", { ascending: false })
-      .limit(3);
-    if (topError) throw new Error(`v_player_ownership(top): ${topError.message}`);
-    const ids = (top ?? []).map((r: any) => r.player_id);
-    if (ids.length === 0) return { gameweekNumber: gw.gameweek_number as number, players: [] as any[] };
+    let top: any[] = [];
+    try {
+      top = await topFromView(supabase, "v_player_ownership_current");
+    } catch (e) {
+      console.warn("[most-selected] v_player_ownership_current nije dostupan, stari izvor:", (e as Error).message);
+    }
+
+    if (top.length === 0) {
+      const { data: latest, error: latestError } = await supabase
+        .from("v_player_ownership")
+        .select("gameweek_id, gameweek_number")
+        .order("gameweek_number", { ascending: false })
+        .limit(1);
+      if (latestError) throw new Error(`v_player_ownership: ${latestError.message}`);
+      const gw = latest?.[0];
+      if (!gw) return { gameweekNumber: null as number | null, players: [] as any[] };
+      top = await topFromView(supabase, "v_player_ownership", gw.gameweek_id);
+    }
+
+    const gameweekNumber = (top[0]?.gameweek_number ?? null) as number | null;
+    const ids = top.map((r) => r.player_id);
+    if (ids.length === 0) return { gameweekNumber, players: [] as any[] };
 
     const { data: players, error: pError } = await supabase
       .from("players")
@@ -171,12 +202,14 @@ export const getMostSelectedCached = unstable_cache(
     if (pError) throw new Error(`players: ${pError.message}`);
     const byId = new Map((players ?? []).map((p: any) => [p.id, p]));
     return {
-      gameweekNumber: gw.gameweek_number as number,
-      players: (top ?? []).map((r: any) => ({ pct: Number(r.pct), picks: r.picks, player: byId.get(r.player_id) })).filter((x) => x.player),
+      gameweekNumber,
+      players: top
+        .map((r) => ({ pct: Number(r.pct), picks: r.picks, player: byId.get(r.player_id) }))
+        .filter((x) => x.player),
     };
   },
-  ["most-selected-v1"],
-  { revalidate: 300, tags: TAGS }
+  ["most-selected-v2"],
+  { revalidate: 300, tags: [...TAGS, "ownership"] }
 );
 
 /** Povređeni, suspendovani i neizvesni igrači (tab „Povređeni” u Statistikama). */

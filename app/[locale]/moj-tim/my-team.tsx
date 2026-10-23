@@ -20,6 +20,7 @@ import {
   type SelectablePlayer,
 } from "@/lib/fantasy-rules";
 import { LocalTime } from "@/components/LocalTime";
+import { refreshOwnershipAction } from "./actions";
 
 export type SquadEntry = {
   player: SelectablePlayer;
@@ -437,6 +438,8 @@ export function MyTeam({
         setSaving(false);
         return;
       }
+      // Transferi su upisani: kartica „Najtraženiji igrači" se osvežava odmah.
+      void refreshOwnershipAction();
     }
 
     if (lineupDirty || pending.length > 0) {
