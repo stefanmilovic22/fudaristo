@@ -131,7 +131,9 @@
     "linkBroken": "Link nije važeći. Zatraži novi.",
     "showPassword": "Prikaži lozinku",
     "hidePassword": "Sakrij lozinku",
-    "repeatPasswordHint": "Upiši istu lozinku još jednom."
+    "repeatPasswordHint": "Upiši istu lozinku još jednom.",
+    "noAccount": "Nemaš nalog?",
+    "registerLink": "Registruj se"
   },
   "league": {
     "pageTitle": "Lige",
@@ -1093,8 +1095,7 @@
     "tileTransfers": "{count, plural, one {# transfer} few {# transfera} other {# transfera}}",
     "preSeasonNote": "Do prvog roka su transferi besplatni i neograničeni, pa se u prvom kolu ništa ne naplaćuje. Za sledeća kola važe obična pravila.",
     "promoGuestBody": "Novo u Fudaristu: isprobaj transfere 3 kola unapred — slobodni transferi, cena u poenima, kasa i težina narednih mečeva. Dostupno uz besplatan nalog.",
-    "promoGuestCta": "Napravi nalog i isprobaj",
-    "promoGuestLogin": "Već imaš nalog? Prijavi se"
+    "tryIt": "Isprobaj"
   },
   "actions": {
     "pointsShort": "Poeni",

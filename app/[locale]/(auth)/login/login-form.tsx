@@ -44,6 +44,7 @@ export function LoginForm() {
   }
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {linkError && !error && (
         <p className="text-danger-400 text-sm bg-danger-400/10 px-3 py-2 rounded">
@@ -91,5 +92,13 @@ export function LoginForm() {
         {loading ? t("signingIn") : t("signIn")}
       </button>
     </form>
+    {/* Ko je stigao ovamo sa „Isprobaj" (npr. planer) a nema nalog, odavde se registruje. */}
+    <p className="text-sm text-slate-400 mt-5">
+      {t("noAccount")}{" "}
+      <Link href="/register" className="font-semibold text-gold-300 hover:underline">
+        {t("registerLink")}
+      </Link>
+    </p>
+    </>
   );
 }

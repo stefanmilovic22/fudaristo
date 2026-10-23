@@ -188,19 +188,14 @@ export async function PlannerPromo({
           {locked ? t("promoLockedBody") : guest ? t("promoGuestBody") : t("promoBody")}
         </p>
         {!locked && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-4">
-            <Link
-              href={guest ? "/register" : "/planer"}
-              className="inline-flex items-center gap-2 bg-gold-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gold-300 transition-colors"
-            >
-              {guest ? t("promoGuestCta") : t("promoCta")} →
-            </Link>
-            {guest && (
-              <Link href="/login" className="text-sm font-semibold text-gold-300 hover:underline">
-                {t("promoGuestLogin")}
-              </Link>
-            )}
-          </div>
+          // Gost dobija isto dugme kao član: /planer ga vodi na prijavu (a odatle
+          // može da se registruje), pa posle prijave stiže pravo u planer.
+          <Link
+            href="/planer"
+            className="inline-flex items-center gap-2 mt-4 bg-gold-400 text-navy-950 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-gold-300 transition-colors"
+          >
+            {guest ? t("tryIt") : t("promoCta")} →
+          </Link>
         )}
       </div>
       {!locked && (

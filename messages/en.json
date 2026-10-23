@@ -131,7 +131,9 @@
     "linkBroken": "That link is not valid. Request a new one.",
     "showPassword": "Show password",
     "hidePassword": "Hide password",
-    "repeatPasswordHint": "Type the same password again."
+    "repeatPasswordHint": "Type the same password again.",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Sign up"
   },
   "league": {
     "pageTitle": "Leagues",
@@ -1093,8 +1095,7 @@
     "tileTransfers": "{count, plural, one {# transfer} other {# transfers}}",
     "preSeasonNote": "Until the first deadline transfers are free and unlimited, so nothing is charged in the first gameweek. The usual rules apply from the next ones.",
     "promoGuestBody": "New on Fudaristo: try transfers 3 gameweeks ahead — free transfers, cost in points, budget and upcoming fixture difficulty. Available with a free account.",
-    "promoGuestCta": "Create an account and try it",
-    "promoGuestLogin": "Already have an account? Log in"
+    "tryIt": "Try it"
   },
   "actions": {
     "pointsShort": "Points",
