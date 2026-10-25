@@ -24,6 +24,7 @@ import { ChartIcon, SwapIcon } from "@/components/icons";
 import { NewBadge } from "@/components/NewBadge";
 import { PlannerTip } from "@/components/PlannerTip";
 import { EmptyState } from "@/components/EmptyState";
+import { DataLoadError } from "@/components/DataLoadError";
 import type { SelectablePlayer } from "@/lib/fantasy-rules";
 import { LocalTime } from "@/components/LocalTime";
 import { readableInk } from "@/lib/color";
@@ -76,7 +77,7 @@ export default async function MojTimPage({
           )
           .eq("user_id", user.id)
           .eq("gameweek_id", targetGw.id)
-      : Promise.resolve({ data: null });
+      : Promise.resolve({ data: null, error: null });
 
   // Prenos sastava iz prethodnog kola. Bez ovoga bi korisnik posle svakog
   // deadline-a dobio prazan squad builder (i, ranije, resetovan budžet).
@@ -93,7 +94,7 @@ export default async function MojTimPage({
   // Sve što ne zavisi jedno od drugog ide istovremeno (ranije 9 upita jedan
   // za drugim). Javni podaci (igrači, ocene, mečevi) dolaze iz keša.
   const [
-    ,
+    carryRes,
     profileRes,
     squadRes,
     players,
@@ -130,12 +131,43 @@ export default async function MojTimPage({
 
   let profile = profileRes.data;
   let squadRows = squadRes.data;
-  if (targetGw && (!squadRows || squadRows.length === 0)) {
+  // Prenos je do sada bio nem: ako padne (greška baze) ili nema šta da prenese,
+  // korisnik sa timom tiho dobije prazan builder. Bar zapisujemo razlog.
+  const carry = carryRes as { data?: { ok?: boolean; reason?: string } | null; error?: { message: string } | null } | null;
+  if (carry?.error) console.error("[moj-tim] carry_over_squad:", user.id, carry.error.message);
+  else if (carry?.data && carry.data.ok === false && carry.data.reason !== "already_has_squad") {
+    console.error("[moj-tim] carry_over_squad nije preneo sastav:", user.id, carry.data.reason);
+  }
+  // Greška pri čitanju sastava se NE sme tumačiti kao „nema sastav“: korisnik sa
+  // timom bi tada video prazan builder (i budžet 0.9M). Pri grešci pokušaj ponovo,
+  // pa ako i dalje ne ide — prikaži grešku umesto builder-a.
+  let squadError: { message: string; code?: string } | null = squadRes.error ?? null;
+  if (targetGw && (squadError || !squadRows || squadRows.length === 0)) {
     // Sastava za ovo kolo nije bilo u trenutku čitanja — prenos ga je upravo
     // mogao napraviti (i dodati slobodan transfer), pa se oba čitaju ponovo.
-    const [freshProfile, freshSquad] = await Promise.all([readProfile(), readSquad()]);
-    profile = freshProfile.data;
-    squadRows = freshSquad.data;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const [freshProfile, freshSquad] = await Promise.all([readProfile(), readSquad()]);
+      profile = freshProfile.data ?? profile;
+      squadRows = freshSquad.data;
+      squadError = freshSquad.error ?? null;
+      if (squadError) {
+        console.error("[moj-tim] čitanje sastava:", user.id, squadError.message);
+        continue;
+      }
+      // Prenos je prijavio da je kopirao sastav, a ovde ga još nema: sačekaj trenutak.
+      if ((!squadRows || squadRows.length === 0) && carry?.data?.ok === true) continue;
+      break;
+    }
+  }
+
+  if (squadError) {
+    const tNav = await getTranslations("nav");
+    return (
+      <div>
+        <h2 className="font-display text-2xl mb-4">{tNav("myTeam")}</h2>
+        <DataLoadError whatKey="whatSquad" error={squadError} />
+      </div>
+    );
   }
 
   if (!targetGw) {

@@ -267,6 +267,7 @@
   },
   "errors": {
     "whatTable": "της βαθμολογίας",
+    "whatSquad": "της ομάδας σου",
     "loadFailed": "Η φόρτωση ({what}) απέτυχε.",
     "unknown": "Άγνωστο σφάλμα — δες τα logs στο Vercel.",
     "code": "Κωδικός",

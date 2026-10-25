@@ -267,6 +267,7 @@
   },
   "errors": {
     "whatTable": "tabele",
+    "whatSquad": "tvog tima",
     "loadFailed": "Učitavanje {what} nije uspelo.",
     "unknown": "Nepoznata greška — pogledaj log na Vercel-u.",
     "code": "Kod",

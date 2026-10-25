@@ -267,6 +267,7 @@
   },
   "errors": {
     "whatTable": "the table",
+    "whatSquad": "your team",
     "loadFailed": "Could not load {what}.",
     "unknown": "Unknown error — check the Vercel logs.",
     "code": "Code",

@@ -17,7 +17,7 @@ export async function DataLoadError({
   error,
 }: {
   /** Ključ iz errors.* koji imenuje šta se učitavalo — npr. "whatFixtures". */
-  whatKey: "whatFixtures" | "whatLeague" | "whatStats" | "whatTable";
+  whatKey: "whatFixtures" | "whatLeague" | "whatStats" | "whatTable" | "whatSquad";
   error: { message: string; code?: string; hint?: string | null; details?: string | null } | null;
 }) {
   const t = await getTranslations("errors");
