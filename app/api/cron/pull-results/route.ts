@@ -21,6 +21,31 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
+
+  // Prenos sastava u sledeće kolo za SVE korisnike (migracija 015). Bez ovoga se
+  // sastav prepisuje tek kad korisnik otvori /moj-tim, što je znalo da završi
+  // praznim builder-om. Ide pre ingestion-a i odvojeno, da jedno ne ruši drugo.
+  // Dira samo korisnike bez sastava za to kolo, pa je bezbedno za ponavljanje.
+  try {
+    const { data: next } = await supabase
+      .from("gameweeks")
+      .select("id")
+      .gt("deadline_at", new Date().toISOString())
+      .order("deadline_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (next) {
+      const { error } = await supabase.rpc("carry_over_all_squads", { p_gameweek_id: next.id });
+      if (error) throw new Error(error.message);
+    }
+  } catch (e) {
+    await reportEvent({
+      level: "error",
+      source: "cron:carry-over",
+      message: `Prenos sastava nije uspeo: ${e instanceof Error ? e.message : String(e)}`,
+    });
+  }
+
   let result;
   try {
     result = await runResultsIngestion(supabase, null);
