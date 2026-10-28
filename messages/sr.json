@@ -481,7 +481,6 @@
     "zone_conference": "Prolaz u Conference League Group",
     "zone_relegation": "Relegation Group (borba za opstanak)",
     "title": "Tabela grčke Super lige",
-    "subtitle": "Računa se iz odigranih mečeva: pobeda 3 boda, nerešeno 1, poraz 0.",
     "noMatches": "Još nema odigranih mečeva — tabela se popunjava čim se upišu rezultati.",
     "colPos": "#",
     "colClub": "Klub",
@@ -503,6 +502,7 @@
     "formW": "P",
     "formD": "N",
     "formL": "I",
+    "deductionNote": "{club}: oduzeto {points} boda odlukom Saveza.",
     "note": "Redosled: bodovi, gol-razlika, postignuti golovi. Ne uračunava međusobne susrete.",
     "bandTitle": "Super liga Grčke",
     "afterRound": "posle {number}. kola"

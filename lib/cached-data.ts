@@ -121,8 +121,17 @@ export const getRoundMatchesCached = unstable_cache(
 export const getTableDataCached = unstable_cache(
   async () => {
     const supabase = createPublicClient();
+    // points_deduction (migracija 020): ako kolona još ne postoji, tabela radi kao pre.
+    const clubsQuery = async () => {
+      const full = await supabase
+        .from("clubs")
+        .select("id, name, short_name, primary_color, points_deduction")
+        .eq("is_active", true);
+      if (!full.error) return full;
+      return supabase.from("clubs").select("id, name, short_name, primary_color").eq("is_active", true);
+    };
     const [clubsRes, fxRes] = await Promise.all([
-      supabase.from("clubs").select("id, name, short_name, primary_color").eq("is_active", true),
+      clubsQuery(),
       supabase
         .from("fixtures")
         .select("home_club_id, away_club_id, home_score, away_score, kickoff_at")
@@ -131,9 +140,9 @@ export const getTableDataCached = unstable_cache(
     ]);
     if (clubsRes.error) throw new Error(`clubs: ${clubsRes.error.message}`);
     if (fxRes.error) throw new Error(`fixtures(finished): ${fxRes.error.message}`);
-    return { clubs: clubsRes.data ?? [], fixtures: fxRes.data ?? [] };
+    return { clubs: (clubsRes.data ?? []) as any[], fixtures: fxRes.data ?? [] };
   },
-  ["league-table-v1"],
+  ["league-table-v2"],
   { revalidate: TTL, tags: TAGS }
 );
 

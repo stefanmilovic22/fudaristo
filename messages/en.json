@@ -481,7 +481,6 @@
     "zone_conference": "Promotion - Super League (Conference League Group)",
     "zone_relegation": "Super League (Relegation Group)",
     "title": "Greek Super League table",
-    "subtitle": "Calculated from played matches: win 3 points, draw 1, loss 0.",
     "noMatches": "No matches played yet — the table fills in as results are entered.",
     "colPos": "#",
     "colClub": "Club",
@@ -503,6 +502,7 @@
     "formW": "W",
     "formD": "D",
     "formL": "L",
+    "deductionNote": "{club}: −{points} points deducted due to a decision by the Federation.",
     "note": "Order: points, goal difference, goals scored. Head-to-head is not taken into account.",
     "bandTitle": "Greek Super League",
     "afterRound": "after round {number}"

@@ -3,11 +3,19 @@
  * status "finished" i upisanim rezultatom), ne čuva se posebno. Tako uvek
  * prati ono što je admin/uvoz upisao i ne može da se razmimoiđe sa rezultatima.
  *
- * Bodovanje: pobeda 3, nerešeno 1, poraz 0. Redosled: bodovi, gol-razlika,
+ * Bodovanje: pobeda 3, nerešeno 1, poraz 0, minus bodovi oduzeti odlukom saveza.
+ * Redosled: bodovi, gol-razlika,
  * postignuti golovi, pa ime kluba. (Pravi poredak Super lige ima i međusobni
  * skor; ovde ga namerno nema da tabela ostane jednostavna i predvidljiva.)
  */
-export type TableClub = { id: string; name: string; short_name: string; primary_color: string };
+export type TableClub = {
+  id: string;
+  name: string;
+  short_name: string;
+  primary_color: string;
+  /** Bodovi oduzeti odlukom saveza (clubs.points_deduction, migracija 020). */
+  points_deduction?: number | null;
+};
 export type TableFixture = {
   home_club_id: string;
   away_club_id: string;
@@ -31,6 +39,8 @@ export type TableRow = {
   goalsAgainst: number;
   goalDiff: number;
   points: number;
+  /** Već uračunato u `points`; čuva se da tabela može da ga objasni. */
+  deduction: number;
   form: FormResult[]; // poslednjih 5, najnoviji poslednji
   rank: number;
 };
@@ -41,6 +51,7 @@ export function computeLeagueTable(clubs: TableClub[], fixtures: TableFixture[])
     rows.set(c.id, {
       clubId: c.id, name: c.name, short: c.short_name, color: c.primary_color,
       played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDiff: 0, points: 0,
+      deduction: Math.max(0, Math.round(Number(c.points_deduction ?? 0)) || 0),
       results: [],
     });
   }
@@ -64,6 +75,7 @@ export function computeLeagueTable(clubs: TableClub[], fixtures: TableFixture[])
 
   const list = [...rows.values()].map((r) => ({
     ...r,
+    points: r.points - r.deduction,
     goalDiff: r.goalsFor - r.goalsAgainst,
     form: r.results.sort((a, b) => a.at.localeCompare(b.at)).slice(-5).map((x) => x.r),
   }));

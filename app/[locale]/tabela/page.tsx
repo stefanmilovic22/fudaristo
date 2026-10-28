@@ -46,8 +46,7 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
 
   return (
     <div>
-      <h2 className="font-display text-2xl mb-1">{t("title")}</h2>
-      <p className="text-slate-400 text-sm mb-6">{t("subtitle")}</p>
+      <h2 className="font-display text-2xl mb-6">{t("title")}</h2>
 
       {!playedAny && <p className="text-slate-400 text-sm mb-4">{t("noMatches")}</p>}
 
@@ -114,6 +113,11 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
                     <span className="inline-block min-w-[2.25rem] rounded-lg bg-navy-700 px-2 py-1 font-display font-bold text-base tabular-nums">
                       {r.points}
                     </span>
+                    {r.deduction > 0 && (
+                      <sup className="text-gold-300 font-bold ml-0.5" title={t("deductionNote", { club: r.name, points: r.deduction })}>
+                        *
+                      </sup>
+                    )}
                   </td>
                   <td className="py-3 px-3 hidden md:table-cell">
                     <div className="flex justify-center gap-1">
@@ -141,6 +145,13 @@ export default async function TabelaPage({ params }: { params: Promise<{ locale:
           </li>
         ))}
       </ul>
+      {rows
+        .filter((r) => r.deduction > 0)
+        .map((r) => (
+          <p key={r.clubId} className="max-w-[960px] text-gold-300 text-xs mt-3">
+            * {t("deductionNote", { club: r.name, points: r.deduction })}
+          </p>
+        ))}
       <p className="max-w-[960px] text-slate-500 text-xs mt-3">{t("note")}</p>
     </div>
   );
