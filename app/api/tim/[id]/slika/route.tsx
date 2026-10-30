@@ -7,6 +7,10 @@ import { getCurrentUser } from "@/lib/supabase/current-user";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { loadTeamShare } from "@/lib/team-share";
 
+// Izrada slike traje nekoliko sekundi na sporijim serverima; podrazumevano
+// ograničenje bi je preseklo i telefon bi dobio grešku.
+export const maxDuration = 30;
+
 /**
  * „Podeli tim" — slika 1080×1350 sa postavom iz poslednjeg zaključanog kola.
  * Traži prijavu, jer prikazuje imena igrača (kao i stranica /tim/[id], koja je

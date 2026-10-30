@@ -289,22 +289,33 @@ function inkOn(hex: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? "#0B1526" : "#F4F6F8";
 }
 
-function GrassTexture() {
+function GrassTexture({ w, h }: { w: number; h: number }) {
+  // Jedan <svg> sa pravougaonicima i zaobljenim isecanjem unutar njega. Ranije su
+  // tribina i teren imali `overflow: hidden` sa zaobljenim ivicama, a Satori/resvg
+  // tada za SVAKI element unutra (80 pravougaonika, 11 kartica…) pravi posebno
+  // isečenu sliku — slika je zbog toga trajala 6–9 sekundi umesto manje od jedne.
   const rows = 10;
   const cols = 8;
+  const cw = w / cols;
+  const rh = h / rows;
+  const rects = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const dark = r % 2 === 1;
+      const odd = c % 2 === 0;
+      const color = dark ? (odd ? GRASS.darkOdd : GRASS.darkEven) : odd ? GRASS.lightOdd : GRASS.lightEven;
+      rects.push(<rect key={`${r}-${c}`} x={c * cw} y={r * rh} width={cw + 0.5} height={rh + 0.5} fill={color} />);
+    }
+  }
   return (
-    <div style={{ ...f, position: "absolute", left: 0, top: 0, right: 0, bottom: 0, flexDirection: "column", background: "#70BD3F" }}>
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} style={{ ...f, flex: 1 }}>
-          {Array.from({ length: cols }).map((__, c) => {
-            const dark = r % 2 === 1;
-            const odd = c % 2 === 0;
-            const color = dark ? (odd ? GRASS.darkOdd : GRASS.darkEven) : odd ? GRASS.lightOdd : GRASS.lightEven;
-            return <div key={c} style={{ ...f, flex: 1, background: color }} />;
-          })}
-        </div>
-      ))}
-    </div>
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", left: 0, top: 0 }}>
+      <defs>
+        <clipPath id="grass-round">
+          <rect x={0} y={0} width={w} height={h} rx={12} ry={12} />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#grass-round)">{rects}</g>
+    </svg>
   );
 }
 
@@ -415,7 +426,6 @@ function PlayerCard({ dot, isGk, photo }: { dot: ShareDot; isGk: boolean; photo:
           background: "rgba(255,255,255,0.12)",
           border: "2px solid rgba(255,255,255,0.18)",
           paddingTop: 10,
-          overflow: "hidden",
         }}
       >
         <div style={{ ...f, justifyContent: "center", width: "100%" }}>
@@ -490,6 +500,7 @@ function PlayerCard({ dot, isGk, photo }: { dot: ShareDot; isGk: boolean; photo:
             fontSize: 18,
             fontWeight: 600,
             padding: "3px 6px",
+            borderRadius: "0 0 15px 15px",
           }}
         >
           {dot.detail ?? dot.points * dot.multiplier}
@@ -521,6 +532,11 @@ export function ShareCard({
   const grassW = standW - GAP * 2;
   const grassH = standH - TOP - GAP;
   const hasSquad = rows.some((r) => r.length > 0);
+  // Kartice sa fotografijom dresa su viši od vektorskih; kad ih ima u skoro svakom
+  // redu, smanji razmak da donji red ne štrči ispod terena (teren više ne seče
+  // sadržaj — zaobljeno isecanje je usporavalo sliku nekoliko puta).
+  const photoRows = rows.filter((r) => r.some((d) => d.photoUrl && photos[d.photoUrl])).length;
+  const padding = photoRows >= 3 ? "10px 0 4px" : "34px 0 26px";
 
   return (
     <Frame style={{ flexDirection: "column", background: `linear-gradient(180deg, ${NAVY_900} 0%, ${NAVY_950} 100%)` }}>
@@ -562,7 +578,6 @@ export function ShareCard({
           borderRadius: 24,
           background: "#0A0D12",
           border: "3px solid rgba(90,180,255,0.5)",
-          overflow: "hidden",
         }}
       >
         <div
@@ -595,11 +610,10 @@ export function ShareCard({
             width: grassW,
             height: grassH,
             borderRadius: 14,
-            overflow: "hidden",
             border: "2px solid rgba(90,180,255,0.25)",
           }}
         >
-          <GrassTexture />
+          <GrassTexture w={grassW - 4} h={grassH - 4} />
           <PitchLines w={grassW} h={grassH} />
           {hasSquad ? (
             <div
@@ -612,7 +626,7 @@ export function ShareCard({
                 bottom: 0,
                 flexDirection: "column",
                 justifyContent: "space-around",
-                padding: "34px 0 26px",
+                padding,
               }}
             >
               {rows.map((row, i) => (

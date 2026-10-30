@@ -46,10 +46,12 @@ export function ShareTeamButton({
       if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], text, url });
+          return;
         } catch (e) {
-          if (!(e instanceof DOMException && e.name === "AbortError")) throw e; // korisnik je odustao
+          if (e instanceof DOMException && e.name === "AbortError") return; // korisnik je odustao
+          // NotAllowedError i sl.: pregledač traži svež dodir korisnika, a slika je
+          // stigla kasno — umesto greške, slika se preuzima (dole).
         }
-        return;
       }
 
       const a = document.createElement("a");
