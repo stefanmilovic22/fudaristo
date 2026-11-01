@@ -1681,74 +1681,96 @@ const PLAYER_STATUSES: PlayerStatus[] = ["available", "injured", "suspended", "d
 
 export type { InjuryRow, InjuriesPreview } from "@/lib/injuries-preview";
 
-export async function previewSofascoreInjuriesAction(jsonText: string): Promise<InjuriesPreview> {
+// Greške se VRAĆAJU, ne bacaju: u produkciji Next sakriva poruku iz izuzetka
+// bačenog u Server Action-u, pa bi admin umesto razloga video samo
+// „Minified React error #441".
+export type InjuriesPreviewResult = { ok: true; preview: InjuriesPreview } | { ok: false; error: string };
+export type InjuriesConfirmResult = { ok: true; updated: number } | { ok: false; error: string };
+
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+export async function previewSofascoreInjuriesAction(jsonText: string): Promise<InjuriesPreviewResult> {
   await requireAdmin();
-  const supabase = createServiceRoleClient();
-
-  let json: unknown;
   try {
-    json = JSON.parse(jsonText);
-  } catch {
-    throw new Error("Ovo nije validan JSON — proveri da li je ceo fajl učitan.");
+    const supabase = createServiceRoleClient();
+
+    let json: unknown;
+    try {
+      json = JSON.parse(jsonText);
+    } catch {
+      return { ok: false, error: "Ovo nije validan JSON — proveri da li je ceo fajl učitan." };
+    }
+    const file = parseInjuriesFile(json);
+    if (file.teams.length === 0) return { ok: false, error: "Fajl ne sadrži nijedan klub ('teams' je prazno)." };
+
+    const [clubsRes, playersRes] = await Promise.all([
+      supabase.from("clubs").select("id, name"),
+      supabase
+        .from("players")
+        .select("id, first_name, last_name, club_id, status, status_note, status_until")
+        .eq("is_active", true),
+    ]);
+    if (clubsRes.error) return { ok: false, error: `Klubovi: ${clubsRes.error.message}` };
+    if (playersRes.error) return { ok: false, error: `Igrači: ${playersRes.error.message}` };
+
+    const clubList = (clubsRes.data ?? []) as { id: string; name: string }[];
+    const playerList = (playersRes.data ?? []) as any[];
+    return { ok: true, preview: buildInjuriesPreview(file, clubList, playerList) };
+  } catch (e) {
+    console.error("[admin/povrede] pregled:", e);
+    return { ok: false, error: errText(e) };
   }
-  const file = parseInjuriesFile(json);
-  if (file.teams.length === 0) throw new Error("Fajl ne sadrži nijedan klub ('teams' je prazno).");
-
-  const { data: clubs } = await supabase.from("clubs").select("id, name");
-  const { data: players } = await supabase
-    .from("players")
-    .select("id, first_name, last_name, club_id, status, status_note, status_until")
-    .eq("is_active", true);
-  const clubList = (clubs ?? []) as { id: string; name: string }[];
-  const playerList = (players ?? []) as any[];
-
-  return buildInjuriesPreview(file, clubList, playerList);
 }
 
 export async function confirmSofascoreInjuriesAction(input: {
   round: number | null;
   entries: { playerId: string; status: PlayerStatus; note: string | null; until: string | null }[];
-}): Promise<{ updated: number }> {
+}): Promise<InjuriesConfirmResult> {
   await requireAdmin();
-  const supabase = createServiceRoleClient();
+  try {
+    const supabase = createServiceRoleClient();
 
-  const errors: string[] = [];
-  let updated = 0;
-  for (const e of input.entries) {
-    if (!PLAYER_STATUSES.includes(e.status)) {
-      errors.push(`${e.playerId}: nepoznat status`);
-      continue;
+    const errors: string[] = [];
+    let updated = 0;
+    for (const e of input.entries) {
+      if (!PLAYER_STATUSES.includes(e.status)) {
+        errors.push(`${e.playerId}: nepoznat status`);
+        continue;
+      }
+      const available = e.status === "available";
+      const untilMs = e.until ? new Date(e.until).getTime() : NaN;
+      const { error } = await supabase
+        .from("players")
+        .update({
+          status: e.status,
+          status_note: available ? null : (e.note ?? null)?.slice(0, 200) ?? null,
+          status_until: available || !Number.isFinite(untilMs) ? null : new Date(untilMs).toISOString(),
+        })
+        .eq("id", e.playerId);
+      if (error) errors.push(`${e.playerId}: ${error.message}`);
+      else updated++;
     }
-    const available = e.status === "available";
-    const untilMs = e.until ? new Date(e.until).getTime() : NaN;
-    const { error } = await supabase
-      .from("players")
-      .update({
-        status: e.status,
-        status_note: available ? null : (e.note ?? null)?.slice(0, 200) ?? null,
-        status_until: available || !Number.isFinite(untilMs) ? null : new Date(untilMs).toISOString(),
-      })
-      .eq("id", e.playerId);
-    if (error) errors.push(`${e.playerId}: ${error.message}`);
-    else updated++;
+    if (errors.length > 0) return { ok: false, error: `Neke izmene nisu upisane: ${errors.join("; ")}` };
+
+    // Vreme poslednjeg ažuriranja za prikaz u Statistikama — i kad nije bilo izmena
+    // (spisak je proveren, samo se ništa nije promenilo).
+    const { error: stampError } = await supabase.from("data_updates").upsert(
+      {
+        key: "injuries",
+        updated_at: new Date().toISOString(),
+        note: input.round !== null ? String(input.round) : null, // samo broj kola; tekst se sklapa po jeziku
+      },
+      { onConflict: "key" }
+    );
+    if (stampError) return { ok: false, error: `Izmene su upisane, ali vreme ažuriranja nije: ${stampError.message}` };
+
+    revalidatePath("/admin");
+    revalidatePath("/statistike");
+    return { ok: true, updated };
+  } catch (e) {
+    console.error("[admin/povrede] potvrda:", e);
+    return { ok: false, error: errText(e) };
   }
-  if (errors.length > 0) throw new Error(`Neke izmene nisu upisane: ${errors.join("; ")}`);
-
-  // Vreme poslednjeg ažuriranja za prikaz u Statistikama — i kad nije bilo izmena
-  // (spisak je proveren, samo se ništa nije promenilo).
-  const { error: stampError } = await supabase.from("data_updates").upsert(
-    {
-      key: "injuries",
-      updated_at: new Date().toISOString(),
-      note: input.round !== null ? String(input.round) : null, // samo broj kola; tekst se sklapa po jeziku
-    },
-    { onConflict: "key" }
-  );
-  if (stampError) throw new Error(`Izmene su upisane, ali vreme ažuriranja nije: ${stampError.message}`);
-
-  revalidatePath("/admin");
-  revalidatePath("/statistike");
-  return { updated };
 }
 
 

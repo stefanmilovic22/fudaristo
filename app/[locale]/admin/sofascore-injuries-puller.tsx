@@ -61,7 +61,12 @@ export function SofascoreInjuriesPuller() {
     setStale(false);
     setDone(null);
     try {
-      const result = await previewSofascoreInjuriesAction(jsonText);
+      const res = await previewSofascoreInjuriesAction(jsonText);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      const result = res.preview;
       setPreview(result);
       const p: Record<number, string> = {};
       const s: Record<number, Status> = {};
@@ -101,6 +106,10 @@ export function SofascoreInjuriesPuller() {
           until: r.until,
         }));
       const result = await confirmSofascoreInjuriesAction({ round: preview.round, entries });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
       setDone(result.updated);
       setPreview(null);
       setJsonText("");
