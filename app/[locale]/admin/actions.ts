@@ -30,6 +30,12 @@ import type { Position } from "@/lib/fantasy-rules";
 import { diffMatchEvents, eventsToPlayers, findPlayer, type EventDiffRow, type OurStatRow, type SquadPlayer } from "@/lib/sofascore-events";
 import { mapMissingStatus, parseInjuriesFile, type PlayerStatus } from "@/lib/sofascore-injuries";
 import { buildInjuriesPreview, type InjuriesPreview } from "@/lib/injuries-preview";
+import {
+  buildNationalitiesPreview,
+  normalizeCountryCode,
+  parseNationalitiesFile,
+  type NationalitiesPreview,
+} from "@/lib/nationality";
 import { teamNamesMatch } from "@/lib/team-names";
 import { selectAllPages } from "@/lib/db-paging";
 import {
@@ -1770,6 +1776,84 @@ export async function confirmSofascoreInjuriesAction(input: {
   } catch (e) {
     console.error("[admin/povrede] potvrda:", e);
     return { ok: false, error: errText(e) };
+  }
+}
+
+
+// ----------------------------------------------------------------------------
+// Nacionalnosti igrača (migracija 021) — uvoz iz SofaScore-a: preview pa confirm.
+// Kao i kod povreda, greške se vraćaju kao vrednost (Next u produkciji sakriva
+// poruku izuzetka iz Server Action-a).
+// ----------------------------------------------------------------------------
+
+export type { NationalitiesPreview } from "@/lib/nationality";
+export type NationalitiesPreviewResult = { ok: true; preview: NationalitiesPreview } | { ok: false; error: string };
+export type NationalitiesConfirmResult = { ok: true; updated: number } | { ok: false; error: string };
+
+export async function previewNationalitiesAction(jsonText: string): Promise<NationalitiesPreviewResult> {
+  await requireAdmin();
+  try {
+    let json: unknown;
+    try {
+      json = JSON.parse(jsonText);
+    } catch {
+      return { ok: false, error: "Ovo nije validan JSON — proveri da li je ceo fajl učitan." };
+    }
+    const file = parseNationalitiesFile(json);
+    if (file.teams.length === 0) return { ok: false, error: "Fajl ne sadrži nijedan klub ('teams' je prazno)." };
+
+    const supabase = createServiceRoleClient();
+    const [clubsRes, playersRes] = await Promise.all([
+      supabase.from("clubs").select("id, name"),
+      supabase.from("players").select("id, first_name, last_name, club_id, nationality").eq("is_active", true),
+    ]);
+    if (clubsRes.error) return { ok: false, error: `Klubovi: ${clubsRes.error.message}` };
+    if (playersRes.error) {
+      const missing = /nationality/i.test(playersRes.error.message);
+      return {
+        ok: false,
+        error: missing ? "Pokreni migrations/021-nacionalnost.sql u Supabase SQL editoru." : `Igrači: ${playersRes.error.message}`,
+      };
+    }
+    return {
+      ok: true,
+      preview: buildNationalitiesPreview(file, (clubsRes.data ?? []) as any[], (playersRes.data ?? []) as any[]),
+    };
+  } catch (e) {
+    console.error("[admin/drzave] pregled:", e);
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export async function confirmNationalitiesAction(
+  entries: { playerId: string; country: string }[]
+): Promise<NationalitiesConfirmResult> {
+  await requireAdmin();
+  try {
+    const supabase = createServiceRoleClient();
+    // Grupisano po državi: jedan upit po državi umesto po igraču.
+    const byCountry = new Map<string, string[]>();
+    for (const e of entries ?? []) {
+      const code = normalizeCountryCode(e.country);
+      if (!code || !e.playerId) continue;
+      byCountry.set(code, [...(byCountry.get(code) ?? []), String(e.playerId)]);
+    }
+    let updated = 0;
+    const errors: string[] = [];
+    for (const [code, ids] of byCountry) {
+      const { error } = await supabase.from("players").update({ nationality: code }).in("id", ids);
+      if (error) errors.push(`${code}: ${error.message}`);
+      else updated += ids.length;
+    }
+    if (errors.length > 0) return { ok: false, error: `Neke izmene nisu upisane: ${errors.join("; ")}` };
+
+    revalidatePath("/igraci");
+    revalidatePath("/klubovi");
+    revalidateTag("public-data", { expire: 0 });
+    return { ok: true, updated };
+  } catch (e) {
+    console.error("[admin/drzave] potvrda:", e);
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 

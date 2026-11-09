@@ -22,19 +22,21 @@ function throwIfError<T>(res: { data: T | null; error: { message: string } | nul
 export const getActivePlayersCached = unstable_cache(
   async () => {
     const supabase = createPublicClient();
-    return throwIfError(
-      await supabase
+    const cols = "id, first_name, last_name, position, price, status, club_id, total_points";
+    const clubs = "clubs(name, short_name, primary_color, jersey_photo_url)";
+    const run = (withNationality: boolean) =>
+      supabase
         .from("players")
-        .select(
-          "id, first_name, last_name, position, price, status, club_id, total_points, clubs(name, short_name, primary_color, jersey_photo_url)"
-        )
+        .select(`${cols}${withNationality ? ", nationality" : ""}, ${clubs}`)
         .eq("is_active", true)
         .order("position")
-        .order("price", { ascending: false }),
-      "players"
-    ) as any[];
+        .order("price", { ascending: false });
+    // Kolona nationality (migracija 021) možda još ne postoji — tada sajt radi kao pre.
+    const first = await run(true);
+    if (first.error && /nationality/i.test(first.error.message)) return throwIfError(await run(false), "players") as any[];
+    return throwIfError(first, "players") as any[];
   },
-  ["active-players-v1"],
+  ["active-players-v2"],
   { revalidate: TTL, tags: TAGS }
 );
 

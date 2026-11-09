@@ -1,5 +1,6 @@
 import { playerFullName, type Position } from "@/lib/fantasy-rules";
 import { JerseyIcon } from "@/components/JerseyIcon";
+import { Flag } from "@/components/Flag";
 
 export type PlayerLineData = {
   first_name: string;
@@ -11,6 +12,9 @@ export type PlayerLineData = {
   avg_rating: number | null;
   /** Promena cene u poslednjoj izmeni (+0.1 / −0.1); izostavljeno ako je nije bilo. */
   priceDelta?: number;
+  /** Dvoslovna oznaka države (players.nationality) i njen naziv za title/alt; zastavica se crta samo kad postoji. */
+  nationality?: string | null;
+  nationalityName?: string;
 };
 
 /** Boja oznake statusa: povreda/suspenzija crveno, neizvesno zlatno. */
@@ -58,7 +62,10 @@ export function PlayerLine({
         </span>
       )}
       <span className="flex-1 min-w-0 flex flex-col items-start sm:flex-row sm:items-center sm:gap-2">
-        <span className="max-w-full truncate font-semibold">{playerFullName(player)}</span>
+        <span className="max-w-full min-w-0 flex items-center gap-1.5 font-semibold">
+          {player.nationality && <Flag code={player.nationality} name={player.nationalityName} height={12} />}
+          <span className="truncate">{playerFullName(player)}</span>
+        </span>
         {statusLabel && (
           <span
             className={`shrink-0 text-[10px] font-bold rounded-full px-1.5 py-0.5 ${

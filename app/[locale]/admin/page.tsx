@@ -19,6 +19,7 @@ import { SofascoreBulkPuller } from "./sofascore-bulk-puller";
 import { SofascoreEventsPuller } from "./sofascore-events-puller";
 import { SofascoreKickoffsPuller } from "./sofascore-kickoffs-puller";
 import { SofascoreInjuriesPuller } from "./sofascore-injuries-puller";
+import { NationalitiesPanel } from "./nationalities-panel";
 import { PriceChangesPanel } from "./price-changes-panel";
 import { SystemHealthPanel } from "./system-health-panel";
 
@@ -269,6 +270,8 @@ export default async function AdminPage() {
       <SofascoreKickoffsPuller />
 
       <SofascoreInjuriesPuller />
+
+      <NationalitiesPanel />
 
       <PriceChangesPanel />
 

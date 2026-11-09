@@ -8,6 +8,8 @@ import { computeDifficulty } from "@/lib/fdr";
 import { reasonKey, humanizeReason } from "@/lib/injury-reasons";
 import { playerFullName } from "@/lib/fantasy-rules";
 import { ClubBadge } from "@/components/ClubBadge";
+import { Flag } from "@/components/Flag";
+import { countryName } from "@/lib/country";
 import { FdrChip } from "@/components/FdrChip";
 import { LocalTime } from "@/components/LocalTime";
 
@@ -26,14 +28,19 @@ type PlayerPageData = {
 const loadPlayer = unstable_cache(
   async (id: string): Promise<PlayerPageData | null> => {
     const supabase = createPublicClient();
-    const { data: player } = await supabase
-      .from("players")
-      .select(
-        "id, first_name, last_name, position, price, status, status_note, status_until, total_points, club_id, " +
-          "clubs(name, short_name, primary_color)"
-      )
-      .eq("id", id)
-      .maybeSingle();
+    const cols =
+      "id, first_name, last_name, position, price, status, status_note, status_until, total_points, club_id";
+    const clubCols = "clubs(name, short_name, primary_color)";
+    const read = (withNationality: boolean) =>
+      supabase
+        .from("players")
+        .select(`${cols}${withNationality ? ", nationality" : ""}, ${clubCols}`)
+        .eq("id", id)
+        .maybeSingle();
+    // Kolona nationality (migracija 021) možda još ne postoji — tada profil radi kao pre.
+    let playerRes: any = await read(true);
+    if (playerRes.error && /nationality/i.test(playerRes.error.message)) playerRes = await read(false);
+    const player = playerRes.data as any;
     if (!player) return null;
 
     const [own, avg, stats, prices] = await Promise.all([
@@ -161,6 +168,12 @@ export default async function IgracPage({ params }: { params: Promise<{ locale: 
         <ClubBadge short={club.short_name} color={club.primary_color} size={64} />
         <div className="min-w-[200px] flex-1">
           <h2 className="font-display text-2xl sm:text-3xl leading-tight">{playerFullName(player)}</h2>
+          {player.nationality && (
+            <p className="mt-1 inline-flex items-center gap-2 text-sm text-slate-300">
+              <Flag code={player.nationality} name={countryName(player.nationality, locale)} height={16} />
+              {countryName(player.nationality, locale)}
+            </p>
+          )}
           <p className="text-slate-400 text-sm mt-0.5">
             {club.name} · {tPos(`label${player.position}` as never)} · {Number(player.price).toFixed(1)}M
             {delta !== 0 && (

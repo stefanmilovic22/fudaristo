@@ -6,6 +6,7 @@ import { getLastPriceChanges } from "@/lib/price-changes";
 import { ActionLink } from "@/components/ActionLink";
 import { PriceIcon } from "@/components/icons";
 import { DataLoadError } from "@/components/DataLoadError";
+import { countryName } from "@/lib/country";
 import { PlayersBoard, type BoardClub } from "./players-board";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -83,6 +84,8 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
       total_points: p.total_points ?? 0,
       avg_rating: ratingByPlayer.get(p.id) ?? null,
       priceDelta: deltaByPlayer.get(p.id),
+      nationality: p.nationality ?? null,
+      nationalityName: p.nationality ? countryName(p.nationality, locale) : undefined,
     });
   }
   const clubs = [...byClub.values()].sort((a, b) => a.name.localeCompare(b.name));

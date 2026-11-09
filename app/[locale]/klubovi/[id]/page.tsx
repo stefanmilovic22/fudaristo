@@ -13,6 +13,7 @@ import { ClubBadge } from "@/components/ClubBadge";
 import { FormDots } from "@/components/FormDots";
 import { LocalTime } from "@/components/LocalTime";
 import { PlayerLine, PlayerLineHeader } from "@/components/PlayerLine";
+import { countryName } from "@/lib/country";
 import { ExpandableCard } from "@/components/ExpandableCard";
 import { DataLoadError } from "@/components/DataLoadError";
 import { EmptyState } from "@/components/EmptyState";
@@ -69,6 +70,8 @@ export default async function ClubPage({ params }: { params: Promise<{ locale: s
     .map((p) => ({
       id: p.id,
       first_name: p.first_name,
+      nationality: (p.nationality ?? null) as string | null,
+      nationalityName: p.nationality ? countryName(p.nationality, locale) : undefined,
       last_name: p.last_name,
       position: p.position as Position,
       price: Number(p.price),
