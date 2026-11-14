@@ -9,6 +9,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Grbovi klubova su mali i retko se menjaju — isto keširanje kao dresovi.
+        source: "/crests/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=2592000",
+          },
+        ],
+      },
+      {
         // Fotografije dresova su male i retko se menjaju: keš u browseru i na
         // CDN-u, uz osvežavanje u pozadini — ne skidaju se ponovo pri svakoj poseti.
         source: "/jerseys/:path*",
