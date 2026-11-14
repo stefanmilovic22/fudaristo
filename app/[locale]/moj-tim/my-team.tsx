@@ -548,7 +548,8 @@ export function MyTeam({
         }
         isCaptain={s.state.captain}
         isViceCaptain={s.state.vice}
-        active={swapSlot === s.key || transferSlot === s.key || Boolean(s.replacement)}
+        active={swapSlot === s.key || transferSlot === s.key}
+        pending={Boolean(s.replacement)}
         dimmed={
           transferSlot
             ? transferSlot !== s.key

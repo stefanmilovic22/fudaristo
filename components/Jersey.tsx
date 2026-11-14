@@ -53,8 +53,10 @@ export type JerseyProps = {
   isGoalkeeper?: boolean;
   /** Kratka oznaka pozicije iznad dresa (koristi se na klupi). */
   positionLabel?: string;
-  /** Vizuelno istaknut — npr. izabran za zamenu. */
+  /** Vizuelno istaknut — npr. izabran za zamenu (okvir i blago podizanje). */
   active?: boolean;
+  /** Nepotvrđen transfer: isti okvir kao `active`, ali bez podizanja — kartice ostaju u istom redu. */
+  pending?: boolean;
   /** Prigušen — npr. ne može da uđe u zamenu sa aktivnim igračem. */
   dimmed?: boolean;
   /** Manji, potpuno nepromenjen dekorativni dres — videti komentar iznad. */
@@ -77,6 +79,7 @@ export function Jersey({
   isGoalkeeper,
   positionLabel,
   active,
+  pending,
   dimmed,
   compact,
   onRemove,
@@ -220,7 +223,7 @@ export function Jersey({
 
       <div
         className={`relative w-full rounded-[9px] bg-white/[0.07] border pt-[5px] transition-transform ${
-          active
+          active || pending
             ? "border-gold-400 shadow-[0_3px_10px_rgba(90,180,255,0.35)]"
             : "border-white/10 shadow-[0_3px_8px_rgba(0,0,0,0.25)]"
         } ${onClick ? "hover:-translate-y-0.5" : ""} ${active ? "-translate-y-1" : ""}`}
