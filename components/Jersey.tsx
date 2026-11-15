@@ -222,10 +222,12 @@ export function Jersey({
       )}
 
       <div
-        className={`relative w-full rounded-[9px] bg-white/[0.07] border pt-[5px] transition-transform ${
+        // FPL stil: dres stoji slobodno na terenu, bez kartice. Okvir se vidi samo
+        // kad je igrač istaknut (izbor za zamenu / nepotvrđen transfer).
+        className={`relative w-full rounded-[9px] border transition-transform ${
           active || pending
             ? "border-gold-400 shadow-[0_3px_10px_rgba(90,180,255,0.35)]"
-            : "border-white/10 shadow-[0_3px_8px_rgba(0,0,0,0.25)]"
+            : "border-transparent"
         } ${onClick ? "hover:-translate-y-0.5" : ""} ${active ? "-translate-y-1" : ""}`}
       >
         <button
@@ -243,36 +245,36 @@ export function Jersey({
             onClick ? "cursor-pointer" : "cursor-default"
           }`}
         >
-          {photoUrl ? (
-            // Fotografija se NE seče u SHIRT_PATH siluetu (probano — deo dresa
-            // nestaje i izgleda kao greška). Umesto toga fiksna visina
-            // (overflow-hidden) blago odseca dno, dovoljno tesno da kartončić
-            // ostane nizak koliko i vektorski dres pored njega.
-            <div
-              className={`w-[45px] h-[49px] sm:w-[58px] sm:h-[63px] overflow-hidden drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)] ${
-                isGoalkeeper ? "border-2 border-dashed border-gold-300" : ""
-              }`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- spoljni URL po klubu, next/image domenska bela lista nepotrebna komplikacija za ovoliko slika */}
-              <img src={photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-auto block" />
-            </div>
-          ) : (
-            <svg viewBox="0 0 100 76" className="w-[45px] sm:w-[58px] drop-shadow-[0_2px_3px_rgba(0,0,0,0.45)]">
-              <path
-                d={SHIRT_PATH}
-                fill={color}
-                stroke={isGoalkeeper ? "#F0C868" : "rgba(255,255,255,0.35)"}
-                strokeWidth={isGoalkeeper ? 4 : 2.5}
-                strokeLinejoin="round"
-                strokeDasharray={isGoalkeeper ? "7 4" : undefined}
-              />
-              {initials && (
-                <text x="50" y="52" textAnchor="middle" fontSize="22" fontWeight="700" fill={ink} opacity="0.85">
-                  {initials}
-                </text>
-              )}
-            </svg>
-          )}
+          {/* Isti okvir visine za fotografiju i za vektorski dres: dres je široko kao ćelija,
+              dno (struk) je pri dnu okvira, a traka sa imenom ga blago prekriva — svi igrači
+              u redu su time iste visine i na istoj liniji. Fotografija se ne seče u siluetu
+              (probano — deo dresa nestaje), već se samo odseca dno. */}
+          <div
+            className={`w-full aspect-[58/63] overflow-hidden flex items-end drop-shadow-[0_2px_3px_rgba(0,0,0,0.3)] ${
+              isGoalkeeper ? "border-2 border-dashed border-gold-300 rounded-sm" : ""
+            }`}
+          >
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- spoljni URL po klubu, next/image domenska bela lista nepotrebna komplikacija za ovoliko slika
+              <img src={photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-auto block self-start" />
+            ) : (
+              <svg viewBox="0 0 100 76" className="w-full">
+                <path
+                  d={SHIRT_PATH}
+                  fill={color}
+                  stroke={isGoalkeeper ? "#F0C868" : "rgba(255,255,255,0.35)"}
+                  strokeWidth={isGoalkeeper ? 4 : 2.5}
+                  strokeLinejoin="round"
+                  strokeDasharray={isGoalkeeper ? "7 4" : undefined}
+                />
+                {initials && (
+                  <text x="50" y="52" textAnchor="middle" fontSize="22" fontWeight="700" fill={ink} opacity="0.85">
+                    {initials}
+                  </text>
+                )}
+              </svg>
+            )}
+          </div>
         </button>
 
         {isGoalkeeper && (
@@ -309,10 +311,10 @@ export function Jersey({
           </button>
         )}
 
-        <div className="w-full bg-chalk-50 text-navy-950 text-[9px] font-semibold leading-tight px-1 py-[2px] text-center truncate">
+        <div className="relative -mt-[3px] w-full rounded-t-[3px] bg-chalk-50 text-navy-950 text-[9px] font-semibold leading-tight px-1 py-[2px] text-center truncate shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
           {name ?? "—"}
         </div>
-        <div className="w-full rounded-b-[8px] bg-navy-950/[0.88] text-chalk-50 text-[8.5px] leading-tight px-1 py-[2px] text-center truncate">
+        <div className="w-full rounded-b-[5px] bg-navy-950/[0.88] text-chalk-50 text-[8.5px] leading-tight px-1 py-[2px] text-center truncate shadow-[0_2px_4px_rgba(0,0,0,0.25)]">
           {detail ?? ""}
         </div>
       </div>
