@@ -141,7 +141,7 @@ export default async function LocaleLayout({
                     priority
                     className="w-11 h-11 sm:w-14 sm:h-14 rounded-full drop-shadow-[0_4px_14px_rgba(124,196,255,0.30)]"
                   />
-                  <span className="hidden xs:inline text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
+                  <span className="hidden md:inline text-sm text-slate-400 font-medium">Fantasy Ελλάδα</span>
                 </Link>
   
                 <MainNav isAdmin={Boolean(profile?.is_admin)} />
