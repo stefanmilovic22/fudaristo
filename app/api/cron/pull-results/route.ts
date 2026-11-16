@@ -15,8 +15,11 @@ export const maxDuration = 60;
 // da niko spolja ne može ručno da pokrene ingestion. Admin ima svoj put
 // preko /admin dugmeta "Pokreni sada" (Server Action, ne ova ruta).
 export async function GET(request: NextRequest) {
+  // Bez podešenog CRON_SECRET-a ruta odbija SVE: inače bi se poređenje svelo na
+  // "Bearer undefined", što svako može da pošalje.
+  const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

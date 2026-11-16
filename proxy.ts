@@ -67,6 +67,9 @@ function redirectToLogin(request: NextRequest) {
 }
 
 /**
+ * (U Next 16 se ovaj fajl zove proxy.ts; do tada je bio middleware.ts — komentari
+ * po kodu koji pominju „middleware“ misle na njega.)
+ *
  * Middleware hvata SVE rute, pa svaka greška ovde ruši ceo sajt sa
  * MIDDLEWARE_INVOCATION_FAILED — ne samo stranicu u pitanju. Zato ništa ovde
  * ne sme da baci izuzetak.
@@ -76,7 +79,7 @@ function redirectToLogin(request: NextRequest) {
  * kolačiće sesije. Obrnuto bi značilo da intl napravi nov odgovor i baci
  * osvežene kolačiće — korisnik bi se povremeno odjavljivao bez razloga.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const preview = previewRewrite(request);
   if (preview) return preview;
 

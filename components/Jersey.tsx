@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { assetUrl } from "@/lib/asset-url";
 
 /**
  * Dres — osnovna vizuelna jedinica terena, po uzoru na FPL.
@@ -256,7 +257,7 @@ export function Jersey({
           >
             {photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- spoljni URL po klubu, next/image domenska bela lista nepotrebna komplikacija za ovoliko slika
-              <img src={photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-auto block self-start" />
+              <img src={assetUrl(photoUrl)} alt="" loading="lazy" decoding="async" className="w-full h-auto block self-start" />
             ) : (
               <svg viewBox="0 0 100 76" className="w-full">
                 <path

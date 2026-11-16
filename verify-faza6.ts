@@ -226,6 +226,9 @@ function makeMock(db: DB) {
   }
 
   const rpcs: Record<string, (a: any) => number> = {
+    // Migracija 015: prenos sastava onima koji ga nemaju. U testnoj bazi svi već
+    // imaju sastav za kolo, pa nema šta da se prenese.
+    carry_over_all_squads: () => 0,
     score_write_stat_points: ({ p_rows }) => {
       for (const r of p_rows) {
         const row = db.player_gameweek_stats.find((x) => x.id === r.id);

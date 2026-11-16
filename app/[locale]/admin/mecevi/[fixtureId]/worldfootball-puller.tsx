@@ -346,7 +346,7 @@ export function WorldfootballPuller({
               Odustani
             </button>
             <span className="text-slate-500 text-xs">
-              Posle primene i dalje moraš da klikneš „Sačuvaj i potvrdi" u tabeli ispod.
+              Posle primene i dalje moraš da klikneš „Sačuvaj i potvrdi&quot; u tabeli ispod.
             </span>
           </div>
         </div>

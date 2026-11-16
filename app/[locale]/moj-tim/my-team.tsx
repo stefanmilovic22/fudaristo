@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
@@ -142,6 +142,18 @@ export function MyTeam({
     );
   });
   const dirty = pending.length > 0 || lineupDirty;
+
+  // Nesačuvane izmene (transferi, postava, kapiten): pregledač pita pre
+  // zatvaranja kartice ili osvežavanja, da se rad ne izgubi slučajno. Tokom
+  // samog snimanja se ne pita — tada stranica sama osvežava podatke.
+  useEffect(() => {
+    if (!dirty || saving) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty, saving]);
 
   // --- Izbor zamene ---------------------------------------------------------
   const activeSlot = transferSlot ? slotByKey.get(transferSlot) ?? null : null;

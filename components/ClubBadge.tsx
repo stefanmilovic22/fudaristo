@@ -1,4 +1,5 @@
 import { readableInk } from "@/lib/color";
+import { assetUrl } from "@/lib/asset-url";
 import { crestFor } from "@/lib/club-crests";
 
 /**
@@ -23,7 +24,7 @@ export function ClubBadge({
     return (
       // eslint-disable-next-line @next/next/no-img-element -- mali statički grb iz /public, bez next/image
       <img
-        src={crest}
+        src={assetUrl(crest)}
         alt=""
         aria-hidden
         width={size}

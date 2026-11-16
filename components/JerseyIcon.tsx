@@ -1,3 +1,5 @@
+import { assetUrl } from "@/lib/asset-url";
+
 /**
  * Mali dres pored imena igrača (liste Klubovi / Igrači). Bez logike i bez
  * prevoda, pa radi u serverskim i u klijentskim komponentama. Pravi dres
@@ -27,7 +29,7 @@ export function JerseyIcon({
         style={{ width: size, height: Math.round(size * 1.08) }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- spoljni URL po klubu, kao u Jersey.tsx */}
-        <img src={photoUrl} alt="" loading="lazy" decoding="async" className="w-full h-auto block" />
+        <img src={assetUrl(photoUrl)} alt="" loading="lazy" decoding="async" className="w-full h-auto block" />
       </span>
     );
   }
