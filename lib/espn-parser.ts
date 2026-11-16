@@ -98,22 +98,38 @@ export function parseEspnSummary(json: any): ExtractedMatch {
       const athleteId = p.athlete?.id != null ? String(p.athlete.id) : null;
       const started = Boolean(p.starter);
 
+      const displayName = p.athlete?.fullName ?? p.athlete?.displayName ?? "?";
       let minutesPlayed: number;
       let cameOnAt: number | null = null;
       if (started) {
         const offMinute = athleteId ? subOffMinuteByAthleteId.get(athleteId) : undefined;
-        minutesPlayed = offMinute ?? 90;
+        if (offMinute === undefined && p.subbedOut) {
+          // ESPN kaže da je izašao, ali nema događaj sa minutom — 90 bi bilo
+          // pogrešno za onoga ko je izašao u 60. minutu.
+          warnings.push(`${displayName}: izašao je iz igre, ali ESPN ne daje minut izmene — upisano 90, proveri ručno.`);
+        }
+        // Izmena u nadoknadi vremena (npr. 93') ne sme da da više od 90 min.
+        minutesPlayed = Math.min(90, offMinute ?? 90);
       } else if (p.subbedIn) {
         const onMinute = athleteId ? subOnMinuteByAthleteId.get(athleteId) : undefined;
         cameOnAt = onMinute ?? null;
-        minutesPlayed = onMinute != null ? 90 - onMinute : 0;
+        if (onMinute == null) {
+          // Bez minuta ulaska ne zna se koliko je igrao; 1 daje bar poen za nastup,
+          // a admin dobija upozorenje da upiše tačan broj.
+          minutesPlayed = 1;
+          warnings.push(`${displayName}: ušao je u igru, ali ESPN ne daje minut izmene — upisan 1 minut, proveri ručno.`);
+        } else {
+          // Ušao u nadoknadi (npr. 91'–94') ima 90 − minut ≤ 0, a nastup mora da se
+          // broji (bar 1 minut) — inače izgubi poen za nastup.
+          minutesPlayed = Math.max(1, 90 - onMinute);
+        }
       } else {
         minutesPlayed = 0;
       }
 
       players.push({
         worldfootballId: null,
-        nameOnPage: p.athlete?.fullName ?? p.athlete?.displayName ?? "?",
+        nameOnPage: displayName,
         minutesPlayed,
         goals: statValue(p.stats, "totalGoals"),
         assists: statValue(p.stats, "goalAssists"),

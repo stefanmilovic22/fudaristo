@@ -35,8 +35,11 @@ export function PlayerLine({
   posLabel,
   statusLabel,
   jersey,
+  hideJerseyOnNarrow,
 }: {
   player: PlayerLineData;
+  /** Na ekranu užem od 400 px dres se ne crta — daje mesto imenu (npr. kad je red već pod klubom). */
+  hideJerseyOnNarrow?: boolean;
   /** Dres kluba pored imena (boja i, ako postoji, fotografija). */
   jersey?: { color: string; photoUrl?: string | null };
   /** Skraćenica pozicije; izostavljeno kad su igrači već grupisani po poziciji. */
@@ -52,7 +55,7 @@ export function PlayerLine({
         </span>
       )}
       {jersey && (
-        <span className="shrink-0 w-[30px] grid place-items-center">
+        <span className={`shrink-0 w-[30px] place-items-center ${hideJerseyOnNarrow ? "hidden xs:grid" : "grid"}`}>
           <JerseyIcon
             color={jersey.color}
             photoUrl={jersey.photoUrl}
@@ -105,17 +108,19 @@ export function PlayerLineHeader({
   rating,
   hasPos,
   hasJersey,
+  hideJerseyOnNarrow,
 }: {
   price: string;
   points: string;
   rating: string;
   hasPos?: boolean;
   hasJersey?: boolean;
+  hideJerseyOnNarrow?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 pt-3 text-[10px] uppercase tracking-wide text-slate-500">
       {hasPos && <span className="shrink-0 w-9" />}
-      {hasJersey && <span className="shrink-0 w-[30px]" />}
+      {hasJersey && <span className={`shrink-0 w-[30px] ${hideJerseyOnNarrow ? "hidden xs:block" : ""}`} />}
       <span className="flex-1" />
       <span className="shrink-0 w-14 text-right">{price}</span>
       <span className="shrink-0 w-9 text-right">{points}</span>

@@ -14,6 +14,7 @@ import { PublicSquadPitch, type PublicEntry } from "@/components/PublicSquadPitc
 import type { BreakdownGroup } from "@/components/PlayerPointsBreakdownPopover";
 import { readableInk } from "@/lib/color";
 import { getCurrentUser } from "@/lib/supabase/current-user";
+import { PerformanceChart, type PerformancePoint } from "@/components/PerformanceChart";
 import { GameweekNav } from "@/components/GameweekNav";
 import { TeamSideCards } from "@/components/TeamSideCards";
 import { getGameweeksCached, getGameweekStatsCached, getManagerCountCached } from "@/lib/cached-data";
@@ -59,7 +60,7 @@ export default async function TimPage({
   // Bira se jedno kolo iz ?kolo=N, a bez toga ili uz nepoznat broj — poslednje.
   const chosenGw = finalizedGws.find((g) => String(g.number) === kolo) ?? finalizedGws[0] ?? null;
 
-  const [{ data: owner }, { data: allGwPoints }, { data: standing }, managerCount, squadRes, gwStatRows] =
+  const [{ data: owner }, { data: allGwPoints }, { data: standing }, managerCount, squadRes, gwStatRows, perfRes] =
     await Promise.all([
       supabase
         .from("users")
@@ -88,7 +89,17 @@ export default async function TimPage({
       // Statistika za CELO kolo (do par stotina redova) iz keša — isti podaci za
       // sve koji gledaju to kolo; višak se odbacuje ispod.
       chosenGw ? getGameweekStatsCached(chosenGw.id).catch(() => [] as any[]) : Promise.resolve([] as any[]),
+      // Istorija poena i plasmana za grafik (migracija 023). Ako funkcija još ne
+      // postoji, upit vrati grešku — grafik se tada samo ne prikazuje.
+      Promise.resolve(supabase.rpc("user_performance_history", { p_user: id })).catch(() => ({ data: null })),
     ]);
+  const performance: PerformancePoint[] = ((perfRes?.data ?? []) as any[]).map((r) => ({
+    gameweek: Number(r.gameweek_number),
+    points: Number(r.points),
+    average: Number(r.avg_points),
+    rank: Number(r.rank),
+    managers: Number(r.managers),
+  }));
 
   if (!owner) notFound();
 
@@ -308,6 +319,9 @@ export default async function TimPage({
         bench={bench}
         autoSubLabel={tPitch("autoSubbedIn")}
       />
+      <div className="mt-4">
+        <PerformanceChart data={performance} currentGameweek={lastFinalized.number} />
+      </div>
     </Shell>
   );
 }

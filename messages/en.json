@@ -366,7 +366,16 @@
     "nameTaken": "That team name is taken — pick another.",
     "favoriteNote": "Has no effect on fantasy rules — it only shows on your profile.",
     "save": "Save settings",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "deleteTitle": "Delete account",
+    "deleteBody": "Permanently deletes your account, team, transfers and all points. Leagues you created stay with their other members. This cannot be undone.",
+    "deleteOpen": "Delete account",
+    "deleteConfirmLabel": "To confirm, type your team name: {name}",
+    "deleteConfirm": "Permanently delete account",
+    "deleteBusy": "Deleting…",
+    "deleteMismatch": "The team name does not match.",
+    "deleteAdmin": "An admin account cannot be deleted from here.",
+    "deleteFailed": "Deleting failed. Try again in a minute."
   },
   "register": {
     "nameTaken": "That team name is taken — try another.",
@@ -421,7 +430,15 @@
     "points": "{points} points",
     "transferCost": "{cost} for transfers",
     "rankAndPoints": "{rank} place · {points} points total",
-    "supports": "supports {club}"
+    "supports": "supports {club}",
+    "chartTitle": "Points and rank by gameweek",
+    "chartPoints": "Points",
+    "chartRank": "Rank",
+    "chartAverage": "Average of all",
+    "chartGameweek": "Gameweek",
+    "chartRankHint": "First place is at the top.",
+    "chartSummaryPoints": "Best gameweek: {best} points (GW {gameweek}).",
+    "chartSummaryRank": "Currently {rank} of {managers}."
   },
   "adminDenied": {
     "title": "Admin panel",
@@ -556,7 +573,15 @@
     "total": "Total",
     "captainX2": "Captain ×2",
     "tripleX3": "Triple ×3",
-    "rating": "Rating"
+    "rating": "Rating",
+    "captain": "Captain",
+    "viceCaptain": "Vice-captain",
+    "toBench": "To bench",
+    "toLineup": "To line-up",
+    "transfer": "Transfer",
+    "cancelTransfer": "Undo transfer",
+    "swapHint": "Substitution: tap “To bench” or “To line-up”, then the player to swap with.",
+    "swapPick": "Tap the player {name} swaps with."
   },
   "team": {
     "pointsHistory": "Points by gameweek",
@@ -886,7 +911,13 @@
     "status_injured": "Injured",
     "status_suspended": "Suspended",
     "status_doubtful": "Doubtful",
-    "status_unavailable": "Unavailable"
+    "status_unavailable": "Unavailable",
+    "watch": "Watch player",
+    "unwatch": "Stop watching",
+    "watchedFilter": "Watched ({count})",
+    "watchedEmpty": "You are not watching any player yet. Tap the star next to a player to add them.",
+    "watchFull": "You can watch up to 50 players. Remove one to add another.",
+    "watchFailed": "Could not save. Try again."
   },
   "injuryReasons": {
     "knock_injury": "Knock injury",

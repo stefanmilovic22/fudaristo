@@ -4,6 +4,7 @@ import { localePath } from "@/lib/locale-path";
 import { createClient } from "@/lib/supabase/server";
 import { getClubsCached } from "@/lib/cached-data";
 import { getCurrentUser } from "@/lib/supabase/current-user";
+import { DeleteAccount } from "./delete-account";
 import { SettingsForm } from "./settings-form";
 
 export default async function PodesavanjaPage({
@@ -44,6 +45,7 @@ export default async function PodesavanjaPage({
         favoriteClubId={profile?.favorite_club_id ?? null}
         clubs={clubs}
       />
+      {profile?.team_name && <DeleteAccount teamName={profile.team_name} />}
     </div>
   );
 }

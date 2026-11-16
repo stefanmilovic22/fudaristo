@@ -32,6 +32,8 @@ export type PickerProps = {
   blockedReason: (p: SelectablePlayer) => string | null;
   onPick: (p: SelectablePlayer) => void;
   onClearLock?: () => void;
+  /** Praćeni igrači (stranica Igrači): daje filter „Praćeni“ i zvezdicu u redu. */
+  watchedIds?: string[];
 };
 
 export function PlayerPicker({
@@ -41,12 +43,16 @@ export function PlayerPicker({
   blockedReason,
   onPick,
   onClearLock,
+  watchedIds,
 }: PickerProps) {
   const t = useTranslations("picker");
   const tPos = useTranslations("positions");
   const tCommon = useTranslations("common");
   const tStats = useTranslations("stats");
   const tInfo = useTranslations("playerInfo");
+  const tPlayers = useTranslations("players");
+  const watchedSet = useMemo(() => new Set(watchedIds ?? []), [watchedIds]);
+  const [onlyWatched, setOnlyWatched] = useState(false);
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position | "ALL">("ALL");
   const [clubId, setClubId] = useState<string>("ALL");
@@ -67,6 +73,7 @@ export function PlayerPicker({
       if (activePosition && p.position !== activePosition) return false;
       if (clubId !== "ALL" && p.club_id !== clubId) return false;
       if (maxPrice !== null && p.price > maxPrice) return false;
+      if (onlyWatched && !watchedSet.has(p.id)) return false;
       if (q && !playerFullName(p).toLowerCase().includes(q) && !p.club_name.toLowerCase().includes(q))
         return false;
       return true;
@@ -92,7 +99,7 @@ export function PlayerPicker({
       }
     });
     return list;
-  }, [players, activePosition, clubId, maxPrice, search, sort]);
+  }, [players, activePosition, clubId, maxPrice, search, sort, onlyWatched, watchedSet]);
 
   const inputClass =
     "bg-navy-900/60 border border-navy-600 rounded-lg px-2.5 py-2 text-sm text-chalk-50 focus:border-gold-400 focus:outline-none";
@@ -170,6 +177,20 @@ export function PlayerPicker({
         </label>
       </div>
 
+      {watchedSet.size > 0 && (
+        <button
+          type="button"
+          onClick={() => setOnlyWatched((v) => !v)}
+          aria-pressed={onlyWatched}
+          className={`self-start inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-xs font-semibold transition-colors ${
+            onlyWatched ? "bg-gold-400 text-navy-950" : "bg-navy-900/60 border border-navy-600 text-slate-300 hover:text-chalk-50"
+          }`}
+        >
+          <span aria-hidden>★</span>
+          {tPlayers("watchedFilter", { count: watchedSet.size })}
+        </button>
+      )}
+
       <label className="flex flex-col gap-1 text-[11px] text-slate-400">
         {t("sort")}
         <select
@@ -213,6 +234,9 @@ export function PlayerPicker({
               />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">
+                  {watchedSet.has(p.id) && (
+                    <span className="text-gold-300 mr-1" aria-label={tPlayers("watch")}>★</span>
+                  )}
                   {playerFullName(p)}
                   {p.status !== "available" && (
                     <span className="text-danger-400 text-[11px] ml-1.5">{p.status}</span>

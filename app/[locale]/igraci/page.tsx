@@ -7,6 +7,8 @@ import { ActionLink } from "@/components/ActionLink";
 import { PriceIcon } from "@/components/icons";
 import { DataLoadError } from "@/components/DataLoadError";
 import { countryName } from "@/lib/country";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/current-user";
 import { PlayersBoard, type BoardClub } from "./players-board";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -43,6 +45,16 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
         <DataLoadError whatKey="whatTable" error={{ message: (e as Error).message }} />
       </div>
     );
+  }
+
+  // Praćeni igrači (migracija 023): samo za prijavljenog, i bez njih stranica radi
+  // — ako tabela još ne postoji, zvezdice jednostavno ostaju prazne.
+  const user = await getCurrentUser();
+  let watchedIds: string[] = [];
+  if (user) {
+    const supabase = await createClient();
+    const { data } = await supabase.from("player_watchlist").select("player_id");
+    watchedIds = (data ?? []).map((r: { player_id: string }) => r.player_id);
   }
 
   const deltaByPlayer = new Map(priceChanges.rows.map((r) => [r.playerId, Math.round((r.newPrice - r.oldPrice) * 10) / 10]));
@@ -104,7 +116,7 @@ export default async function IgraciPage({ params }: { params: Promise<{ locale:
         </div>
         <ActionLink href="/igraci/cene" icon={PriceIcon} label={t("priceChangesLink")} shortLabel={t("priceChangesLink")} variant="plan" inline />
       </div>
-      <PlayersBoard clubs={clubs} upcomingByClub={upcomingByClub} />
+      <PlayersBoard clubs={clubs} upcomingByClub={upcomingByClub} userId={user?.id ?? null} watchedIds={watchedIds} />
     </div>
   );
 }

@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "verify": "tsx verify-faza6.ts && tsx verify-prevodi.tsx && tsx verify-cene.ts && tsx verify-planer.ts && tsx verify-povrede.ts && tsx verify-drzave.ts && tsx verify-parser-html.ts",
+    "verify": "tsx verify-faza6.ts && tsx verify-prevodi.tsx && tsx verify-cene.ts && tsx verify-planer.ts && tsx verify-povrede.ts && tsx verify-drzave.ts && tsx verify-parser-html.ts && tsx verify-espn.ts",
     "verify-scoring": "tsx verify-faza6.ts",
     "verify-prevodi": "tsx verify-prevodi.tsx",
     "verify-maintenance": "tsx verify-maintenance.ts",

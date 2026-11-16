@@ -34,11 +34,14 @@ export function SquadBuilder({
   gameweekId,
   players,
   budgetAvailable,
+  watchedIds = [],
 }: {
   gameweekId: string;
   players: SelectablePlayer[];
   /** Raspoloživ novac iz users.budget_remaining — 100M za prvi tim ikad. */
   budgetAvailable: number;
+  /** Praćeni igrači — filter „Praćeni“ u izboru igrača. */
+  watchedIds?: string[];
 }) {
   const t = useTranslations("builder");
   const tTeam = useTranslations("team");
@@ -451,6 +454,7 @@ export function SquadBuilder({
               blockedReason={blockedReason}
               onPick={addPlayer}
               onClearLock={() => setPendingPosition(null)}
+              watchedIds={watchedIds}
             />
           ) : (
             <SwapHelp swapPlayer={swapPlayer} />

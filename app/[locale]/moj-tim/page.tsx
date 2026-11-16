@@ -106,6 +106,7 @@ export default async function MojTimPage({
     { data: gwWindow },
     preSeason,
     { data: finalizedRows },
+    watchRes,
   ] = await Promise.all([
     carryOver,
     readProfile(),
@@ -127,7 +128,11 @@ export default async function MojTimPage({
       : Promise.resolve({ data: null }),
     targetGw ? isBuildingFirstSquad(supabase, user.id, targetGw.number) : Promise.resolve(false),
     supabase.from("gameweeks").select("id").eq("status", "finalized").limit(1),
+    // Praćeni igrači (migracija 023) za filter u izboru igrača. Ako tabela još ne
+    // postoji, upit vrati grešku i filter se jednostavno ne prikazuje.
+    supabase.from("player_watchlist").select("player_id"),
   ]);
+  const watchedIds: string[] = ((watchRes?.data ?? []) as { player_id: string }[]).map((r) => r.player_id);
 
   let profile = profileRes.data;
   let squadRows = squadRes.data;
@@ -229,6 +234,7 @@ export default async function MojTimPage({
           gameweekId={targetGw.id}
           players={selectablePlayers}
           budgetAvailable={Number(profile?.budget_remaining ?? 100)}
+          watchedIds={watchedIds}
         />
       </div>
     );
@@ -398,6 +404,7 @@ export default async function MojTimPage({
           preSeason={preSeason}
           opponentByClub={Object.fromEntries(opponentByClub)}
           upcomingByClub={Object.fromEntries(upcomingByClub)}
+          watchedIds={watchedIds}
         />
       </div>
     </div>

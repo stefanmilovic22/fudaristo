@@ -366,7 +366,16 @@
     "nameTaken": "To ime tima je već zauzeto — izaberi drugo.",
     "favoriteNote": "Ne utiče na fantasy pravila — služi samo za prikaz na tvom profilu.",
     "save": "Sačuvaj podešavanja",
-    "saved": "Sačuvano."
+    "saved": "Sačuvano.",
+    "deleteTitle": "Brisanje naloga",
+    "deleteBody": "Trajno briše tvoj nalog, tim, transfere i sve poene. Lige koje si napravio ostaju ostalim članovima. Ovo ne može da se poništi.",
+    "deleteOpen": "Obriši nalog",
+    "deleteConfirmLabel": "Za potvrdu upiši ime svog tima: {name}",
+    "deleteConfirm": "Trajno obriši nalog",
+    "deleteBusy": "Brišem…",
+    "deleteMismatch": "Ime tima se ne poklapa.",
+    "deleteAdmin": "Admin nalog ne može da se obriše odavde.",
+    "deleteFailed": "Brisanje nije uspelo. Pokušaj ponovo za koji minut."
   },
   "register": {
     "nameTaken": "Ovo ime tima je već zauzeto — probaj drugo.",
@@ -421,7 +430,15 @@
     "points": "{points} poena",
     "transferCost": "{cost} za transfere",
     "rankAndPoints": "{rank}. mesto · {points} poena ukupno",
-    "supports": "navija za {club}"
+    "supports": "navija za {club}",
+    "chartTitle": "Poeni i plasman po kolima",
+    "chartPoints": "Poeni",
+    "chartRank": "Plasman",
+    "chartAverage": "Prosek svih",
+    "chartGameweek": "Kolo",
+    "chartRankHint": "Prvo mesto je gore.",
+    "chartSummaryPoints": "Najbolje kolo: {best} poena (kolo {gameweek}).",
+    "chartSummaryRank": "Trenutno {rank}. mesto od {managers}."
   },
   "adminDenied": {
     "title": "Admin panel",
@@ -556,7 +573,15 @@
     "total": "Ukupno",
     "captainX2": "Kapiten ×2",
     "tripleX3": "Triple ×3",
-    "rating": "Ocena"
+    "rating": "Ocena",
+    "captain": "Kapiten",
+    "viceCaptain": "Vicekapiten",
+    "toBench": "Na klupu",
+    "toLineup": "U postavu",
+    "transfer": "Transfer",
+    "cancelTransfer": "Poništi transfer",
+    "swapHint": "Zamena: dodirni „Na klupu“ ili „U postavu“, pa igrača sa kojim menja mesto.",
+    "swapPick": "Dodirni igrača sa kojim {name} menja mesto."
   },
   "team": {
     "pointsHistory": "Poeni po kolima",
@@ -886,7 +911,13 @@
     "status_injured": "Povređen",
     "status_suspended": "Suspendovan",
     "status_doubtful": "Neizvestan",
-    "status_unavailable": "Nedostupan"
+    "status_unavailable": "Nedostupan",
+    "watch": "Prati igrača",
+    "unwatch": "Prestani da pratiš",
+    "watchedFilter": "Praćeni ({count})",
+    "watchedEmpty": "Još ne pratiš nijednog igrača. Dodirni zvezdicu pored igrača da ga dodaš.",
+    "watchFull": "Možeš da pratiš najviše 50 igrača. Ukloni nekog da dodaš novog.",
+    "watchFailed": "Praćenje nije sačuvano. Pokušaj ponovo."
   },
   "injuryReasons": {
     "knock_injury": "Povreda od udarca",

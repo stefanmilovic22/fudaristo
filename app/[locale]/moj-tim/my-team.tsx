@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Bench, Pitch, PitchRow } from "@/components/Pitch";
 import { Jersey } from "@/components/Jersey";
 import { PlayerPicker } from "@/components/PlayerPicker";
-import { PlayerInfoPopover, type UpcomingFixture } from "@/components/PlayerInfoPopover";
+import { PlayerInfoPopover, type PlayerAction, type UpcomingFixture } from "@/components/PlayerInfoPopover";
 import {
   FORMATIONS,
   MAX_PLAYERS_PER_CLUB,
@@ -59,6 +59,7 @@ export function MyTeam({
   // i dalje radi — samo bez naredna-3-meča u prozorčiću — umesto da puca na
   // `upcomingByClub[clubId]` nad undefined objektom.
   upcomingByClub = {},
+  watchedIds = [],
 }: {
   gameweekId: string;
   gameweekNumber: number;
@@ -73,11 +74,14 @@ export function MyTeam({
   opponentByClub: Record<string, string>;
   /** club_id → naredna do 3 zakazana meča, za prozorčić sa info o igraču. */
   upcomingByClub: Record<string, UpcomingFixture[]>;
+  /** Praćeni igrači — filter „Praćeni“ u izboru zamene. */
+  watchedIds?: string[];
 }) {
   const t = useTranslations("team");
   const locale = useLocale();
   const tCommon = useTranslations("common");
   const tPos = useTranslations("positions");
+  const tInfo = useTranslations("playerInfo");
   const tPitch = useTranslations("pitch");
   const router = useRouter();
   const supabase = createClient();
@@ -94,6 +98,9 @@ export function MyTeam({
   );
   const [transferSlot, setTransferSlot] = useState<string | null>(null);
   const [swapSlot, setSwapSlot] = useState<string | null>(null);
+  // Meni igrača je sakriven za ovo mesto, a mesto je i dalje izabrano: korisnik je
+  // u meniju dodirnuo „Na klupu / U postavu“ i sada bira drugog igrača za zamenu.
+  const [menuHiddenFor, setMenuHiddenFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -198,6 +205,7 @@ export function MyTeam({
 
   function startTransfer(slotKey: string) {
     setSwapSlot(null);
+    setMenuHiddenFor(null);
     setError(null);
     setFlash(null);
     setTransferSlot(slotKey);
@@ -267,6 +275,7 @@ export function MyTeam({
 
   function handleJerseyClick(slotKey: string) {
     if (transferSlot) return; // usred biranja zamene — ne mešaj sa postavom
+    setMenuHiddenFor(null);
     if (!swapSlot) {
       setSwapSlot(slotKey);
       setFlash(null);
@@ -528,13 +537,79 @@ export function MyTeam({
     .map((pos) => starterSlots.filter((s) => s.current.position === pos).length)
     .join("-");
 
+  // Radnje u meniju igrača (dodir na dres). Teren i dugmad na njemu ostaju isti —
+  // meni nudi iste radnje velikim dugmadima, zgodnijim za prst.
+  const menuActions = (s: (typeof slots)[number], onPitch: boolean): PlayerAction[] => {
+    const close = () => setSwapSlot(null);
+    const list: PlayerAction[] = [];
+    if (onPitch) {
+      list.push({
+        key: "captain",
+        badge: "C",
+        label: tInfo("captain"),
+        active: s.state.captain,
+        onClick: () => {
+          setCaptain(s.key);
+          close();
+        },
+      });
+      list.push({
+        key: "vice",
+        badge: "V",
+        label: tInfo("viceCaptain"),
+        active: s.state.vice,
+        onClick: () => {
+          setVice(s.key);
+          close();
+        },
+      });
+    }
+    list.push({
+      key: "swap",
+      badge: "⇅",
+      label: onPitch ? tInfo("toBench") : tInfo("toLineup"),
+      onClick: () => {
+        // Mesto ostaje izabrano, meni se sklanja — sledeći dodir bira drugog igrača.
+        setMenuHiddenFor(s.key);
+        setFlash(tInfo("swapPick", { name: playerShirtName(s.current) }));
+        // Na telefonu klupa (ili teren) često nije na ekranu — pomeri prikaz do
+        // prvog igrača sa kojim je zamena moguća, da se vidi šta se bira.
+        const target = slots.find((o) => o.key !== s.key && wouldBeValidSwap(s.key, o.key));
+        if (target) {
+          requestAnimationFrame(() =>
+            document
+              .querySelector(`[data-slot="${target.key}"]`)
+              ?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+          );
+        }
+      },
+    });
+    list.push(
+      s.replacement
+        ? {
+            key: "undo",
+            badge: "↩",
+            label: tInfo("cancelTransfer"),
+            onClick: () => {
+              cancelReplacement(s.key);
+              close();
+            },
+          }
+        : { key: "transfer", badge: "⇄", label: tInfo("transfer"), onClick: () => startTransfer(s.key) }
+    );
+    return list;
+  };
+
   const renderSlot = (s: (typeof slots)[number], onPitch: boolean) => (
     <JerseySlot
       key={s.key}
-      showPopover={swapSlot === s.key}
+      slotKey={s.key}
+      showPopover={swapSlot === s.key && menuHiddenFor !== s.key}
       player={s.current}
       fixtures={upcomingByClub[s.current.club_id] ?? []}
       onClosePopover={() => setSwapSlot(null)}
+      actions={menuActions(s, onPitch)}
+      hint={tInfo("swapHint")}
     >
       <Jersey
         color={s.current.club_color}
@@ -694,6 +769,7 @@ export function MyTeam({
               selectedIds={inSquadIds}
               blockedReason={blockedReason}
               onPick={chooseReplacement}
+              watchedIds={watchedIds}
             />
           </>
         ) : (
@@ -769,20 +845,26 @@ export function MyTeam({
  */
 function JerseySlot({
   children,
+  slotKey,
   showPopover,
   player,
   fixtures,
   onClosePopover,
+  actions,
+  hint,
 }: {
   children: React.ReactNode;
+  slotKey: string;
   showPopover: boolean;
   player: SelectablePlayer;
   fixtures: UpcomingFixture[];
   onClosePopover: () => void;
+  actions: PlayerAction[];
+  hint: string;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   return (
-    <div ref={anchorRef} className="relative">
+    <div ref={anchorRef} data-slot={slotKey} className="relative">
       {children}
       {showPopover && (
         <PlayerInfoPopover
@@ -790,6 +872,8 @@ function JerseySlot({
           player={player}
           fixtures={fixtures}
           onClose={onClosePopover}
+          actions={actions}
+          hint={hint}
         />
       )}
     </div>
