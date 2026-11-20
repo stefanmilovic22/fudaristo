@@ -326,7 +326,7 @@
     "captain": "Captain",
     "viceCaptain": "Vice-captain",
     "bench": "Bench",
-    "benchNote": "Bench order decides who comes on first if a player doesn't play a single minute.",
+    "benchNote": "Bench order decides who comes on first if a player doesn't play a single minute. Tap two bench players to swap their places (1st comes on first).",
     "player": "Player",
     "remove": "Remove {name}",
     "removeGeneric": "Remove player",
@@ -581,7 +581,10 @@
     "transfer": "Transfer",
     "cancelTransfer": "Undo transfer",
     "swapHint": "Substitution: tap “To bench” or “To line-up”, then the player to swap with.",
-    "swapPick": "Tap the player {name} swaps with."
+    "swapPick": "Tap the player {name} swaps with.",
+    "benchEarlier": "Earlier on bench",
+    "benchLater": "Later on bench",
+    "benchReordered": "{name} is now number {n} to come on from the bench."
   },
   "team": {
     "pointsHistory": "Points by gameweek",
@@ -616,7 +619,7 @@
     "transfersSavedLineupNot": "Transfers were saved but the lineup was not: {message}",
     "savedTransfers": "Saved — {count, plural, one {# transfer} other {# transfers}} made.",
     "savedLineup": "Lineup saved.",
-    "swapHelpActive": "Player selected. Click a player on the other side (pitch ↔ bench) to swap them. Dimmed players would break the formation.",
+    "swapHelpActive": "Player selected. Click a player on the other side (pitch ↔ bench) to swap them, or another bench player to swap their order. Dimmed players would break the formation.",
     "swapHelpIdle": "Click a shirt, then another player on the opposite side, to swap pitch and bench. Pick captain and vice-captain with the C and V buttons.",
     "transferHelp": "The × in the corner of a shirt starts a transfer: the player is marked for sale and a list of replacements at his position opens. Nothing is final until you press save.",
     "confirmTransfers": "Confirm {count, plural, one {# transfer} other {# transfers}}",
@@ -644,7 +647,7 @@
     "hide": "hide",
     "finishSwapFirst": "Finish the swap before changing formation",
     "formation": "Formation",
-    "swapHelpActive": "<b>{name}</b> is selected. Click a player on the other side (pitch ↔ bench) to swap them. Dimmed players would break the formation.",
+    "swapHelpActive": "<b>{name}</b> is selected. Click a player on the other side (pitch ↔ bench) to swap them, or another bench player to swap their order. Dimmed players would break the formation.",
     "swapHelpIdle": "Click a player, then another on the opposite side, to swap them. The formation must stay valid.",
     "captainHint": "Pick captain and vice-captain with the C and V buttons under the shirt.",
     "lineupTitle": "Lineup",

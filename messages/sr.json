@@ -326,7 +326,7 @@
     "captain": "Kapiten",
     "viceCaptain": "Vice-kapiten",
     "bench": "Klupa",
-    "benchNote": "Redosled klupe odlučuje ko prvi ulazi ako neko ne odigra nijedan minut.",
+    "benchNote": "Redosled klupe odlučuje ko prvi ulazi ako neko ne odigra nijedan minut. Dodirni dva igrača sa klupe da im zameniš mesta (1. ulazi prvi).",
     "player": "Igrač",
     "remove": "Ukloni {name}",
     "removeGeneric": "Ukloni igrača",
@@ -581,7 +581,10 @@
     "transfer": "Transfer",
     "cancelTransfer": "Poništi transfer",
     "swapHint": "Zamena: dodirni „Na klupu“ ili „U postavu“, pa igrača sa kojim menja mesto.",
-    "swapPick": "Dodirni igrača sa kojim {name} menja mesto."
+    "swapPick": "Dodirni igrača sa kojim {name} menja mesto.",
+    "benchEarlier": "Ranije na klupi",
+    "benchLater": "Kasnije na klupi",
+    "benchReordered": "{name} je sada {n}. na redu za ulazak sa klupe."
   },
   "team": {
     "pointsHistory": "Poeni po kolima",
@@ -616,7 +619,7 @@
     "transfersSavedLineupNot": "Transferi su sačuvani, ali postava nije: {message}",
     "savedTransfers": "Sačuvano — {count, plural, one {# transfer} few {# transfera} other {# transfera}} izvršeno.",
     "savedLineup": "Postava je sačuvana.",
-    "swapHelpActive": "Igrač je izabran. Klikni na igrača sa druge strane (teren ↔ klupa) da ih zameniš mestima. Prigušeni igrači bi pokvarili formaciju.",
+    "swapHelpActive": "Igrač je izabran. Klikni na igrača sa druge strane (teren ↔ klupa) da ih zameniš mestima, ili na drugog igrača sa klupe da zameniš redosled ulaska. Prigušeni igrači bi pokvarili formaciju.",
     "swapHelpIdle": "Klikni na dres, pa na drugog igrača sa suprotne strane, da zameniš postavu i klupu. Kapitena i vice-kapitena biraš dugmićima C i V.",
     "transferHelp": "× u uglu dresa započinje transfer: igrač se označi za prodaju i otvara se lista zamena na njegovoj poziciji. Ništa nije konačno dok ne klikneš dugme za čuvanje.",
     "confirmTransfers": "Potvrdi {count, plural, one {# transfer} few {# transfera} other {# transfera}}",
@@ -644,7 +647,7 @@
     "hide": "sakrij",
     "finishSwapFirst": "Završi zamenu pa biraj formaciju",
     "formation": "Formacija",
-    "swapHelpActive": "Izabran je <b>{name}</b>. Klikni na igrača sa druge strane (teren ↔ klupa) da ih zameniš. Prigušeni igrači bi pokvarili formaciju.",
+    "swapHelpActive": "Izabran je <b>{name}</b>. Klikni na igrača sa druge strane (teren ↔ klupa) da ih zameniš, ili na drugog igrača sa klupe da zameniš redosled ulaska. Prigušeni igrači bi pokvarili formaciju.",
     "swapHelpIdle": "Klikni na igrača, pa na drugog sa suprotne strane, da ih zameniš mestima. Formacija mora ostati validna.",
     "captainHint": "Kapitena i vice-kapitena biraš dugmićima C i V ispod dresa.",
     "lineupTitle": "Postava",

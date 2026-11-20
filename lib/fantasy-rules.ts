@@ -446,9 +446,27 @@ export function autoPickSquad(
  * Postava dobija squad_order 1..11 (po liniji, golman prvi), klupa 1..4 —
  * redosled klupe je ono što će auto-sub logika u Fazi 6 koristiti.
  */
+/**
+ * Redosled klupe BEZ golmana (golman je odvojen, jer ga može zameniti samo drugi
+ * golman): prvo oni koje je korisnik rasporedio (`priority`, od onog koji ulazi
+ * prvi), a ostali iza njih po ceni opadajuće. Bez `priority` je to stari
+ * podrazumevani redosled po ceni.
+ */
+export function orderBenchOutfield<T extends { id: string; position: Position; price: number }>(
+  benchPlayers: T[],
+  priority: string[] = []
+): T[] {
+  const idx = new Map(priority.map((id, i) => [id, i]));
+  return benchPlayers
+    .filter((p) => p.position !== "GK")
+    .sort((a, b) => (idx.get(a.id) ?? 999) - (idx.get(b.id) ?? 999) || b.price - a.price);
+}
+
 export function buildSquadOrder(
   selected: SelectablePlayer[],
-  startingIds: Set<string>
+  startingIds: Set<string>,
+  /** Izabran redosled ulaska sa klupe (id-jevi, prvi ulazi prvi); izostavljeno = po ceni. */
+  benchPriority: string[] = []
 ): Map<string, number> {
   const order = new Map<string, number>();
   const posRank: Record<Position, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
@@ -458,14 +476,12 @@ export function buildSquadOrder(
     .sort((a, b) => posRank[a.position] - posRank[b.position] || b.price - a.price);
   starters.forEach((p, i) => order.set(p.id, i + 1));
 
-  // Klupa: rezervni golman poslednji (najređe ulazi), ostali po ceni opadajuće.
-  const bench = selected
-    .filter((p) => !startingIds.has(p.id))
-    .sort((a, b) => {
-      if (a.position === "GK" && b.position !== "GK") return 1;
-      if (b.position === "GK" && a.position !== "GK") return -1;
-      return b.price - a.price;
-    });
+  // Klupa: igrači iz polja po izabranom redosledu, rezervni golman poslednji.
+  const benchAll = selected.filter((p) => !startingIds.has(p.id));
+  const bench = [
+    ...orderBenchOutfield(benchAll, benchPriority),
+    ...benchAll.filter((p) => p.position === "GK"),
+  ];
   bench.forEach((p, i) => order.set(p.id, i + 1));
 
   return order;

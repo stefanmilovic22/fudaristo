@@ -34,6 +34,29 @@ export type SquadEntry = {
 type LineupState = { starting: boolean; captain: boolean; vice: boolean };
 
 /**
+ * Sačuvan prioritet klupe iz baze: samo igrači sa klupe, bez golmana (njega može
+ * da zameni samo drugi golman, pa nije deo reda za ulazak).
+ */
+function initialBenchRank(squad: SquadEntry[]): Map<string, number> {
+  const bench = squad
+    .filter((e) => !e.isStarting && e.player.position !== "GK")
+    .sort((a, b) => a.squadOrder - b.squadOrder || b.player.price - a.player.price);
+  return new Map(bench.map((e, i) => [e.player.id, i + 1]));
+}
+
+/** Redosled klupe (bez golmana) kao niz ključeva, od onog koji ulazi prvi. */
+function sortBench<T extends { key: string; current: { price: number } }>(
+  items: T[],
+  rank: Map<string, number>
+): T[] {
+  // Igrač bez zabeleženog prioriteta (tek sišao sa terena) ide na kraj, a ne na početak.
+  return [...items].sort(
+    (a, b) =>
+      (rank.get(a.key) ?? 99) - (rank.get(b.key) ?? 99) || b.current.price - a.current.price || a.key.localeCompare(b.key)
+  );
+}
+
+/**
  * "Moj tim" — jedan ekran, po uzoru na FPL.
  *
  * Ključno u ponašanju: klik na × NE menja tim. On samo otvara stanje
@@ -96,6 +119,11 @@ export function MyTeam({
         ])
       )
   );
+  // Prioritet ulaska igrača sa klupe (manji broj = ulazi ranije). Ključ je mesto
+  // (id originalnog igrača), pa transfer ne remeti redosled. Početne vrednosti su
+  // sačuvani squad_order iz baze — ranije se redosled uvek računao po ceni i
+  // korisnik ga nije mogao menjati.
+  const [benchRank, setBenchRank] = useState<Map<string, number>>(() => initialBenchRank(squad));
   const [transferSlot, setTransferSlot] = useState<string | null>(null);
   const [swapSlot, setSwapSlot] = useState<string | null>(null);
   // Meni igrača je sakriven za ovo mesto, a mesto je i dalje izabrano: korisnik je
@@ -141,13 +169,27 @@ export function MyTeam({
   const pending = slots.filter((s) => s.replacement);
   const pointsCost = preSeason ? 0 : -4 * Math.max(0, pending.length - freeTransfers);
 
-  const lineupDirty = squad.some((e) => {
-    const st = lineup.get(e.player.id);
-    if (!st) return false;
-    return (
-      st.starting !== e.isStarting || st.captain !== e.isCaptain || st.vice !== e.isViceCaptain
-    );
-  });
+  // Redosled klupe (bez golmana), od onog koji ulazi prvi — i sačuvani, i trenutni.
+  const benchOutfield = useMemo(
+    () =>
+      sortBench(
+        slots.filter((s) => !s.state.starting && s.current.position !== "GK"),
+        benchRank
+      ),
+    [slots, benchRank]
+  );
+  const savedBenchKeys = useMemo(() => [...initialBenchRank(squad).keys()].join(","), [squad]);
+  const benchOrderChanged = benchOutfield.map((s) => s.key).join(",") !== savedBenchKeys;
+
+  const lineupDirty =
+    benchOrderChanged ||
+    squad.some((e) => {
+      const st = lineup.get(e.player.id);
+      if (!st) return false;
+      return (
+        st.starting !== e.isStarting || st.captain !== e.isCaptain || st.vice !== e.isViceCaptain
+      );
+    });
   const dirty = pending.length > 0 || lineupDirty;
 
   // Nesačuvane izmene (transferi, postava, kapiten): pregledač pita pre
@@ -240,10 +282,43 @@ export function MyTeam({
         ])
       )
     );
+    setBenchRank(initialBenchRank(squad));
     setTransferSlot(null);
     setSwapSlot(null);
     setError(null);
     setFlash(t("allUndone"));
+  }
+
+  // --- Redosled klupe ---------------------------------------------------------
+  /** Oba igrača su na klupi i nijedan nije golman (golman nije u redu za ulazak). */
+  function canReorderBench(aKey: string, bKey: string): boolean {
+    if (aKey === bKey) return false;
+    const a = slotByKey.get(aKey);
+    const b = slotByKey.get(bKey);
+    if (!a || !b) return false;
+    return (
+      !a.state.starting && !b.state.starting && a.current.position !== "GK" && b.current.position !== "GK"
+    );
+  }
+
+  /** Zamenjuje mesta dva igrača u redu za ulazak. */
+  function swapBenchOrder(aKey: string, bKey: string) {
+    const keys = benchOutfield.map((s) => s.key);
+    const i = keys.indexOf(aKey);
+    const j = keys.indexOf(bKey);
+    if (i < 0 || j < 0) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+    setBenchRank(new Map(keys.map((k, idx) => [k, idx + 1])));
+    setFlash(tInfo("benchReordered", { name: playerShirtName(slotByKey.get(aKey)!.current), n: j + 1 }));
+  }
+
+  /** Pomera igrača za jedno mesto napred (−1) ili nazad (+1) u redu za ulazak. */
+  function moveOnBench(key: string, delta: -1 | 1) {
+    const keys = benchOutfield.map((s) => s.key);
+    const i = keys.indexOf(key);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    swapBenchOrder(key, keys[j]);
   }
 
   // --- Zamena teren ↔ klupa -------------------------------------------------
@@ -285,6 +360,12 @@ export function MyTeam({
       setSwapSlot(null);
       return;
     }
+    // Dva igrača sa klupe (oba u polju, ne golman): zamena redosleda ulaska.
+    if (canReorderBench(swapSlot, slotKey)) {
+      swapBenchOrder(swapSlot, slotKey);
+      setSwapSlot(null);
+      return;
+    }
     if (!wouldBeValidSwap(swapSlot, slotKey)) {
       setSwapSlot(slotKey);
       return;
@@ -293,6 +374,18 @@ export function MyTeam({
     const a = slotByKey.get(swapSlot)!;
     const leaving = a.state.starting ? a.key : slotKey;
     const entering = a.state.starting ? slotKey : a.key;
+
+    // Igrač koji ide na klupu preuzima mesto u redu onoga ko ulazi u postavu
+    // (kao na FPL-u) — redosled klupe se ne meša zbog same zamene.
+    setBenchRank((prev) => {
+      const next = new Map(prev);
+      const inherited = next.get(entering);
+      if (inherited !== undefined && slotByKey.get(leaving)?.current.position !== "GK") {
+        next.set(leaving, inherited);
+      }
+      next.delete(entering);
+      return next;
+    });
 
     setLineup((prev) => {
       const next = new Map(prev);
@@ -471,13 +564,8 @@ export function MyTeam({
             POSITIONS.indexOf(a.current.position) - POSITIONS.indexOf(b.current.position) ||
             b.current.price - a.current.price
         );
-      const benchOrder = slots
-        .filter((s) => !s.state.starting)
-        .sort((a, b) => {
-          if (a.current.position === "GK" && b.current.position !== "GK") return 1;
-          if (b.current.position === "GK" && a.current.position !== "GK") return -1;
-          return b.current.price - a.current.price;
-        });
+      // Klupa: prvo igrači iz polja po izabranom redosledu, golman poslednji.
+      const benchOrder = [...benchOutfield, ...slots.filter((s) => !s.state.starting && s.current.position === "GK")];
       const order = new Map<string, number>();
       starters.forEach((s, i) => order.set(s.key, i + 1));
       benchOrder.forEach((s, i) => order.set(s.key, i + 1));
@@ -518,16 +606,7 @@ export function MyTeam({
   const starterSlots = slots.filter((s) => s.state.starting);
   // Golman se prikazuje odvojeno od klupe: njegov redosled nije prioritet
   // ulaska, jer ga može zameniti samo drugi golman.
-  const benchSlots = slots
-    .filter((s) => !s.state.starting)
-    .sort((a, b) => {
-      if (a.current.position === "GK" && b.current.position !== "GK") return 1;
-      if (b.current.position === "GK" && a.current.position !== "GK") return -1;
-      return b.current.price - a.current.price;
-    });
-
-  const benchGk = benchSlots.find((s) => s.current.position === "GK") ?? null;
-  const benchOutfield = benchSlots.filter((s) => s.current.position !== "GK");
+  const benchGk = slots.find((s) => !s.state.starting && s.current.position === "GK") ?? null;
 
   const rows = POSITIONS.map((pos) =>
     starterSlots.filter((s) => s.current.position === pos)
@@ -584,6 +663,32 @@ export function MyTeam({
         }
       },
     });
+    // Klupa (igrač iz polja): pomeranje u redu za ulazak. Golman nije u redu.
+    if (!onPitch && s.current.position !== "GK") {
+      const idx = benchOutfield.findIndex((b) => b.key === s.key);
+      if (idx > 0) {
+        list.push({
+          key: "earlier",
+          badge: "‹",
+          label: tInfo("benchEarlier"),
+          onClick: () => {
+            moveOnBench(s.key, -1);
+            close();
+          },
+        });
+      }
+      if (idx >= 0 && idx < benchOutfield.length - 1) {
+        list.push({
+          key: "later",
+          badge: "›",
+          label: tInfo("benchLater"),
+          onClick: () => {
+            moveOnBench(s.key, 1);
+            close();
+          },
+        });
+      }
+    }
     list.push(
       s.replacement
         ? {
@@ -640,7 +745,10 @@ export function MyTeam({
         dimmed={
           transferSlot
             ? transferSlot !== s.key
-            : swapSlot !== null && swapSlot !== s.key && !wouldBeValidSwap(swapSlot, s.key)
+            : swapSlot !== null &&
+              swapSlot !== s.key &&
+              !wouldBeValidSwap(swapSlot, s.key) &&
+              !canReorderBench(swapSlot, s.key)
         }
         onClick={() => handleJerseyClick(s.key)}
         onRemove={s.replacement ? () => cancelReplacement(s.key) : () => startTransfer(s.key)}

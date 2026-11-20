@@ -19,6 +19,7 @@ import {
   STARTING_XI_SIZE,
   autoPickSquad,
   buildSquadOrder,
+  orderBenchOutfield,
   formatEUR,
   playerFullName,
   playerShirtName,
@@ -58,6 +59,9 @@ export function SquadBuilder({
   const [viceCaptainId, setViceCaptainId] = useState<string | null>(null);
   const [pendingPosition, setPendingPosition] = useState<Position | null>(null);
   const [swapId, setSwapId] = useState<string | null>(null);
+  // Izabran redosled ulaska sa klupe (id-jevi). Prazno = po ceni; prvi dodir na
+  // klupu ga prepisuje trenutnim prikazom, pa se sve što se vidi i čuva.
+  const [benchPriority, setBenchPriority] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -252,6 +256,21 @@ export function SquadBuilder({
       return;
     }
     const a = playersById.get(swapId)!;
+    // Dva igrača sa klupe (oba u polju): zamena redosleda ulaska.
+    if (!startingIds.has(a.id) && !startingIds.has(p.id) && a.position !== "GK" && p.position !== "GK") {
+      const ids = orderBenchOutfield(
+        selected.filter((x) => !startingIds.has(x.id)),
+        benchPriority
+      ).map((x) => x.id);
+      const i = ids.indexOf(a.id);
+      const j = ids.indexOf(p.id);
+      if (i >= 0 && j >= 0) {
+        [ids[i], ids[j]] = [ids[j], ids[i]];
+        setBenchPriority(ids);
+      }
+      setSwapId(null);
+      return;
+    }
     if (!wouldBeValidSwap(a, p)) {
       setSwapId(p.id);
       return;
@@ -259,6 +278,18 @@ export function SquadBuilder({
 
     const leaving = startingIds.has(a.id) ? a : p;
     const entering = startingIds.has(a.id) ? p : a;
+
+    // Igrač koji ide na klupu preuzima mesto u redu onoga ko ulazi u postavu.
+    setBenchPriority((prev) => {
+      const ids = orderBenchOutfield(
+        selected.filter((x) => !startingIds.has(x.id)),
+        prev
+      ).map((x) => x.id);
+      const at = ids.indexOf(entering.id);
+      if (at >= 0 && leaving.position !== "GK") ids[at] = leaving.id;
+      else if (at >= 0) ids.splice(at, 1);
+      return ids;
+    });
 
     setStartingIds((prev) => {
       const next = new Set(prev);
@@ -288,7 +319,7 @@ export function SquadBuilder({
     setSaving(true);
     setSaveError(null);
 
-    const orderById = buildSquadOrder(selected, startingIds);
+    const orderById = buildSquadOrder(selected, startingIds, benchPriority);
 
     // Ceo upis (15 redova u squads + skidanje budžeta) ide kroz jednu Postgres
     // funkciju — atomično, i sa serverskom proverom roka, budžeta, sastava i
@@ -422,7 +453,16 @@ export function SquadBuilder({
             captainId={captainId}
             viceCaptainId={viceCaptainId}
             swapPlayer={swapPlayer}
-            canSwapWith={(p) => (swapPlayer ? wouldBeValidSwap(swapPlayer, p) : true)}
+            canSwapWith={(p) =>
+              swapPlayer
+                ? wouldBeValidSwap(swapPlayer, p) ||
+                  (!startingIds.has(swapPlayer.id) &&
+                    !startingIds.has(p.id) &&
+                    swapPlayer.position !== "GK" &&
+                    p.position !== "GK")
+                : true
+            }
+            benchPriority={benchPriority}
             onPlayerClick={handleLineupClick}
             onCaptain={(id) => {
               if (viceCaptainId === id) setViceCaptainId(null);
@@ -642,6 +682,7 @@ function LineupStep({
   viceCaptainId,
   swapPlayer,
   canSwapWith,
+  benchPriority,
   onPlayerClick,
   onCaptain,
   onVice,
@@ -653,6 +694,8 @@ function LineupStep({
   viceCaptainId: string | null;
   swapPlayer: SelectablePlayer | null;
   canSwapWith: (p: SelectablePlayer) => boolean;
+  /** Izabran redosled ulaska sa klupe (prazno = po ceni). */
+  benchPriority: string[];
   onPlayerClick: (p: SelectablePlayer) => void;
   onCaptain: (id: string) => void;
   onVice: (id: string) => void;
@@ -661,18 +704,12 @@ function LineupStep({
   const tPitch = useTranslations("pitch");
   const tPos = useTranslations("positions");
   const starters = selected.filter((p) => startingIds.has(p.id));
-  const bench = selected
-    .filter((p) => !startingIds.has(p.id))
-    .sort((a, b) => {
-      if (a.position === "GK" && b.position !== "GK") return 1;
-      if (b.position === "GK" && a.position !== "GK") return -1;
-      return b.price - a.price;
-    });
+  const benchAll = selected.filter((p) => !startingIds.has(p.id));
 
   // Golman se prikazuje odvojeno: njegov redosled na klupi nije prioritet
   // ulaska, jer ga može zameniti samo drugi golman.
-  const benchGk = bench.find((p) => p.position === "GK") ?? null;
-  const benchOutfield = bench.filter((p) => p.position !== "GK");
+  const benchGk = benchAll.find((p) => p.position === "GK") ?? null;
+  const benchOutfield = orderBenchOutfield(benchAll, benchPriority);
 
   const render = (p: SelectablePlayer, onPitch: boolean) => (
     <Jersey
