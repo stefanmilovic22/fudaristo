@@ -663,31 +663,32 @@ export function MyTeam({
         }
       },
     });
-    // Klupa (igrač iz polja): pomeranje u redu za ulazak. Golman nije u redu.
+    // Klupa (igrač iz polja): pomeranje u redu za ulazak, strelicama levo/desno
+    // (isti smer kao red na klupi). Prikazane su uvek, a na kraju reda zatamnjene.
     if (!onPitch && s.current.position !== "GK") {
       const idx = benchOutfield.findIndex((b) => b.key === s.key);
-      if (idx > 0) {
-        list.push({
-          key: "earlier",
-          badge: "‹",
-          label: tInfo("benchEarlier"),
-          onClick: () => {
-            moveOnBench(s.key, -1);
-            close();
-          },
-        });
-      }
-      if (idx >= 0 && idx < benchOutfield.length - 1) {
-        list.push({
-          key: "later",
-          badge: "›",
-          label: tInfo("benchLater"),
-          onClick: () => {
-            moveOnBench(s.key, 1);
-            close();
-          },
-        });
-      }
+      list.push({
+        key: "earlier",
+        badge: "",
+        label: tInfo("benchEarlier"),
+        arrow: "left",
+        disabled: idx <= 0,
+        onClick: () => {
+          moveOnBench(s.key, -1);
+          close();
+        },
+      });
+      list.push({
+        key: "later",
+        badge: "",
+        label: tInfo("benchLater"),
+        arrow: "right",
+        disabled: idx < 0 || idx >= benchOutfield.length - 1,
+        onClick: () => {
+          moveOnBench(s.key, 1);
+          close();
+        },
+      });
     }
     list.push(
       s.replacement
@@ -715,6 +716,7 @@ export function MyTeam({
       onClosePopover={() => setSwapSlot(null)}
       actions={menuActions(s, onPitch)}
       hint={tInfo("swapHint")}
+      arrowCaption={tInfo("benchOrder")}
     >
       <Jersey
         color={s.current.club_color}
@@ -960,6 +962,7 @@ function JerseySlot({
   onClosePopover,
   actions,
   hint,
+  arrowCaption,
 }: {
   children: React.ReactNode;
   slotKey: string;
@@ -969,6 +972,7 @@ function JerseySlot({
   onClosePopover: () => void;
   actions: PlayerAction[];
   hint: string;
+  arrowCaption: string;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   return (
@@ -982,6 +986,7 @@ function JerseySlot({
           onClose={onClosePopover}
           actions={actions}
           hint={hint}
+          arrowCaption={arrowCaption}
         />
       )}
     </div>

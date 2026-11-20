@@ -584,7 +584,8 @@
     "swapPick": "Dodirni igrača sa kojim {name} menja mesto.",
     "benchEarlier": "Ranije na klupi",
     "benchLater": "Kasnije na klupi",
-    "benchReordered": "{name} je sada {n}. na redu za ulazak sa klupe."
+    "benchReordered": "{name} je sada {n}. na redu za ulazak sa klupe.",
+    "benchOrder": "Redosled na klupi"
   },
   "team": {
     "pointsHistory": "Poeni po kolima",

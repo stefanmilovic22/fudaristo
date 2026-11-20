@@ -584,7 +584,8 @@
     "swapPick": "Tap the player {name} swaps with.",
     "benchEarlier": "Earlier on bench",
     "benchLater": "Later on bench",
-    "benchReordered": "{name} is now number {n} to come on from the bench."
+    "benchReordered": "{name} is now number {n} to come on from the bench.",
+    "benchOrder": "Bench order"
   },
   "team": {
     "pointsHistory": "Points by gameweek",

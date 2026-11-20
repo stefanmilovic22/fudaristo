@@ -26,8 +26,66 @@ export type PlayerAction = {
   badge: string;
   /** Već važi za ovog igrača (npr. on JESTE kapiten) — dugme je istaknuto. */
   active?: boolean;
+  /**
+   * Dugme sa strelicom umesto natpisa (pomeranje na klupi). Natpis ostaje samo kao
+   * tooltip i oznaka za čitače ekrana, jer u dugme ne staje.
+   */
+  arrow?: "left" | "right";
+  /** Dugme je prikazano, ali nije moguće (npr. već je prvi na klupi). */
+  disabled?: boolean;
   onClick: () => void;
 };
+
+/** Par dugmadi sa strelicama (levo/desno) sa kratkim naslovom iznad. */
+function ArrowRow({
+  actions,
+  caption,
+  size,
+}: {
+  actions: PlayerAction[];
+  caption?: string;
+  size: "lg" | "sm";
+}) {
+  if (actions.length === 0) return null;
+  const big = size === "lg";
+  return (
+    <div className={big ? "mt-3" : "mt-2 pt-2 border-t border-white/10"}>
+      {caption && (
+        <p className={`uppercase tracking-wide text-slate-500 ${big ? "text-[10px] mb-1.5" : "text-[10px] mb-1"}`}>
+          {caption}
+        </p>
+      )}
+      <div className={`grid grid-cols-2 ${big ? "gap-2" : "gap-1.5"}`}>
+        {actions.map((a) => (
+          <button
+            key={a.key}
+            type="button"
+            onClick={a.onClick}
+            disabled={a.disabled}
+            aria-label={a.label}
+            title={a.label}
+            className={`flex items-center justify-center border text-gold-300 transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+              big ? "min-h-[52px] rounded-xl" : "min-h-[36px] rounded-lg"
+            } bg-navy-900 border-navy-600 ${a.disabled ? "" : big ? "active:bg-navy-700" : "hover:bg-navy-700"}`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className={big ? "w-7 h-7" : "w-5 h-5"}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              {a.arrow === "left" ? <path d="M19 12H5m6-6-6 6 6 6" /> : <path d="M5 12h14m-6-6 6 6-6 6" />}
+            </svg>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export type PlayerInfoPopoverProps = {
   /** Element pored kog se prozorčić pozicionira (dres na terenu ili klupi). */
@@ -55,6 +113,8 @@ export type PlayerInfoPopoverProps = {
   actions?: PlayerAction[];
   /** Kratko uputstvo ispod dugmadi (npr. kako se radi zamena). */
   hint?: string;
+  /** Naslov iznad dugmadi sa strelicama (npr. „Redosled na klupi“). */
+  arrowCaption?: string;
 };
 
 /** Širina prozorčića iznad dresa — potrebna i za držanje unutar ekrana. */
@@ -74,7 +134,7 @@ const EDGE_GAP = 8;
  * kog igrača na klupi bio delimično ili potpuno odsečen tom ivicom. Portal to
  * zaobilazi u potpunosti — prozorčić se crta van tih kontejnera.
  */
-export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, actions, hint }: PlayerInfoPopoverProps) {
+export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, actions, hint, arrowCaption }: PlayerInfoPopoverProps) {
   const locale = useLocale();
   const t = useTranslations("playerInfo");
   const tPos = useTranslations("positions");
@@ -90,6 +150,8 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
   } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const hasActions = Boolean(actions && actions.length > 0);
+  const textActions = (actions ?? []).filter((a) => !a.arrow);
+  const arrowActions = (actions ?? []).filter((a) => a.arrow);
   const sheetMode = hasActions && Boolean(pos?.narrow);
 
   useLayoutEffect(() => {
@@ -248,7 +310,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
           </div>
 
           <div className="grid grid-cols-2 gap-2 mt-4">
-            {actions!.map((a) => (
+            {textActions.map((a) => (
               <button
                 key={a.key}
                 type="button"
@@ -258,7 +320,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
                   a.active
                     ? "bg-gold-400/15 border-gold-400 text-chalk-50"
                     : "bg-navy-900 border-navy-600 text-chalk-50 active:bg-navy-700"
-                } ${actions!.length % 2 === 1 && a === actions![actions!.length - 1] ? "col-span-2" : ""}`}
+                } ${textActions.length % 2 === 1 && a === textActions[textActions.length - 1] ? "col-span-2" : ""}`}
               >
                 <span
                   aria-hidden
@@ -272,6 +334,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
               </button>
             ))}
           </div>
+          <ArrowRow actions={arrowActions} caption={arrowCaption} size="lg" />
           {hint && <p className="text-xs text-slate-400 mt-2.5">{hint}</p>}
 
           {player.id && (
@@ -350,8 +413,9 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
       </div>
 
       {hasActions && (
-        <div className="grid grid-cols-2 gap-1.5 mt-2.5 pt-2.5 border-t border-white/10">
-          {actions!.map((a) => (
+        <div className="mt-2.5 pt-2.5 border-t border-white/10">
+        <div className="grid grid-cols-2 gap-1.5">
+          {textActions.map((a) => (
             <button
               key={a.key}
               type="button"
@@ -361,7 +425,7 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
                 a.active
                   ? "bg-gold-400/15 border-gold-400 text-chalk-50"
                   : "bg-navy-900 border-navy-600 text-chalk-50 hover:bg-navy-700"
-              } ${actions!.length % 2 === 1 && a === actions![actions!.length - 1] ? "col-span-2" : ""}`}
+              } ${textActions.length % 2 === 1 && a === textActions[textActions.length - 1] ? "col-span-2" : ""}`}
             >
               <span
                 aria-hidden
@@ -374,6 +438,8 @@ export function PlayerInfoPopover({ anchorRef, player, fixtures, onClose, action
               <span className="truncate">{a.label}</span>
             </button>
           ))}
+        </div>
+        <ArrowRow actions={arrowActions} caption={arrowCaption} size="sm" />
         </div>
       )}
       {hasActions && hint && <p className="text-[11px] text-slate-400 mt-1.5 leading-snug">{hint}</p>}
